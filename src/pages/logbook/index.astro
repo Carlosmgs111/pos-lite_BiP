@@ -1,0 +1,48 @@
+---
+import { getCollection } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import EntryCard from '../../components/logbook/EntryCard.astro';
+import { runSuites } from '../../../package/tests/runner';
+import '../../../package/tests'; // Register suites
+import type { TestSummary } from '../../types/logbook';
+
+const entries = await getCollection('logbook');
+const sorted = entries.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const entriesWithTests = await Promise.all(
+  sorted.map(async (entry) => {
+    const results = entry.data.testSuites.length > 0 ? await runSuites(entry.data.testSuites) : [];
+    const testSummary: TestSummary = results.reduce(
+      (acc, r) => ({
+        passed: acc.passed + r.passed,
+        failed: acc.failed + r.failed,
+        total: acc.total + r.total,
+      }),
+      { passed: 0, failed: 0, total: 0 }
+    );
+    return { entry, testSummary };
+  })
+);
+---
+
+<Layout title="Bitacora - pos-lite">
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <header class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Bitacora de Desarrollo</h1>
+      <p class="text-gray-500 mt-2">Seguimiento del progreso de pos-lite — un sistema POS construido en publico con DDD, monolito modular y puertos/adaptadores.</p>
+    </header>
+
+    <div class="space-y-4">
+      {entriesWithTests.map(({ entry, testSummary }) => (
+        <EntryCard
+          id={entry.id}
+          title={entry.data.title}
+          date={entry.data.date}
+          summary={entry.data.summary}
+          tags={entry.data.tags}
+          testSummary={testSummary}
+        />
+      ))}
+    </div>
+  </div>
+</Layout>

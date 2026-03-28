@@ -1,17 +1,13 @@
 ---
-
+import Layout from "../layouts/Layout.astro";
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="pos-lite">
+  <div class="max-w-3xl mx-auto px-4 py-16 text-center">
+    <h1 class="text-4xl font-bold text-gray-900">pos-lite</h1>
+    <p class="text-gray-500 mt-4">Sistema POS ligero — construido en publico con DDD</p>
+    <a href="/logbook/" class="inline-block mt-6 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+      Ver Bitacora
+    </a>
+  </div>
+</Layout>
