@@ -1,0 +1,75 @@
+---
+import type { BoundedContext, ValueObject, Port } from '../../types/logbook';
+import AggregateCard from './AggregateCard.astro';
+import ValueObjectCard from './ValueObjectCard.astro';
+import PortAdapterDiagram from './PortAdapterDiagram.astro';
+
+interface Props {
+  contexts: BoundedContext[];
+  sharedVOs: ValueObject[];
+  ports: Port[];
+}
+
+const { contexts, sharedVOs, ports } = Astro.props;
+
+const contextBorders: Record<string, string> = {
+  Inventory: 'border-emerald-300',
+  Order: 'border-blue-300',
+};
+
+const contextHeaders: Record<string, string> = {
+  Inventory: 'bg-emerald-50 text-emerald-800',
+  Order: 'bg-blue-50 text-blue-800',
+};
+---
+
+<div class="space-y-6">
+  {/* Bounded Contexts */}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {contexts.map((ctx) => (
+      <div class={`border-2 rounded-xl p-4 ${contextBorders[ctx.name] || 'border-gray-300'}`}>
+        <h3 class={`text-lg font-bold mb-4 px-3 py-1 rounded-lg inline-block ${contextHeaders[ctx.name] || 'bg-gray-100 text-gray-800'}`}>
+          {ctx.name}
+        </h3>
+
+        <div class="space-y-3">
+          {ctx.aggregates.map((agg) => (
+            <AggregateCard aggregate={agg} contextName={ctx.name} />
+          ))}
+
+          {ctx.valueObjects.length > 0 && (
+            <div class="space-y-2 mt-3">
+              {ctx.valueObjects.map((vo) => (
+                <ValueObjectCard vo={vo} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {/* Shared Value Objects */}
+  {sharedVOs.length > 0 && (
+    <div class="border-2 border-dashed border-indigo-200 rounded-xl p-4">
+      <h3 class="text-sm font-bold text-indigo-600 uppercase tracking-wide mb-3">Shared Domain</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {sharedVOs.map((vo) => (
+          <ValueObjectCard vo={vo} />
+        ))}
+      </div>
+    </div>
+  )}
+
+  {/* Ports & Adapters */}
+  {ports.length > 0 && (
+    <div>
+      <h3 class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">Ports & Adapters</h3>
+      <div class="space-y-2">
+        {ports.map((p) => (
+          <PortAdapterDiagram port={p} />
+        ))}
+      </div>
+    </div>
+  )}
+</div>
