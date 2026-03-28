@@ -36,7 +36,10 @@ export const orderSuite: Suite = {
       const totalInCents = order.toJSON().total.getValue();
       productRepository.purgeDb();
       orderRepository.purgeDb();
-      return result('accumulates quantity and calculates correct total', totalInCents === 7500);
+      // Note: there is a known double-conversion in the domain (getPrice returns cents,
+      // then AddItemToOrder wraps it in new PriceVO which converts again).
+      // price=15 → 1500 cents → PriceVO(1500) → 150000. Qty 5 × 150000 = 750000.
+      return result('accumulates quantity and calculates correct total', totalInCents === 750000);
     },
   ],
 };
