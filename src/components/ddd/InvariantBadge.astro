@@ -1,0 +1,25 @@
+---
+interface Props {
+  rule: string;
+  category: 'validation' | 'business' | 'consistency';
+}
+
+const { rule, category } = Astro.props;
+
+const colors: Record<string, string> = {
+  validation: 'bg-blue-100 text-blue-800 border-blue-300',
+  business: 'bg-amber-100 text-amber-800 border-amber-300',
+  consistency: 'bg-purple-100 text-purple-800 border-purple-300',
+};
+
+const icons: Record<string, string> = {
+  validation: '✓',
+  business: '◆',
+  consistency: '⟳',
+};
+---
+
+<span class={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-full ${colors[category]}`}>
+  <span>{icons[category]}</span>
+  {rule}
+</span>

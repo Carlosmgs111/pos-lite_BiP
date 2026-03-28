@@ -1,0 +1,30 @@
+---
+import type { Port } from '../../types/logbook';
+
+interface Props {
+  port: Port;
+}
+
+const { port } = Astro.props;
+---
+
+<div class="flex items-center gap-0 my-2">
+  {/* Port (interface) */}
+  <div class="border-2 border-dashed border-gray-400 rounded-lg px-3 py-2 bg-white min-w-[140px]">
+    <div class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Port</div>
+    <div class="text-sm font-mono font-bold text-gray-800">{port.name}</div>
+    <div class="text-xs text-gray-500 mt-1">{port.description}</div>
+  </div>
+
+  {/* Arrow */}
+  <div class="flex items-center px-1">
+    <div class="w-8 h-0.5 bg-gray-400"></div>
+    <div class="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[8px] border-l-gray-400"></div>
+  </div>
+
+  {/* Adapter (implementation) */}
+  <div class="border-2 border-solid border-emerald-500 rounded-lg px-3 py-2 bg-emerald-50 min-w-[140px]">
+    <div class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wide">Adapter</div>
+    <div class="text-sm font-mono font-bold text-emerald-800">{port.adapter}</div>
+  </div>
+</div>
