@@ -1,0 +1,24 @@
+---
+interface Props {
+  prev: { id: string; title: string } | null;
+  next: { id: string; title: string } | null;
+}
+
+const { prev, next } = Astro.props;
+---
+
+<nav class="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+  {prev ? (
+    <a href={`/logbook/${prev.id}/`} class="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600 transition-colors">
+      <span>←</span>
+      <span class="max-w-[200px] truncate">{prev.title}</span>
+    </a>
+  ) : <div />}
+
+  {next ? (
+    <a href={`/logbook/${next.id}/`} class="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600 transition-colors">
+      <span class="max-w-[200px] truncate">{next.title}</span>
+      <span>→</span>
+    </a>
+  ) : <div />}
+</nav>

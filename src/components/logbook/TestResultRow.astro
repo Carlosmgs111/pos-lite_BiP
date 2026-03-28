@@ -1,0 +1,21 @@
+---
+import type { TestResult } from '../../../package/tests/runner';
+
+interface Props {
+  testResult: TestResult;
+}
+
+const { testResult } = Astro.props;
+---
+
+<div class="flex items-start gap-2 py-1.5 text-sm">
+  <span class={`flex-shrink-0 mt-0.5 ${testResult.passed ? 'text-green-600' : 'text-red-600'}`}>
+    {testResult.passed ? '✓' : '✗'}
+  </span>
+  <div>
+    <span class="text-gray-800">{testResult.name}</span>
+    {testResult.message && (
+      <p class="text-xs text-red-500 mt-0.5">{testResult.message}</p>
+    )}
+  </div>
+</div>

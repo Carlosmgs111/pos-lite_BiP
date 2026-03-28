@@ -1,0 +1,37 @@
+---
+import type { SuiteResult } from '../../../package/tests/runner';
+import TestResultRow from './TestResultRow.astro';
+
+interface Props {
+  suiteResult: SuiteResult;
+}
+
+const { suiteResult } = Astro.props;
+const passRate = suiteResult.total > 0 ? (suiteResult.passed / suiteResult.total) * 100 : 0;
+---
+
+<div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+  <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+    <h4 class="text-sm font-bold text-gray-900 capitalize">{suiteResult.suite}</h4>
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-green-700 font-medium">{suiteResult.passed} passed</span>
+      {suiteResult.failed > 0 && (
+        <span class="text-xs text-red-700 font-medium">{suiteResult.failed} failed</span>
+      )}
+    </div>
+  </div>
+
+  {/* Progress bar */}
+  <div class="h-1.5 bg-gray-100">
+    <div
+      class={`h-full ${suiteResult.failed > 0 ? 'bg-red-500' : 'bg-green-500'}`}
+      style={`width: ${passRate}%`}
+    ></div>
+  </div>
+
+  <div class="px-4 py-2 divide-y divide-gray-100">
+    {suiteResult.tests.map((t) => (
+      <TestResultRow testResult={t} />
+    ))}
+  </div>
+</div>
