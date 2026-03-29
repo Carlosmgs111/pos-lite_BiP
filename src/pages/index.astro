@@ -1,13 +1,47 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { t } from "../i18n";
 ---
 
 <Layout title="pos-lite">
-  <div class="max-w-3xl mx-auto px-4 py-16 text-center">
-    <h1 class="text-4xl font-bold text-gray-900">pos-lite</h1>
-    <p class="text-gray-500 mt-4">Sistema POS ligero — construido en publico con DDD</p>
-    <a href="/logbook/" class="inline-block mt-6 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-      Ver Bitacora
-    </a>
-  </div>
+  <!-- Hero -->
+  <section class="min-h-[70vh] flex items-center justify-center px-4">
+    <div class="max-w-2xl mx-auto text-center space-y-6">
+      <p class="text-xl md:text-2xl italic font-light text-gray-600">
+        {t.hero.scene}
+      </p>
+
+      <p class="text-lg md:text-xl text-gray-700">
+        {t.hero.bridge}
+      </p>
+
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-900">
+        {t.hero.declaration}
+      </h1>
+
+      <p class="text-sm md:text-base text-gray-400 max-w-md mx-auto">
+        {t.hero.subtext}
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+        <a
+          href="#about"
+          class="px-5 py-2.5 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
+        >
+          {t.hero.ctaPrimary}
+        </a>
+        <a
+          href="/logbook/"
+          class="px-5 py-2.5 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          {t.hero.ctaSecondary}
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- About placeholder -->
+  <section id="about" class="max-w-2xl mx-auto px-4 py-16 text-center">
+    <p class="text-sm text-gray-400">{t.about.placeholder}</p>
+  </section>
 </Layout>
