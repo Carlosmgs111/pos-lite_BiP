@@ -27,7 +27,7 @@ export const orderSuite: Suite = {
       const exists = order !== undefined && order !== null;
       productRepository.purgeDb();
       orderRepository.purgeDb();
-      return result("creates an empty order", exists);
+      return result("Creates an empty order", exists);
     },
     async () => {
       await registerProduct.execute({
@@ -50,7 +50,7 @@ export const orderSuite: Suite = {
       });
       productRepository.purgeDb();
       orderRepository.purgeDb();
-      return result("adds item to order", r.isSuccess);
+      return result("Adds item to order", r.isSuccess);
     },
     async () => {
       await registerProduct.execute({
@@ -81,7 +81,7 @@ export const orderSuite: Suite = {
       productRepository.purgeDb();
       orderRepository.purgeDb();
       return result(
-        "accumulates quantity and calculates correct total",
+        "Accumulates quantity and calculates correct total",
         totalInCents === 75.00
       );
     },
@@ -115,7 +115,7 @@ export const orderSuite: Suite = {
       productRepository.purgeDb();
       orderRepository.purgeDb();
       return result(
-        "accumulates quantity and calculates correct total",
+        "Removes quantity from order and calculates correct total",
         totalInCents === 60.00
       );
     },

@@ -1,10 +1,12 @@
-import { PriceVO } from "../../shared/domain/Price.VO";
-import { NameVO } from "./Name.VO";
+
 import { Result } from "../../shared/domain/Result";
+import { PriceVO } from "../../shared/domain/Price.VO";
+import { UuidVO } from "../../shared/domain/Uuid.VO";
+import { NameVO } from "./Name.VO";
 
 export class Product {
   constructor(
-    private id: string,
+    private id: UuidVO,
     private name: NameVO,
     private price: PriceVO,
     private stock: number,
