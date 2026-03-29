@@ -1,14 +1,16 @@
 ---
 import "../styles/global.css";
+import Breadcrumb from "../components/Breadcrumb.astro";
 
 interface Props {
   title?: string;
+  lang?: string;
 }
 
-const { title = 'pos-lite' } = Astro.props;
+const { title = 'pos-lite', lang = 'es' } = Astro.props;
 ---
 
-<html lang="en">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -18,6 +20,9 @@ const { title = 'pos-lite' } = Astro.props;
     <title>{title}</title>
   </head>
   <body>
+    <div class="max-w-3xl mx-auto px-4 pt-8">
+      <Breadcrumb />
+    </div>
     <slot />
   </body>
 </html>
