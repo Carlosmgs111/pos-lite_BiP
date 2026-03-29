@@ -39,7 +39,7 @@ export const inventorySuite: Suite = {
       productRepository.purgeDb();
       return result(
         "stores product with correct price in cents",
-        priceInCents === 2550
+        priceInCents === 25.50
       );
     },
     async () => {

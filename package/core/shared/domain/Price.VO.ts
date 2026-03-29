@@ -10,18 +10,15 @@ export class PriceVO {
 
   static add(prices: PriceVO[]): PriceVO {
     const totalCents = prices.reduce((total, price) => total + price.getValue(), 0);
-    return PriceVO.fromCents(totalCents);
+    return new PriceVO(totalCents);
   }
 
   static multiply(price: PriceVO, quantity: number): PriceVO {
-    return PriceVO.fromCents(price.getValue() * quantity);
+    return new PriceVO(price.getValue() * quantity);
   }
 
-  static fromCents(cents: number): PriceVO {
-    const instance = Object.create(PriceVO.prototype);
-    instance.value = cents;
-    instance.centsPrecision = 2;
-    return instance;
+  private convertToDecimals(cents: number): number {
+    return cents / 100;
   }
 
   private validate(price: number): void {
@@ -47,6 +44,6 @@ export class PriceVO {
   }
 
   getValue(): number {
-    return this.value;
+    return this.convertToDecimals(this.value);
   }
 }

@@ -1,5 +1,5 @@
 import type { Suite, TestResult } from "./runner";
-import { registerProduct, createOrder, addItemToOrder } from "../core";
+import { registerProduct, createOrder, addItemToOrder, removeItemFromOrder } from "../core";
 import { productRepository } from "../core/inventory";
 import { orderRepository } from "../core/order";
 import { PriceVO } from "../core/shared/domain/Price.VO";
@@ -80,12 +80,43 @@ export const orderSuite: Suite = {
       const totalInCents = order.toJSON().total.getValue();
       productRepository.purgeDb();
       orderRepository.purgeDb();
-      // Note: there is a known double-conversion in the domain (getPrice returns cents,
-      // then AddItemToOrder wraps it in new PriceVO which converts again).
-      // price=15 → 1500 cents → PriceVO(1500) → 150000. Qty 5 × 150000 = 750000.
       return result(
         "accumulates quantity and calculates correct total",
-        totalInCents === 750000
+        totalInCents === 75.00
+      );
+    },
+    async () => {
+      await registerProduct.execute({
+        id: "p3",
+        name: "Item C",
+        price: 20,
+        stock: 10,
+        reservedStock: 0,
+      });
+      await createOrder.execute({
+        id: "test-ord-4",
+        items: [],
+        total: new PriceVO(0),
+        createdAt: new Date(),
+      });
+      await addItemToOrder.execute({
+        orderId: "test-ord-4",
+        itemId: "p3",
+        quantity: 7,
+      });
+      await removeItemFromOrder.execute({
+        orderId: "test-ord-4",
+        itemId: "p3",
+        quantity: 4,
+      });
+      const order = await orderRepository.getOrder("test-ord-4");
+      const totalInCents = order.toJSON().total.getValue();
+      console.log({ totalInCents });
+      productRepository.purgeDb();
+      orderRepository.purgeDb();
+      return result(
+        "accumulates quantity and calculates correct total",
+        totalInCents === 60.00
       );
     },
   ],

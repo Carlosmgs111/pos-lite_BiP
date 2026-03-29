@@ -16,22 +16,22 @@ export const sharedSuite: Suite = {
     async () => {
       const price = new PriceVO(10);
       return result(
-        "Price Value Object: Setting price as int (10) should be 1000",
-        price.getValue() === 1000
+        "Price Value Object: Setting price as int (10) should be 10.00",
+        price.getValue() === 10.00
       );
     },
     async () => {
       const price = new PriceVO(10.0);
       return result(
-        "Price Value Object: Setting price as float (10.0) with one decimal should be 1000",
-        price.getValue() === 1000
+        "Price Value Object: Setting price as float (10.0) with one decimal should be 10.00",
+        price.getValue() === 10.00
       );
     },
     async () => {
       const price = new PriceVO(10.01);
       return result(
-        "Price Value Object: Setting price as float (10.01) with two decimals should be 1001",
-        price.getValue() === 1001
+        "Price Value Object: Setting price as float (10.01) with two decimals should be 10.01",
+        price.getValue() === 10.01
       );
     },
     async () => {

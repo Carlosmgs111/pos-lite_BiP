@@ -1,2 +1,2 @@
 export { registerProduct, reserveStock, getProduct } from "./inventory";
-export { addItemToOrder, createOrder } from "./order";
+export { addItemToOrder, createOrder, removeItemFromOrder } from "./order";

@@ -47,6 +47,13 @@ export class Order {
     }
     this.calculateTotal();
   }
+  removeItem(id: string, quantity: number): void {
+    const itemExists = this.findItemById(id);
+    if (itemExists.isSuccess) {
+      itemExists.getValue()!.decrementQuantity(quantity);
+    }
+    this.calculateTotal();
+  }
   findItemById(id: string): Result<OrderItemNotFound, OrderItem> {
     const item = this.items.find((item) => item.getId() === id);
     if (!item) {
