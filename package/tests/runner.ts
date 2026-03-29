@@ -33,7 +33,7 @@ export async function runSuites(suiteNames: string[]): Promise<SuiteResult[]> {
   for (const name of suiteNames) {
     const suite = registry.get(name);
     if (!suite) {
-      results.push({ suite: name, tests: [], passed: 0, failed: 0, total: 0 });
+      // results.push({ suite: name, tests: [], passed: 0, failed: 0, total: 0 });
       continue;
     }
 
