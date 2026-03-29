@@ -6,6 +6,7 @@ import EntryNavigation from '../../components/logbook/EntryNavigation.astro';
 import BoundedContextMap from '../../components/ddd/BoundedContextMap.astro';
 import { resolveTestResults } from '../../lib/resolve-tests';
 import type { LogbookArtifacts } from '../../types/logbook';
+import { t } from '../../i18n';
 
 const artifactModules = import.meta.glob('../../data/logbook/artifacts/*.ts', { eager: true });
 
@@ -32,14 +33,20 @@ const artifacts: LogbookArtifacts | null = artifactKey
 
 const testResults = await resolveTestResults(entry.id, entry.data.testSuites, entry.data.closed);
 
-const dateStr = entry.data.date.toISOString().split('T')[0];
+const displayDate = entry.data.closed ? entry.data.date : new Date();
+const dateStr = displayDate.toISOString().split('T')[0];
 ---
 
 <Layout title={`${entry.data.title} - pos-lite`}>
   <div class="max-w-3xl mx-auto px-4 py-8">
     {/* Header */}
     <header class="mb-8">
-      <time class="text-sm font-mono text-gray-400">{dateStr}</time>
+      <div class="flex items-center gap-2">
+        <time class="text-sm font-mono text-gray-400">{dateStr}</time>
+        <span class={`text-xs font-medium px-1.5 py-0.5 rounded ${entry.data.closed ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'}`}>
+          {entry.data.closed ? t.logbook.statusClosed : t.logbook.statusOpen}
+        </span>
+      </div>
       <h1 class="text-2xl font-bold text-gray-900 mt-1">{entry.data.title}</h1>
       {entry.data.tags.length > 0 && (
         <div class="flex flex-wrap gap-1 mt-3">
