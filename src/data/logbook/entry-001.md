@@ -1,9 +1,10 @@
 ---
 title: "Entry 001 - Definicion de bounded contexts"
 date: 2026-03-28
-summary: "Identificacion inicial de los contextos Inventory y Order, definicion de agregados, value objects e invariantes del sistema POS."
+summary: "Identificacion inicial de los contextos Inventory y Order, definicion de agregados, value objects e invariantes del sistema POS.", 
 tags: ["ddd", "architecture", "inventory", "order"]
-testSuites: ["inventory", "order"]
+testSuites: ["inventory", "order", "shared"]
+closed: false
 ---
 
 ## Contextos identificados

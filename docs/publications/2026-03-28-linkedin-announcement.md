@@ -26,6 +26,17 @@ Lo llame pos-lite y esto es lo que ya tiene:
 ✅ Bitacora publica con resultados de tests en tiempo real
 ✅ Visualizaciones interactivas de la arquitectura DDD
 
+📓 ¿Y como documento todo esto?
+
+Construi una bitacora directamente dentro del proyecto. No es un blog externo ni un Notion aparte — es parte del build del sistema.
+
+Cada entrada tiene 3 secciones:
+📝 Descripcion de lo que se avanzo
+🧪 Resultados reales de tests (se ejecutan en cada build)
+🏗️ Visualizaciones DDD — mapas de contextos, agregados, value objects con sus invariantes
+
+¿Por que asi? Porque quiero que el seguimiento del proyecto sea tan riguroso como el codigo mismo. Si los tests pasan, se refleja. Si algo cambia en la arquitectura, se ve. Sin interpretaciones, sin maquillaje.
+
 ⚡ Los limites de hoy no son los limites de manana. Este proyecto es evolutivo por naturaleza — los contextos pueden cambiar, nuevas reglas pueden emerger.
 
 ¿Te interesa seguir el proceso? 👀

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkedIn Post Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f3f2ef;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    min-height: 100vh;
+  }
+
+  .linkedin-card {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0dfdc;
+    max-width: 555px;
+    width: 100%;
+    height: fit-content;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px 16px 0;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0a66c2, #004182);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .header-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #191919;
+    line-height: 1.3;
+  }
+
+  .header-title {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.3;
+    margin-top: 1px;
+  }
+
+  .header-time {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .header-time svg {
+    width: 14px;
+    height: 14px;
+    fill: #666;
+  }
+
+  .post-content {
+    padding: 12px 16px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #191919;
+    white-space: pre-line;
+  }
+
+  .post-content .line {
+    margin-bottom: 8px;
+  }
+
+  .post-content .line:last-child {
+    margin-bottom: 0;
+  }
+
+  .hashtags {
+    color: #0a66c2;
+    font-weight: 500;
+  }
+
+  .link-placeholder {
+    color: #0a66c2;
+    text-decoration: none;
+  }
+
+  .engagement-bar {
+    padding: 8px 16px;
+    border-top: 1px solid #e0dfdc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .reactions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #666;
+  }
+
+  .reaction-icons {
+    display: flex;
+  }
+
+  .reaction-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin-right: -4px;
+    border: 2px solid white;
+  }
+
+  .reaction-like { background: #378fe9; }
+  .reaction-fire { background: #f5bb5c; }
+  .reaction-clap { background: #6dae4f; }
+
+  .actions-bar {
+    padding: 4px 16px 8px;
+    border-top: 1px solid #e0dfdc;
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #666;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .action-btn:hover {
+    background: #f3f2ef;
+  }
+
+  .page-title {
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div>
+    <div class="page-title">LinkedIn Post Preview</div>
+    <div class="linkedin-card">
+      <div class="card-header">
+        <div class="avatar">TN</div>
+        <div class="header-info">
+          <div class="header-name">Tu Nombre</div>
+          <div class="header-title">Software Engineer | DDD | TypeScript</div>
+          <div class="header-time">
+            Ahora mismo &bull;
+            <svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 115 5 5 5 0 01-5-5z"></path><path d="M7.5 3v5.27l3.12 1.85-.62 1.03L6 8.58V3h1.5z"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="post-content">
+        <div class="line">&#x1F680; Estoy construyendo un sistema POS desde cero. En publico.</div>
+
+        <div class="line">No es un tutorial. No es un proyecto de fin de semana.</div>
+
+        <div class="line">Es un ejercicio real de ingenieria de software donde documento cada decision, cada iteracion, y cada error. Sin filtros.</div>
+
+        <div class="line">El objetivo es doble &#x1F447;</div>
+
+        <div class="line">&#x1F527; Desde lo tecnico — aplicar Domain-Driven Design, monolito modular y puertos/adaptadores en un proyecto que evoluciona con el tiempo. Mostrar como se identifican bounded contexts, como se protegen reglas de negocio con invariantes, y como se estructura codigo que escala sin dependencias innecesarias.</div>
+
+        <div class="line">&#x1F4CA; Desde el negocio — demostrar capacidad de analisis: identificar el problema, definir requerimientos, y traducir reglas de negocio en software funcional.</div>
+
+        <div class="line">Lo llame pos-lite y esto es lo que ya tiene:</div>
+
+        <div class="line">&#x2705; Dos bounded contexts identificados (Inventory y Order)
+&#x2705; Tests sin frameworks externos — cero dependencias
+&#x2705; Bitacora publica con resultados de tests en tiempo real
+&#x2705; Visualizaciones interactivas de la arquitectura DDD</div>
+
+        <div class="line">&#x1F4D3; ¿Y como documento todo esto?</div>
+
+        <div class="line">Construi una bitacora directamente dentro del proyecto. No es un blog externo ni un Notion aparte — es parte del build del sistema.</div>
+
+        <div class="line">Cada entrada tiene 3 secciones:
+&#x1F4DD; Descripcion de lo que se avanzo
+&#x1F9EA; Resultados reales de tests (se ejecutan en cada build)
+&#x1F3D7;&#xFE0F; Visualizaciones DDD — mapas de contextos, agregados, value objects con sus invariantes</div>
+
+        <div class="line">¿Por que asi? Porque quiero que el seguimiento del proyecto sea tan riguroso como el codigo mismo. Si los tests pasan, se refleja. Si algo cambia en la arquitectura, se ve. Sin interpretaciones, sin maquillaje.</div>
+
+        <div class="line">&#x26A1; Los limites de hoy no son los limites de manana. Este proyecto es evolutivo por naturaleza — los contextos pueden cambiar, nuevas reglas pueden emerger.</div>
+
+        <div class="line">¿Te interesa seguir el proceso? &#x1F440;</div>
+
+        <div class="line">&#x1F517; Bitacora: <span class="link-placeholder">https://pos-lite.vercel.app/logbook</span>
+&#x1F4BB; Repo: <span class="link-placeholder">https://github.com/user/pos-lite</span></div>
+
+        <div class="line hashtags">#BuildInPublic #DDD #SoftwareEngineering #TypeScript #DomainDrivenDesign</div>
+      </div>
+
+      <div class="engagement-bar">
+        <div class="reactions">
+          <div class="reaction-icons">
+            <div class="reaction-icon reaction-like">&#x1F44D;</div>
+            <div class="reaction-icon reaction-fire">&#x1F525;</div>
+            <div class="reaction-icon reaction-clap">&#x1F44F;</div>
+          </div>
+          &nbsp;42
+        </div>
+        <span style="font-size:12px;color:#666">5 comentarios</span>
+      </div>
+
+      <div class="actions-bar">
+        <button class="action-btn">&#x1F44D; Recomendar</button>
+        <button class="action-btn">&#x1F4AC; Comentar</button>
+        <button class="action-btn">&#x1F501; Compartir</button>
+        <button class="action-btn">&#x1F4E8; Enviar</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
