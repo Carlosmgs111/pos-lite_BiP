@@ -1,6 +1,7 @@
 import type { Suite, TestResult } from "./runner";
 import { registerProduct, getProduct, reserveStock } from "../core";
 import { productRepository } from "../core/inventory";
+import { UuidVO } from "../core/shared/domain/Uuid.VO";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
@@ -15,65 +16,72 @@ export const inventorySuite: Suite = {
   name: "inventory",
   tests: [
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "test-inv-1",
+        id,
         name: "Product A",
         price: 10,
         stock: 10,
         reservedStock: 0,
       });
-      const r = await getProduct.execute("test-inv-1");
+      const r = await getProduct.execute(id);
       productRepository.purgeDb();
-      return result("registers a product and retrieves it by id", r.isSuccess);
+      return result("Registers a product and retrieves it by id", r.isSuccess);
     },
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "test-inv-2",
+        id,
         name: "Product B",
         price: 25.5,
         stock: 5,
         reservedStock: 0,
       });
-      const r = await getProduct.execute("test-inv-2")!;
-      const priceInCents = r.getValue().getPrice();
+      const r = await getProduct.execute(id);
+      if (!r.isSuccess) {
+        return result("Stores product with correct price", false);
+      }
+      const price = r.getValue()!.getPrice();
       productRepository.purgeDb();
       return result(
-        "stores product with correct price in cents",
-        priceInCents === 25.50
+        "Stores product with correct price",
+        price === 25.5
       );
     },
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "test-inv-3",
+        id,
         name: "Product C",
         price: 10,
         stock: 10,
         reservedStock: 0,
       });
-      const r = await reserveStock.execute("test-inv-3", 3);
+      const r = await reserveStock.execute(id, 3);
       productRepository.purgeDb();
       return result(
-        "reserves stock successfully for valid quantity",
+        "Reserves stock successfully for valid quantity",
         r.isSuccess
       );
     },
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "test-inv-4",
+        id,
         name: "Product D",
         price: 10,
         stock: 2,
         reservedStock: 0,
       });
-      const r = await reserveStock.execute("test-inv-4", 5);
+      const r = await reserveStock.execute(id, 5);
       productRepository.purgeDb();
       return result(
-        "fails when reserving more than available stock",
+        "Fails when reserving more than available stock",
         !r.isSuccess
       );
     },
     async () => {
-      const r = await getProduct.execute("nonexistent");
+      const r = await getProduct.execute("non-existent-with-invalid-uuid");
       productRepository.purgeDb();
       return result("returns error for nonexistent product", !r.isSuccess);
     },

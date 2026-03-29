@@ -8,8 +8,8 @@ export class UuidVO {
     this.value = uuid.toLowerCase();
   }
 
-  static generate(): UuidVO {
-    return new UuidVO(crypto.randomUUID());
+  static generate(): string {
+    return crypto.randomUUID();
   }
 
   private validate(uuid: string): void {

@@ -24,11 +24,6 @@ export class Order {
     private createdAt: Date,
     private state: OrdersStates
   ) {}
-
-  getId() {
-    return this.id;
-  }
-
   static create(props: OrderProps) {
     return new Order(
       props.id,
@@ -37,6 +32,13 @@ export class Order {
       props.createdAt,
       OrdersStates.PENDING
     );
+  }
+  getId() {
+    return this.id;
+  }
+  concreteOrder(): void {
+    this.state = OrdersStates.COMPLETED;
+    
   }
   addItem(item: OrderItem): void {
     const itemExists = this.findItemById(item.getId());

@@ -8,7 +8,7 @@ export const artifacts: LogbookArtifacts = {
         {
           name: 'Product',
           properties: [
-            { name: 'id', type: 'string' },
+            { name: 'id', type: 'UuidVO' },
             { name: 'name', type: 'NameVO' },
             { name: 'price', type: 'PriceVO' },
             { name: 'stock', type: 'number' },
@@ -24,7 +24,7 @@ export const artifacts: LogbookArtifacts = {
       ],
       valueObjects: [
         {
-          name: 'Name',
+          name: 'NameVO',
           shared: false,
           validations: ['Non-empty', 'Min 3 characters'],
         },
@@ -46,7 +46,7 @@ export const artifacts: LogbookArtifacts = {
             { rule: 'Total se recalcula al agregar/remover items', category: 'consistency' },
             { rule: 'Estado inicial siempre es PENDING', category: 'business' },
           ],
-          methods: ['create()', 'addItem()', 'findItemById()', 'calculateTotal()'],
+          methods: ['create()', 'addItem()','removeItem()', 'findItemById()', 'calculateTotal()'],
         },
       ],
       valueObjects: [],
@@ -54,9 +54,14 @@ export const artifacts: LogbookArtifacts = {
   ],
   sharedValueObjects: [
     {
-      name: 'Price',
+      name: 'PriceVO',
       shared: true,
       validations: ['Non-negative', 'Max 2 decimal places', 'Stored as cents'],
+    },
+    {
+      name: 'UuidVO',
+      shared: true,
+      validations: ['Non-empty', 'UUID format'],
     },
   ],
   ports: [
