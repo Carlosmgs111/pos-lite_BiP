@@ -40,6 +40,7 @@ const entriesWithTests = await Promise.all(
           summary={entry.data.summary}
           tags={entry.data.tags}
           testSummary={testSummary}
+          closed={entry.data.closed}
         />
       ))}
     </div>
