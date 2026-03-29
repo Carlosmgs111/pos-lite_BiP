@@ -12,7 +12,7 @@ export class InMemoryProductRepository implements ProductRepository {
   async getProduct(
     productId: string
   ): Promise<Result<ProductNotFoundError, Product>> {
-    const product = this.products.find((product) => product.getId() === productId);
+    const product = this.products.find((product) => product.getId().getValue() === productId);
     if (!product) {
       return Result.fail(new ProductNotFoundError());
     }

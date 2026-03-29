@@ -3,6 +3,7 @@ import { registerProduct, createOrder, addItemToOrder, removeItemFromOrder } fro
 import { productRepository } from "../core/inventory";
 import { orderRepository } from "../core/order";
 import { PriceVO } from "../core/shared/domain/Price.VO";
+import { UuidVO } from "../core/shared/domain/Uuid.VO";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
@@ -30,8 +31,9 @@ export const orderSuite: Suite = {
       return result("Creates an empty order", exists);
     },
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "p1",
+        id,
         name: "Item A",
         price: 10,
         stock: 10,
@@ -45,7 +47,7 @@ export const orderSuite: Suite = {
       });
       const r = await addItemToOrder.execute({
         orderId: "test-ord-2",
-        itemId: "p1",
+        itemId: id,
         quantity: 2,
       });
       productRepository.purgeDb();
@@ -53,8 +55,9 @@ export const orderSuite: Suite = {
       return result("Adds item to order", r.isSuccess);
     },
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "p2",
+        id,
         name: "Item B",
         price: 15,
         stock: 10,
@@ -68,12 +71,12 @@ export const orderSuite: Suite = {
       });
       await addItemToOrder.execute({
         orderId: "test-ord-3",
-        itemId: "p2",
+        itemId: id,
         quantity: 2,
       });
       await addItemToOrder.execute({
         orderId: "test-ord-3",
-        itemId: "p2",
+        itemId: id,
         quantity: 3,
       });
       const order = await orderRepository.getOrder("test-ord-3");
@@ -86,8 +89,9 @@ export const orderSuite: Suite = {
       );
     },
     async () => {
+      const id = UuidVO.generate();
       await registerProduct.execute({
-        id: "p3",
+        id,
         name: "Item C",
         price: 20,
         stock: 10,
@@ -101,12 +105,12 @@ export const orderSuite: Suite = {
       });
       await addItemToOrder.execute({
         orderId: "test-ord-4",
-        itemId: "p3",
+        itemId: id,
         quantity: 7,
       });
       await removeItemFromOrder.execute({
         orderId: "test-ord-4",
-        itemId: "p3",
+        itemId: id,
         quantity: 4,
       });
       const order = await orderRepository.getOrder("test-ord-4");
