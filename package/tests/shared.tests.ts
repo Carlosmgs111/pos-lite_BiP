@@ -36,7 +36,7 @@ export const sharedSuite: Suite = {
     },
     async () => {
       try {
-        const price = new PriceVO(-10);
+        new PriceVO(-10);
       } catch (error) {
         console.log({ error });
         return result(
