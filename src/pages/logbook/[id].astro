@@ -4,8 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 import TestSuiteCard from '../../components/logbook/TestSuiteCard.astro';
 import EntryNavigation from '../../components/logbook/EntryNavigation.astro';
 import BoundedContextMap from '../../components/ddd/BoundedContextMap.astro';
-import { runSuites } from '../../../package/tests/runner';
-import '../../../package/tests'; // Register suites
+import { resolveTestResults } from '../../lib/resolve-tests';
 import type { LogbookArtifacts } from '../../types/logbook';
 
 const artifactModules = import.meta.glob('../../data/logbook/artifacts/*.ts', { eager: true });
@@ -31,24 +30,13 @@ const artifacts: LogbookArtifacts | null = artifactKey
   ? (artifactModules[artifactKey] as { artifacts: LogbookArtifacts }).artifacts
   : null;
 
-const testResults = entry.data.testSuites.length > 0
-  ? await runSuites(entry.data.testSuites)
-  : [];
+const testResults = await resolveTestResults(entry.id, entry.data.testSuites, entry.data.closed);
 
 const dateStr = entry.data.date.toISOString().split('T')[0];
 ---
 
 <Layout title={`${entry.data.title} - pos-lite`}>
   <div class="max-w-3xl mx-auto px-4 py-8">
-    {/* Breadcrumb */}
-    <nav class="text-sm text-gray-400 mb-6">
-      <a href="/" class="hover:text-gray-600">Home</a>
-      <span class="mx-1">/</span>
-      <a href="/logbook/" class="hover:text-gray-600">Bitacora</a>
-      <span class="mx-1">/</span>
-      <span class="text-gray-600">{entry.data.title}</span>
-    </nav>
-
     {/* Header */}
     <header class="mb-8">
       <time class="text-sm font-mono text-gray-400">{dateStr}</time>

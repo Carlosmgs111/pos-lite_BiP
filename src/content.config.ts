@@ -10,6 +10,7 @@ const logbook = defineCollection({
     summary: z.string(),
     tags: z.array(z.string()),
     testSuites: z.array(z.string()).default([]),
+    closed: z.boolean().default(false),
   }),
 });
 

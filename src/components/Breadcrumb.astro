@@ -1,0 +1,43 @@
+---
+const pathname = Astro.url.pathname.replace(/\/+$/, '');
+
+const labels: Record<string, string> = {
+  logbook: 'Bitacora',
+};
+
+const segments = pathname.split('/').filter(Boolean);
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+const items: BreadcrumbItem[] = [{ label: 'Home', href: '/' }];
+
+segments.forEach((segment, i) => {
+  const href = '/' + segments.slice(0, i + 1).join('/') + '/';
+  const isLast = i === segments.length - 1;
+  const label = labels[segment] ?? segment.replace(/-/g, ' ');
+
+  items.push(isLast ? { label } : { label, href });
+});
+
+const showBreadcrumb = segments.length > 0;
+---
+
+{showBreadcrumb && (
+  <nav aria-label="Breadcrumb" class="text-sm text-gray-400 mb-6">
+    <ol class="flex flex-wrap items-center gap-1">
+      {items.map((item, i) => (
+        <li class="flex items-center gap-1">
+          {i > 0 && <span aria-hidden="true">/</span>}
+          {item.href ? (
+            <a href={item.href} class="hover:text-gray-600 transition-colors">{item.label}</a>
+          ) : (
+            <span class="text-gray-600">{item.label}</span>
+          )}
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}

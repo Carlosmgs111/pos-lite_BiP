@@ -2,8 +2,7 @@
 import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
 import EntryCard from '../../components/logbook/EntryCard.astro';
-import { runSuites } from '../../../package/tests/runner';
-import '../../../package/tests'; // Register suites
+import { resolveTestResults } from '../../lib/resolve-tests';
 import type { TestSummary } from '../../types/logbook';
 
 const entries = await getCollection('logbook');
@@ -11,7 +10,7 @@ const sorted = entries.sort((a, b) => b.data.date.getTime() - a.data.date.getTim
 
 const entriesWithTests = await Promise.all(
   sorted.map(async (entry) => {
-    const results = entry.data.testSuites.length > 0 ? await runSuites(entry.data.testSuites) : [];
+    const results = await resolveTestResults(entry.id, entry.data.testSuites, entry.data.closed);
     const testSummary: TestSummary = results.reduce(
       (acc, r) => ({
         passed: acc.passed + r.passed,
