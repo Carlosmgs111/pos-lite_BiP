@@ -10,6 +10,10 @@ const es = {
   about: {
     placeholder: "Próximamente: la historia completa detrás de pos-lite.",
   },
+  logbook: {
+    statusOpen: "En progreso",
+    statusClosed: "Cerrada",
+  },
 } as const;
 
 export default es;
