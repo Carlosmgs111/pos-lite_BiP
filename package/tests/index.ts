@@ -1,8 +1,8 @@
 import { registerSuite } from './runner';
 import { inventorySuite } from './inventory.tests';
-import { orderSuite } from './order.tests';
+import { saleSuite } from './sales.tests';
 import { sharedSuite } from './shared.tests';
 
 registerSuite(inventorySuite);
-registerSuite(orderSuite);
+registerSuite(saleSuite);
 registerSuite(sharedSuite);

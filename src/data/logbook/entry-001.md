@@ -2,8 +2,8 @@
 title: "Entry 001 - Definicion de bounded contexts"
 date: 2026-03-28
 summary: "Identificacion inicial de los contextos Inventory y Order, definicion de agregados, value objects e invariantes del sistema POS."
-tags: ["ddd", "architecture", "inventory", "order"]
-testSuites: ["inventory", "order", "shared"]
+tags: ["ddd", "architecture", "inventory", "sales"]
+testSuites: ["inventory", "sales", "shared"]
 closed: false
 ---
 
@@ -13,11 +13,11 @@ Se identificaron dos bounded contexts iniciales para el sistema POS:
 
 **Inventory** — Gestiona el catalogo de productos, precios y control de stock. El agregado principal es `Product`, que protege invariantes de negocio como la no-negatividad del stock y la coherencia entre stock disponible y reservado.
 
-**Order** — Gestiona el ciclo de vida de las ordenes de venta. El agregado `Order` compone `OrderItem` como entidades internas y mantiene la consistencia del total calculado.
+**Sales** — Gestiona el ciclo de vida de las ordenes de venta. El agregado `Sale` compone `SaleItem` como entidades internas y mantiene la consistencia del total calculado.
 
 ## Comunicacion entre contextos
 
-El contexto Order depende de Inventory a traves de ports (interfaces) definidos en su capa de aplicacion: `GetProductInfo` y `ReserveStock`. La implementacion concreta vive en la capa de infraestructura de Order, siguiendo el patron de puertos y adaptadores.
+El contexto Sales depende de Inventory a traves de ports (interfaces) definidos en su capa de aplicacion: `GetProductInfo` y `ReserveStock`. La implementacion concreta vive en la capa de infraestructura de Sales, siguiendo el patron de puertos y adaptadores.
 
 ## Decisiones de arquitectura
 

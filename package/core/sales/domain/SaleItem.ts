@@ -1,6 +1,6 @@
 import { PriceVO } from "../../shared/domain/Price.VO";
 
-export class OrderItem {
+export class SaleItem {
   constructor(
     private id: string,
     private productName: string,

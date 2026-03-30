@@ -31,13 +31,13 @@ export const artifacts: LogbookArtifacts = {
       ],
     },
     {
-      name: 'Order',
+      name: 'Sales',
       aggregates: [
         {
-          name: 'Order',
+          name: 'Sale',
           properties: [
             { name: 'id', type: 'string' },
-            { name: 'items', type: 'OrderItem[]' },
+            { name: 'items', type: 'SaleItem[]' },
             { name: 'total', type: 'PriceVO' },
             { name: 'state', type: 'OrdersStates' },
             { name: 'createdAt', type: 'Date' },
@@ -67,13 +67,13 @@ export const artifacts: LogbookArtifacts = {
   ports: [
     {
       name: 'GetProductInfo',
-      context: 'Order',
+      context: 'Sales',
       description: 'Obtiene nombre y precio de un producto del contexto Inventory',
       adapter: 'GetProductInfo (infrastructure)',
     },
     {
       name: 'ReserveStock',
-      context: 'Order',
+      context: 'Sales',
       description: 'Reserva stock de un producto en el contexto Inventory',
       adapter: 'ReserveStock (infrastructure)',
     },

@@ -1,33 +1,33 @@
 import type { Suite, TestResult } from "./runner";
-import { registerProduct, createOrder, addItemToOrder, removeItemFromOrder } from "../core";
+import { registerProduct, createSale, addItemToSale, removeItemFromSale } from "../core";
 import { productRepository } from "../core/inventory";
-import { orderRepository } from "../core/order";
+import { saleRepository } from "../core/sales";
 import { PriceVO } from "../core/shared/domain/Price.VO";
 import { UuidVO } from "../core/shared/domain/Uuid.VO";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
     name,
-    suite: "order",
+    suite: "sales",
     passed,
     message: passed ? undefined : message,
   };
 }
 
-export const orderSuite: Suite = {
-  name: "order",
+export const saleSuite: Suite = {
+  name: "sales",
   tests: [
     async () => {
-      await createOrder.execute({
-        id: "test-ord-1",
+      await createSale.execute({
+        id: "test-sale-1",
         items: [],
         total: new PriceVO(0),
         createdAt: new Date(),
       });
-      const order = await orderRepository.getOrder("test-ord-1");
-      const exists = order !== undefined && order !== null;
+      const sale = await saleRepository.getSale("test-sale-1");
+      const exists = sale !== undefined && sale !== null;
       productRepository.purgeDb();
-      orderRepository.purgeDb();
+      saleRepository.purgeDb();
       return result("Creates an empty order", exists);
     },
     async () => {
@@ -39,19 +39,19 @@ export const orderSuite: Suite = {
         stock: 10,
         reservedStock: 0,
       });
-      await createOrder.execute({
-        id: "test-ord-2",
+      await createSale.execute({
+        id: "test-sale-2",
         items: [],
         total: new PriceVO(0),
         createdAt: new Date(),
       });
-      const r = await addItemToOrder.execute({
-        orderId: "test-ord-2",
+      const r = await addItemToSale.execute({
+        saleId: "test-sale-2",
         itemId: id,
         quantity: 2,
       });
       productRepository.purgeDb();
-      orderRepository.purgeDb();
+      saleRepository.purgeDb();
       return result("Adds item to order", r.isSuccess);
     },
     async () => {
@@ -63,26 +63,26 @@ export const orderSuite: Suite = {
         stock: 10,
         reservedStock: 0,
       });
-      await createOrder.execute({
-        id: "test-ord-3",
+      await createSale.execute({
+        id: "test-sale-3",
         items: [],
         total: new PriceVO(0),
         createdAt: new Date(),
       });
-      await addItemToOrder.execute({
-        orderId: "test-ord-3",
+      await addItemToSale.execute({
+        saleId: "test-sale-3",
         itemId: id,
         quantity: 2,
       });
-      await addItemToOrder.execute({
-        orderId: "test-ord-3",
+      await addItemToSale.execute({
+        saleId: "test-sale-3",
         itemId: id,
         quantity: 3,
       });
-      const order = await orderRepository.getOrder("test-ord-3");
-      const total = order.toJSON().total.getValue();
+      const sale = await saleRepository.getSale("test-sale-3");
+      const total = sale.toJSON().total.getValue();
       productRepository.purgeDb();
-      orderRepository.purgeDb();
+      saleRepository.purgeDb();
       return result(
         "Accumulates quantity and calculates correct total",
         total === 75.00
@@ -97,26 +97,26 @@ export const orderSuite: Suite = {
         stock: 10,
         reservedStock: 0,
       });
-      await createOrder.execute({
-        id: "test-ord-4",
+      await createSale.execute({
+        id: "test-sale-4",
         items: [],
         total: new PriceVO(0),
         createdAt: new Date(),
       });
-      await addItemToOrder.execute({
-        orderId: "test-ord-4",
+      await addItemToSale.execute({
+        saleId: "test-sale-4",
         itemId: id,
         quantity: 7,
       });
-      await removeItemFromOrder.execute({
-        orderId: "test-ord-4",
+      await removeItemFromSale.execute({
+        saleId: "test-sale-4",
         itemId: id,
         quantity: 4,
       });
-      const order = await orderRepository.getOrder("test-ord-4");
-      const total = order.toJSON().total.getValue();
+      const sale = await saleRepository.getSale("test-sale-4");
+      const total = sale.toJSON().total.getValue();
       productRepository.purgeDb();
-      orderRepository.purgeDb();
+      saleRepository.purgeDb();
       return result(
         "Removes quantity from order and calculates correct total",
         total === 60.00

@@ -1,46 +1,46 @@
-import { OrderItem } from "./OrderItem";
-import { OrdersStates } from "./OrdersStates";
+import { SaleItem } from "./SaleItem";
+import { SaleStates } from "./SaleStates";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
 
-class OrderItemNotFound extends Error {
+class SaleItemNotFound extends Error {
   constructor() {
     super("Item not found");
   }
 }
 
-interface OrderProps {
+interface SaleProps {
   id: string;
-  items: OrderItem[];
+  items: SaleItem[];
   total: PriceVO;
   createdAt: Date;
 }
 
-export class Order {
+export class Sale {
   constructor(
     private id: string,
-    private items: OrderItem[],
+    private items: SaleItem[],
     private total: PriceVO,
     private createdAt: Date,
-    private state: OrdersStates
+    private state: SaleStates
   ) {}
-  static create(props: OrderProps) {
-    return new Order(
+  static create(props: SaleProps) {
+    return new Sale(
       props.id,
       props.items,
       props.total,
       props.createdAt,
-      OrdersStates.PENDING
+      SaleStates.PENDING
     );
   }
   getId() {
     return this.id;
   }
-  concreteOrder(): void {
-    this.state = OrdersStates.COMPLETED;
+  concreteSale(): void {
+    this.state = SaleStates.COMPLETED;
     
   }
-  addItem(item: OrderItem): void {
+  addItem(item: SaleItem): void {
     const itemExists = this.findItemById(item.getId());
     if (itemExists.isSuccess) {
       itemExists.getValue()!.incrementQuantity(item.getQuantity());
@@ -56,10 +56,10 @@ export class Order {
     }
     this.calculateTotal();
   }
-  findItemById(id: string): Result<OrderItemNotFound, OrderItem> {
+  findItemById(id: string): Result<SaleItemNotFound, SaleItem> {
     const item = this.items.find((item) => item.getId() === id);
     if (!item) {
-      return Result.fail(new OrderItemNotFound());
+      return Result.fail(new SaleItemNotFound());
     }
     return Result.ok(item);
   }

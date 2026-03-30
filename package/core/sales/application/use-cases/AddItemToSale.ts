@@ -1,25 +1,25 @@
-import { Order } from "../../domain/Order";
-import { OrderItem } from "../../domain/OrderItem";
+import { Sale } from "../../domain/Sale";
+import { SaleItem } from "../../domain/SaleItem";
 import type { ReserveStock } from "../ports/ReserveStock";
-import type { OrderRepository } from "../../domain/OrderRepository";
+import type { SaleRepository } from "../../domain/SaleRepository";
 import type { GetProductInfo } from "../ports/GetProductInfo";
 import { PriceVO } from "../../../shared/domain/Price.VO";
 import { Result } from "../../../shared/domain/Result";
 
-interface AddItemToOrderProps {
-  orderId: string;
+interface AddItemToSaleProps {
+  saleId: string;
   itemId: string;
   quantity: number; 
 }
 
-export class AddItemToOrder {
+export class AddItemToSale {
   constructor(
     private reserveStock: ReserveStock,
-    private orderRepository: OrderRepository,
+    private saleRepository: SaleRepository,
     private getProductInfo: GetProductInfo
   ) {}
-  async execute(props: AddItemToOrderProps) {
-    const order: Order = await this.orderRepository.getOrder(props.orderId);
+  async execute(props: AddItemToSaleProps) {
+    const sale: Sale = await this.saleRepository.getSale(props.saleId);
     const reserveStockResult = await this.reserveStock.execute(props.itemId, props.quantity);
     if (!reserveStockResult.isSuccess) {
       return Result.fail(reserveStockResult.getError());
@@ -29,7 +29,7 @@ export class AddItemToOrder {
       return Result.fail(productInfoResult.getError());
     }
     const productInfo = productInfoResult.getValue()!;
-    const item = new OrderItem(
+    const item = new SaleItem(
       props.itemId,
       productInfo.name,
       props.quantity,
@@ -37,8 +37,8 @@ export class AddItemToOrder {
       new PriceVO(props.quantity * productInfo.price)
     );
     console.log({item});
-    order.addItem(item);
-    await this.orderRepository.update(order);
-    return Result.ok(order);
+    sale.addItem(item);
+    await this.saleRepository.update(sale);
+    return Result.ok(sale);
   }
 }
