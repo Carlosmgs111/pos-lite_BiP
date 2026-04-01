@@ -1,0 +1,22 @@
+import { Result } from "../../../shared/domain/Result";
+import type { SaleRepository } from "../../domain/SaleRepository";
+import type { ReleaseStock } from "../ports/ReleaseStock";
+
+export class CancelSale {
+  constructor(
+    private saleRepository: SaleRepository,
+    private releaseStock: ReleaseStock
+  ) {}
+  async execute(saleId: string): Promise<Result<Error, void>> {
+    const saleResult = await this.saleRepository.getSaleById(saleId);
+    if (!saleResult.isSuccess) {
+      return Result.fail(saleResult.getError());
+    }
+    const sale = saleResult.getValue()!;
+    for (const item of sale.getItems()) {
+      await this.releaseStock.execute(item.getId(), item.getQuantity());
+    }
+    await this.saleRepository.delete(saleId);
+    return Result.ok();
+  }
+}

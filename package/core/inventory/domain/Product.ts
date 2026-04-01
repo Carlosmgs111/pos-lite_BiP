@@ -25,6 +25,16 @@ export class Product {
     this.stock += quantity;
     return Result.ok(undefined);
   }
+  confirmStock(quantity: number) {
+    this.reservedStock -= quantity;
+    return Result.ok(undefined);
+  }
+  getStock() {
+    return this.stock;
+  }
+  canReserveStock(quantity: number) {
+    return this.stock >= quantity;
+  }
   getId() {
     return this.id;
   }

@@ -19,7 +19,7 @@ interface SaleProps {
 export class Sale {
   constructor(
     private id: string,
-    private items: SaleItem[],
+    private readonly items: SaleItem[],
     private total: PriceVO,
     private createdAt: Date,
     private state: SaleStates
@@ -46,20 +46,20 @@ export class Sale {
   getId() {
     return this.id;
   }
-  completeSale(): void {  
-    
+  completeSale(): void {
     this.state = SaleStates.COMPLETED;
   }
   addItem(item: SaleItem): void {
     const itemExists = this.findItemById(item.getId());
     if (itemExists.isSuccess) {
-      itemExists
-        .getValue()!
-        .incrementQuantity(item.getQuantity());
+      itemExists.getValue()!.incrementQuantity(item.getQuantity());
     } else {
       this.items.push(item);
     }
     this.recalculateTotal();
+  }
+  getItems() {
+    return [...this.items];
   }
   toJSON() {
     return {

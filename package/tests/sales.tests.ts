@@ -4,6 +4,8 @@ import {
   createSale,
   addItemToSale,
   removeItemFromSale,
+  cancelSale,
+  registerSale,
 } from "../core";
 import { productRepository } from "../core/inventory";
 import { saleRepository } from "../core/sales";
@@ -127,5 +129,60 @@ export const saleSuite: Suite = {
         total === 60.0
       );
     },
+    async () => {
+      const id = UuidVO.generate();
+      await registerProduct.execute({
+        id,
+        name: "Item D",
+        price: 25,
+        stock: 11,
+        reservedStock: 0,
+      });
+      await createSale.execute({
+        id: "test-sale-5",
+        items: [],
+        total: new PriceVO(0),
+        createdAt: new Date(),
+      });
+      await addItemToSale.execute({
+        saleId: "test-sale-5",
+        itemId: id,
+        quantity: 7,
+      });
+      await cancelSale.execute("test-sale-5");
+      const product = await productRepository.getProduct(id);
+      const stock = product.getValue()!.getStock();
+      productRepository.purgeDb();
+      saleRepository.purgeDb();
+      return result("Cancels order and releases stock", stock === 11);
+    },
+    async () => {
+      const id = UuidVO.generate();
+      await registerProduct.execute({
+        id,
+        name: "Item E",
+        price: 30,
+        stock: 10,
+        reservedStock: 0,
+      });
+      await createSale.execute({
+        id: "test-sale-6",
+        items: [],
+        total: new PriceVO(0),
+        createdAt: new Date(),
+      });
+      await addItemToSale.execute({
+        saleId: "test-sale-6",
+        itemId: id,
+        quantity: 7,
+      });
+      await registerSale.execute("test-sale-6");
+      const product = await productRepository.getProduct(id);
+      console.log(product.getValue()!.getStock());
+      const stock = product.getValue()!.getStock();
+      productRepository.purgeDb();
+      saleRepository.purgeDb();
+      return result("Registers order and confirms stock", stock === 3);
+    }
   ],
 };

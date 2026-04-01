@@ -2,7 +2,7 @@ import type { ProductRepository } from "../../domain/ProductRepository";
 import { Result } from "../../../shared/domain/Result";
 import { ProductNotFoundError } from "../../domain/Errors/ProductNotFoundError";
 
-export class ReleaseProduct {
+export class ReleaseStock {
   constructor(private productRepository: ProductRepository) {}
   async execute(
     productId: string,

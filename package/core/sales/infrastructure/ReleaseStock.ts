@@ -1,6 +1,6 @@
 import type { ReleaseStock as ReleaseStockPort } from "../application/ports/ReleaseStock";
 import { Result } from "../../shared/domain/Result";
-import { releaseProduct } from "../../inventory";
+import { releaseStock } from "../../inventory";
 
 export class ReleaseStock implements ReleaseStockPort {
   constructor() {}
@@ -9,6 +9,6 @@ export class ReleaseStock implements ReleaseStockPort {
     itemId: string,
     quantity: number
   ): Promise<Result<Error, void>> {
-    return releaseProduct.execute(itemId, quantity);
+    return releaseStock.execute(itemId, quantity);
   }
 }

@@ -13,6 +13,6 @@ interface CreateSaleProps {
 export class CreateSale {
   constructor(private saleRepository: SaleRepository) {}
   execute(props: CreateSaleProps) {
-    this.saleRepository.registry(Sale.create(props));
+    this.saleRepository.save(Sale.create(props));
   }
 }

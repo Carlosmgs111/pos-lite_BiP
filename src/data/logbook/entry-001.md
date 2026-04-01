@@ -4,7 +4,7 @@ date: 2026-03-28
 summary: "Identificacion inicial de los contextos Inventory y Order, definicion de agregados, value objects e invariantes del sistema POS."
 tags: ["ddd", "architecture", "inventory", "sales"]
 testSuites: ["inventory", "sales", "shared"]
-closed: false
+closed: true
 ---
 
 ## Contextos identificados

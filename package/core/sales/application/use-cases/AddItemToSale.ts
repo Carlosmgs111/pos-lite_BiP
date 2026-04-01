@@ -5,7 +5,7 @@ import type { SaleRepository } from "../../domain/SaleRepository";
 import type { GetProductInfo } from "../ports/GetProductInfo";
 import { PriceVO } from "../../../shared/domain/Price.VO";
 import { Result } from "../../../shared/domain/Result";
-import { SaleNotFoundError } from "../../domain/SaleRepository";
+import { SaleNotFoundError } from "../../domain/Errors/SaleNotFoundError";
 
 interface AddItemToSaleProps {
   saleId: string;
@@ -20,11 +20,11 @@ export class AddItemToSale {
     private getProductInfo: GetProductInfo
   ) {}
   async execute(props: AddItemToSaleProps) {
-    const saleResult: Result<SaleNotFoundError, Sale> = await this.saleRepository.getSaleById(props.saleId);
+    const saleResult = await this.saleRepository.getSaleById(props.saleId);
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
     }
-    const sale: Sale = saleResult.getValue()!;
+    const sale = saleResult.getValue()!;
     const reserveStockResult = await this.reserveStock.execute(props.itemId, props.quantity);
     if (!reserveStockResult.isSuccess) {
       return Result.fail(reserveStockResult.getError());

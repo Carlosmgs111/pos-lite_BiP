@@ -1,14 +1,9 @@
 import { Result } from "../../shared/domain/Result";
 import { Sale } from "./Sale";
 
-export class SaleNotFoundError extends Error {
-  constructor() {
-    super("Sale not found");
-  }
-}
-
 export interface SaleRepository {
-  registry(sale: Sale): Promise<Result<SaleNotFoundError, void>>;
-  getSaleById(id: string): Promise<Result<SaleNotFoundError, Sale>>;
-  update(sale: Sale): Promise<Result<SaleNotFoundError, void>>;
+  save(sale: Sale): Promise<Result<Error, void>>;
+  getSaleById(id: string): Promise<Result<Error, Sale | undefined>>;
+  update(sale: Sale): Promise<Result<Error, void>>;
+  delete(saleId: string): Promise<Result<Error, void>>;
 }

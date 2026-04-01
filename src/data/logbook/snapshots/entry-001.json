@@ -1,0 +1,101 @@
+[
+  {
+    "suite": "inventory",
+    "tests": [
+      {
+        "name": "Registers a product and retrieves it by id",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "Stores product with correct price",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "Reserves stock successfully for valid quantity",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "Fails when reserving more than available stock",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "returns error for nonexistent product",
+        "suite": "inventory",
+        "passed": true
+      }
+    ],
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  },
+  {
+    "suite": "sales",
+    "tests": [
+      {
+        "name": "Creates an empty order",
+        "suite": "sales",
+        "passed": true
+      },
+      {
+        "name": "Adds item to order",
+        "suite": "sales",
+        "passed": true
+      },
+      {
+        "name": "Accumulates quantity and calculates correct total",
+        "suite": "sales",
+        "passed": true
+      },
+      {
+        "name": "Removes quantity from order and calculates correct total",
+        "suite": "sales",
+        "passed": true
+      },
+      {
+        "name": "Cancels order and releases stock",
+        "suite": "sales",
+        "passed": true
+      },
+      {
+        "name": "Registers order and confirms stock",
+        "suite": "sales",
+        "passed": true
+      }
+    ],
+    "passed": 6,
+    "failed": 0,
+    "total": 6
+  },
+  {
+    "suite": "shared",
+    "tests": [
+      {
+        "name": "Price Value Object: Setting price as int (10) should be 10.00",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "Price Value Object: Setting price as float (10.0) with one decimal should be 10.00",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "Price Value Object: Setting price as float (10.01) with two decimals should be 10.01",
+        "suite": "inventory",
+        "passed": true
+      },
+      {
+        "name": "Price Value Object: Setting price with negative value (-10) in construction should throw error",
+        "suite": "inventory",
+        "passed": true
+      }
+    ],
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  }
+]
