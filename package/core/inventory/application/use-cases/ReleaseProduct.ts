@@ -1,13 +1,13 @@
 import type { ProductRepository } from "../../domain/ProductRepository";
-import type { Product } from "../../domain/Product";
 import { Result } from "../../../shared/domain/Result";
 import { ProductNotFoundError } from "../../domain/Errors/ProductNotFoundError";
 
-export class GetProduct {
+export class ReleaseProduct {
   constructor(private productRepository: ProductRepository) {}
   async execute(
-    productId: string
-  ): Promise<Result<Error, Product>> {
+    productId: string,
+    stockToRelease: number
+  ): Promise<Result<ProductNotFoundError, void>> {
     const productResult = await this.productRepository.getProduct(productId);
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
@@ -15,6 +15,8 @@ export class GetProduct {
     if (!productResult.getValue()) {
       return Result.fail(new ProductNotFoundError());
     }
-    return Result.ok(productResult.getValue());
+    const product = productResult.getValue()!;
+    const updatedProduct = product.releaseStock(stockToRelease);
+    return this.productRepository.update(productId, updatedProduct.getValue()!);
   }
 }

@@ -1,5 +1,10 @@
 import type { Suite, TestResult } from "./runner";
-import { registerProduct, createSale, addItemToSale, removeItemFromSale } from "../core";
+import {
+  registerProduct,
+  createSale,
+  addItemToSale,
+  removeItemFromSale,
+} from "../core";
 import { productRepository } from "../core/inventory";
 import { saleRepository } from "../core/sales";
 import { PriceVO } from "../core/shared/domain/Price.VO";
@@ -24,7 +29,7 @@ export const saleSuite: Suite = {
         total: new PriceVO(0),
         createdAt: new Date(),
       });
-      const sale = await saleRepository.getSale("test-sale-1");
+      const sale = await saleRepository.getSaleById("test-sale-1");
       const exists = sale !== undefined && sale !== null;
       productRepository.purgeDb();
       saleRepository.purgeDb();
@@ -79,13 +84,13 @@ export const saleSuite: Suite = {
         itemId: id,
         quantity: 3,
       });
-      const sale = await saleRepository.getSale("test-sale-3");
-      const total = sale.toJSON().total.getValue();
+      const sale = await saleRepository.getSaleById("test-sale-3");
+      const total = sale.getValue()!.toJSON().total.getValue();
       productRepository.purgeDb();
       saleRepository.purgeDb();
       return result(
         "Accumulates quantity and calculates correct total",
-        total === 75.00
+        total === 75.0
       );
     },
     async () => {
@@ -113,13 +118,13 @@ export const saleSuite: Suite = {
         itemId: id,
         quantity: 4,
       });
-      const sale = await saleRepository.getSale("test-sale-4");
-      const total = sale.toJSON().total.getValue();
+      const sale = await saleRepository.getSaleById("test-sale-4");
+      const total = sale.getValue()!.toJSON().total.getValue();
       productRepository.purgeDb();
       saleRepository.purgeDb();
       return result(
         "Removes quantity from order and calculates correct total",
-        total === 60.00
+        total === 60.0
       );
     },
   ],

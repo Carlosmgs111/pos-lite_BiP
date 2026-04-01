@@ -33,28 +33,8 @@ export class Sale {
       SaleStates.PENDING
     );
   }
-  getId() {
-    return this.id;
-  }
-  concreteSale(): void {
-    this.state = SaleStates.COMPLETED;
-    
-  }
-  addItem(item: SaleItem): void {
-    const itemExists = this.findItemById(item.getId());
-    if (itemExists.isSuccess) {
-      itemExists.getValue()!.incrementQuantity(item.getQuantity());
-    } else {
-      this.items.push(item);
-    }
-    this.calculateTotal();
-  }
-  removeItem(id: string, quantity: number): void {
-    const itemExists = this.findItemById(id);
-    if (itemExists.isSuccess) {
-      itemExists.getValue()!.decrementQuantity(quantity);
-    }
-    this.calculateTotal();
+  recalculateTotal(): void {
+    this.total = PriceVO.add(this.items.map((item) => item.getTotal()));
   }
   findItemById(id: string): Result<SaleItemNotFound, SaleItem> {
     const item = this.items.find((item) => item.getId() === id);
@@ -63,8 +43,23 @@ export class Sale {
     }
     return Result.ok(item);
   }
-  calculateTotal(): void {
-    this.total = PriceVO.add(this.items.map((item) => item.getTotal()));
+  getId() {
+    return this.id;
+  }
+  completeSale(): void {  
+    
+    this.state = SaleStates.COMPLETED;
+  }
+  addItem(item: SaleItem): void {
+    const itemExists = this.findItemById(item.getId());
+    if (itemExists.isSuccess) {
+      itemExists
+        .getValue()!
+        .incrementQuantity(item.getQuantity());
+    } else {
+      this.items.push(item);
+    }
+    this.recalculateTotal();
   }
   toJSON() {
     return {

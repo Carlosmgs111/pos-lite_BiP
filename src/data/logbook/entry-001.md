@@ -25,6 +25,11 @@ El contexto Sales depende de Inventory a traves de ports (interfaces) definidos 
 - **Result type**: manejo de errores funcional sin excepciones, forzando al caller a verificar exito antes de acceder al valor
 - **Value Objects compartidos**: `PriceVO` vive en shared/domain ya que ambos contextos lo necesitan
 - **Cero dependencias**: toda la logica de dominio es TypeScript puro, sin librerias externas
+- **Ports y adaptadores**: la capa de aplicacion define interfaces para la comunicacion entre contextos, que son implementadas en la capa de infraestructura
+
+## Decisiones de diseño
+
+- **Verificacion de existencia de entidad**: se hacen desde la capa de aplicacion, no desde el repositorio
 
 ## Naturaleza evolutiva
 

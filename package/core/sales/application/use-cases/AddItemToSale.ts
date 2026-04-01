@@ -5,6 +5,7 @@ import type { SaleRepository } from "../../domain/SaleRepository";
 import type { GetProductInfo } from "../ports/GetProductInfo";
 import { PriceVO } from "../../../shared/domain/Price.VO";
 import { Result } from "../../../shared/domain/Result";
+import { SaleNotFoundError } from "../../domain/SaleRepository";
 
 interface AddItemToSaleProps {
   saleId: string;
@@ -19,7 +20,11 @@ export class AddItemToSale {
     private getProductInfo: GetProductInfo
   ) {}
   async execute(props: AddItemToSaleProps) {
-    const sale: Sale = await this.saleRepository.getSale(props.saleId);
+    const saleResult: Result<SaleNotFoundError, Sale> = await this.saleRepository.getSaleById(props.saleId);
+    if (!saleResult.isSuccess) {
+      return Result.fail(saleResult.getError());
+    }
+    const sale: Sale = saleResult.getValue()!;
     const reserveStockResult = await this.reserveStock.execute(props.itemId, props.quantity);
     if (!reserveStockResult.isSuccess) {
       return Result.fail(reserveStockResult.getError());
@@ -29,15 +34,17 @@ export class AddItemToSale {
       return Result.fail(productInfoResult.getError());
     }
     const productInfo = productInfoResult.getValue()!;
-    const item = new SaleItem(
-      props.itemId,
-      productInfo.name,
-      props.quantity,
-      new PriceVO(productInfo.price),
-      new PriceVO(props.quantity * productInfo.price)
-    );
-    console.log({item});
-    sale.addItem(item);
+    const itemResult = SaleItem.create({
+      id: props.itemId,
+      productName: productInfo.name,
+      quantity: props.quantity,
+      price: new PriceVO(productInfo.price),
+      total: new PriceVO(props.quantity * productInfo.price),
+    });
+    if (!itemResult.isSuccess) {
+      return Result.fail(itemResult.getError());
+    }
+    sale.addItem(itemResult.getValue()!);
     await this.saleRepository.update(sale);
     return Result.ok(sale);
   }

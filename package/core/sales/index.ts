@@ -1,19 +1,25 @@
 import { InMemorySaleRepository } from "./infrastructure/InMemorySaleRepository";
+import { ReserveStock } from "./infrastructure/ReserveStock";
+import { GetProductInfo } from "./infrastructure/GetProductInfo";
+import { ReleaseStock } from "./infrastructure/ReleaseStock";
 import { AddItemToSale } from "./application/use-cases/AddItemToSale";
 import { RemoveItemFromSale } from "./application/use-cases/RemoveItemFromSale";
-import { ReserveStock } from "./infrastructure/ReserveStock";
 import { RegisterSale } from "./application/use-cases/RegisterSale";
-import { GetProductInfo } from "./infrastructure/GetProductInfo";
 import { CreateSale } from "./application/use-cases/CreateSale";
 
 export const saleRepository = new InMemorySaleRepository();
-export const reserveStock = new ReserveStock();
+export const reserveStockCapability = new ReserveStock();
 export const getProductInfo = new GetProductInfo();
+
+export const releaseStock = new ReleaseStock();
+
 export const addItemToSale = new AddItemToSale(
-  reserveStock,
+  reserveStockCapability,
   saleRepository,
   getProductInfo
 );
 export const removeItemFromSale = new RemoveItemFromSale(saleRepository);
-export const registerSale = new RegisterSale(saleRepository);
+export const registerSale = new RegisterSale(saleRepository, releaseStock);
 export const createSale = new CreateSale(saleRepository);
+
+export const createSalesContext = ({}) => {};

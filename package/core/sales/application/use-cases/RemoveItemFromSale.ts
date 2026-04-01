@@ -1,5 +1,7 @@
 import { Result } from "../../../shared/domain/Result";
 import type { SaleRepository } from "../../domain/SaleRepository";
+import { SaleNotFoundError } from "../../domain/SaleRepository";
+import { Sale } from "../../domain/Sale";
 
 export class RemoveItemFromSale {
   constructor(private saleRepository: SaleRepository) {}
@@ -12,11 +14,22 @@ export class RemoveItemFromSale {
     itemId: string;
     quantity: number;
   }): Promise<Result<Error, boolean>> {
-    const sale = await this.saleRepository.getSale(saleId);
-    if (!sale) {
-      return Result.fail(new Error("Sale not found"));
+    const saleResult: Result<SaleNotFoundError, Sale> =
+      await this.saleRepository.getSaleById(saleId);
+    if (!saleResult.isSuccess) {
+      return Result.fail(saleResult.getError());
     }
-    sale.removeItem(itemId, quantity);
+    const sale: Sale = saleResult.getValue()!;
+    const itemResult = sale.findItemById(itemId);
+    if (!itemResult.isSuccess) {
+      return Result.fail(itemResult.getError());
+    }
+    const item = itemResult.getValue()!;
+    const decrementResult = item.decrementQuantity(quantity);
+    if (!decrementResult.isSuccess) {
+      return Result.fail(decrementResult.getError());
+    }
+    sale.recalculateTotal();
     await this.saleRepository.update(sale);
     return Result.ok(true);
   }
