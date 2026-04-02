@@ -1,19 +1,21 @@
-import type { Suite, TestResult } from "./runner";
-import { registerProduct, getProduct, reserveStock } from "../core";
-import { productRepository } from "../core/inventory";
-import { UuidVO } from "../core/shared/domain/Uuid.VO";
+import type { Suite, TestResult } from "../runner";
+import { registerProduct, getProduct, reserveStock } from "../../core";
+import { productRepository } from "../../core/inventory";
+import { UuidVO } from "../../core/shared/domain/Uuid.VO";
+
+const suiteName = "starting/inventory";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
     name,
-    suite: "inventory",
+    suite: suiteName,
     passed,
     message: passed ? undefined : message,
   };
 }
 
 export const inventorySuite: Suite = {
-  name: "inventory",
+  name: suiteName,
   tests: [
     async () => {
       const id = UuidVO.generate();

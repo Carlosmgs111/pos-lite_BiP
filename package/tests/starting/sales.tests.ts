@@ -1,4 +1,4 @@
-import type { Suite, TestResult } from "./runner";
+import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
@@ -6,23 +6,25 @@ import {
   removeItemFromSale,
   cancelSale,
   registerSale,
-} from "../core";
-import { productRepository } from "../core/inventory";
-import { saleRepository } from "../core/sales";
-import { PriceVO } from "../core/shared/domain/Price.VO";
-import { UuidVO } from "../core/shared/domain/Uuid.VO";
+} from "../../core";
+import { productRepository } from "../../core/inventory";
+import { saleRepository } from "../../core/sales";
+import { PriceVO } from "../../core/shared/domain/Price.VO";
+import { UuidVO } from "../../core/shared/domain/Uuid.VO";
+
+const suiteName = "starting/sales";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
     name,
-    suite: "sales",
+    suite: suiteName,
     passed,
     message: passed ? undefined : message,
   };
 }
 
 export const saleSuite: Suite = {
-  name: "sales",
+  name: suiteName,
   tests: [
     async () => {
       await createSale.execute({

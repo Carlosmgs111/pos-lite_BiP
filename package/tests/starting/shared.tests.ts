@@ -1,17 +1,19 @@
-import type { Suite, TestResult } from "./runner";
-import { PriceVO } from "../core/shared/domain/Price.VO";
+import type { Suite, TestResult } from "../runner";
+import { PriceVO } from "../../core/shared/domain/Price.VO";
+
+const suiteName = "starting/shared";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
     name,
-    suite: "inventory",
+    suite: suiteName,
     passed,
     message: passed ? undefined : message,
   };
 }
 
 export const sharedSuite: Suite = {
-  name: "shared",
+  name: suiteName,
   tests: [
     async () => {
       const price = new PriceVO(10);

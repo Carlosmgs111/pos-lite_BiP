@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { SuiteResult } from '../../package/tests/runner';
 import { runSuites } from '../../package/tests/runner';
-import '../../package/tests'; // Register suites
+import '../../package/tests/starting'; // Register suites
 
 const SNAPSHOTS_DIR = join(process.cwd(), 'src/data/logbook/snapshots');
 

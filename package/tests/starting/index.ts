@@ -1,4 +1,4 @@
-import { registerSuite } from './runner';
+import { registerSuite } from '../runner';
 import { inventorySuite } from './inventory.tests';
 import { saleSuite } from './sales.tests';
 import { sharedSuite } from './shared.tests';
