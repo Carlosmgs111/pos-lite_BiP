@@ -1,6 +1,6 @@
 import { Sale } from "../../domain/Sale";
 import { SaleItem } from "../../domain/SaleItem";
-import type { ReserveStock } from "../ports/ReserveStock";
+import type { HandleStockPort } from "../ports/HandleStockPort";
 import type { SaleRepository } from "../../domain/SaleRepository";
 import type { GetProductInfo } from "../ports/GetProductInfo";
 import { PriceVO } from "../../../shared/domain/Price.VO";
@@ -15,7 +15,7 @@ interface AddItemToSaleProps {
 
 export class AddItemToSale {
   constructor(
-    private reserveStock: ReserveStock,
+    private reserveStock: HandleStockPort,
     private saleRepository: SaleRepository,
     private getProductInfo: GetProductInfo
   ) {}
@@ -25,7 +25,7 @@ export class AddItemToSale {
       return Result.fail(saleResult.getError());
     }
     const sale = saleResult.getValue()!;
-    const reserveStockResult = await this.reserveStock.execute(props.itemId, props.quantity);
+    const reserveStockResult = await this.reserveStock.reserveStock(props.itemId, props.quantity);
     if (!reserveStockResult.isSuccess) {
       return Result.fail(reserveStockResult.getError());
     }

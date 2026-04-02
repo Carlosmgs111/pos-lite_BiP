@@ -1,11 +1,11 @@
 import { Result } from "../../../shared/domain/Result";
 import type { SaleRepository } from "../../domain/SaleRepository";
-import type { ReleaseStock } from "../ports/ReleaseStock";
+import type { HandleStockPort } from "../ports/HandleStockPort";
 
 export class CancelSale {
   constructor(
     private saleRepository: SaleRepository,
-    private releaseStock: ReleaseStock
+    private releaseStock: HandleStockPort
   ) {}
   async execute(saleId: string): Promise<Result<Error, void>> {
     const saleResult = await this.saleRepository.getSaleById(saleId);
@@ -14,7 +14,7 @@ export class CancelSale {
     }
     const sale = saleResult.getValue()!;
     for (const item of sale.getItems()) {
-      await this.releaseStock.execute(item.getId(), item.getQuantity());
+      await this.releaseStock.releaseStock(item.getId(), item.getQuantity());
     }
     await this.saleRepository.delete(saleId);
     return Result.ok();

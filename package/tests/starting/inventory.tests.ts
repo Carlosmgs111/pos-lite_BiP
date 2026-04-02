@@ -1,5 +1,5 @@
 import type { Suite, TestResult } from "../runner";
-import { registerProduct, getProduct, reserveStock } from "../../core";
+import { registerProduct, getProduct, handleStockForSale } from "../../core";
 import { productRepository } from "../../core/inventory";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 
@@ -59,7 +59,7 @@ export const inventorySuite: Suite = {
         stock: 10,
         reservedStock: 0,
       });
-      const r = await reserveStock.execute(id, 3);
+      const r = await handleStockForSale.reserveStock(id, 3);
       productRepository.purgeDb();
       return result(
         "Reserves stock successfully for valid quantity",
@@ -75,7 +75,7 @@ export const inventorySuite: Suite = {
         stock: 2,
         reservedStock: 0,
       });
-      const r = await reserveStock.execute(id, 5);
+      const r = await handleStockForSale.reserveStock(id, 5);
       productRepository.purgeDb();
       return result(
         "Fails when reserving more than available stock",
