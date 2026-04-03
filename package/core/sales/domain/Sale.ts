@@ -66,6 +66,13 @@ export class Sale {
   completeSale(): void {
     this.state = SaleStates.COMPLETED;
   }
+  cancelSale(): Result<Error, void> {
+    if (this.state === SaleStates.COMPLETED) {
+      return Result.fail(new Error("Cannot cancel a completed sale"));
+    }
+    this.state = SaleStates.CANCELLED;
+    return Result.ok(undefined);
+  }
   addItem(item: SaleItemProps): void {
     const itemExists = this.findItemById(item.id);
     if (itemExists.isSuccess) {

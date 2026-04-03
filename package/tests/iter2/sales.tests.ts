@@ -9,6 +9,7 @@ import {
 import { cancelSale, saleRepository } from "../../core/sales";
 import { productRepository } from "../../core/inventory";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
+import { SaleStates } from "../../core/sales/domain/SaleStates";
 
 const suiteId = "iter2-sales";
 const suiteName = "Sales (Iter 2)";
@@ -59,7 +60,7 @@ const setup = async () => {
     createdAt: new Date(),
   });
   await createSale.execute({
-    id: sale1Id,
+    id: sale2Id,
     itemIds: [],
     createdAt: new Date(),
   });
@@ -114,10 +115,54 @@ const commitSaleTest = async () => {
   );
 };
 
+const tryingToCalcelACompletedSaleTest = async () => {
+  const resultCancelSale = await cancelSale.execute(sale1Id);
+  return result("Trying to cancel a completed sale should return a controlled domain error", !resultCancelSale.isSuccess);
+};
+
+const addItemsToOtherSaleTest = async () => {
+  await cancelSale.execute(sale2Id);
+  await addItemToSale.execute({
+    saleId: sale2Id,
+    itemId: product1Id,
+    quantity: 3,
+  });
+  await addItemToSale.execute({
+    saleId: sale2Id,
+    itemId: product2Id,
+    quantity: 2,
+  });
+  await addItemToSale.execute({
+    saleId: sale2Id,
+    itemId: product3Id,
+    quantity: 1,
+  });
+  const [product1, product2, product3] = (
+    await getProducts.execute([product1Id, product2Id, product3Id])
+  ).getValue()!;
+
+  const product1Stock = product1.getStock();
+  const product2Stock = product2.getStock();
+  const product3Stock = product3.getStock();
+  return result(
+    "Behavior cross context when add items to other sale, all products stock decreases",
+    product1Stock === 6 && product2Stock === 6 && product3Stock === 6
+  );
+};
+
 const cancelSaleTest = async () => {
-  await cancelSale.execute(sale1Id);
-  const sale = await saleRepository.getSaleById(sale1Id);
-  return result("Cancel sale", sale.getValue()!.getItems().length === 0);
+  await cancelSale.execute(sale2Id);
+  const [product1, product2, product3] = (
+    await getProducts.execute([product1Id, product2Id, product3Id])
+  ).getValue()!;
+
+  const product1Stock = product1.getStock();
+  const product2Stock = product2.getStock();
+  const product3Stock = product3.getStock();
+  return result(
+    "Cancel current sale should release reserved stock and restore stock to state before this sale",
+    product1Stock === 9 && product2Stock === 8 && product3Stock === 7
+  );
 };
 
 // --- Export
@@ -127,5 +172,11 @@ export const saleSuite: Suite = {
   description: suiteDescription,
   setup,
   teardown,
-  tests: [createSaleTest, commitSaleTest, cancelSaleTest],
+  tests: [
+    createSaleTest,
+    commitSaleTest,
+    tryingToCalcelACompletedSaleTest,
+    addItemsToOtherSaleTest,
+    cancelSaleTest,
+  ],
 };

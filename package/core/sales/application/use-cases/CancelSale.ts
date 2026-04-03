@@ -13,10 +13,13 @@ export class CancelSale {
       return Result.fail(saleResult.getError());
     }
     const sale = saleResult.getValue()!;
+    const cancelSaleResult = sale.cancelSale();
+    if (!cancelSaleResult.isSuccess) {
+      return Result.fail(cancelSaleResult.getError());
+    }
     for (const item of sale.getItems()) {
       await this.handleStock.releaseStock(item.getId(), item.getQuantity());
     }
-    await this.saleRepository.delete(saleId);
     return Result.ok();
   }
 }

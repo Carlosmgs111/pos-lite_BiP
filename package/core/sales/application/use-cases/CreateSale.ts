@@ -15,8 +15,10 @@ export class CreateSale {
     private getProductsInfo: GetProductsInfo
   ) {}
   async execute(props: CreateSaleProps) {
-   
-
+    const salesExist = await this.saleRepository.getSaleById(props.id);
+    if (salesExist.isSuccess && salesExist.getValue()) {
+      return Result.fail(new Error("Sale with id " + props.id + " already exists"));
+    }
     const saleItems = await this.getProductsInfo.execute(props.itemIds);
     if (!saleItems.isSuccess) {
       return Result.fail(saleItems.getError());
