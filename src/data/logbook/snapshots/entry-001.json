@@ -1,30 +1,32 @@
 [
   {
-    "suite": "inventory",
+    "id": "starting-inventory",
+    "name": "Inventory",
+    "description": "Registro de productos, consulta por ID y reserva de stock",
     "tests": [
       {
         "name": "Registers a product and retrieves it by id",
-        "suite": "inventory",
+        "suite": "Inventory",
         "passed": true
       },
       {
         "name": "Stores product with correct price",
-        "suite": "inventory",
+        "suite": "Inventory",
         "passed": true
       },
       {
         "name": "Reserves stock successfully for valid quantity",
-        "suite": "inventory",
+        "suite": "Inventory",
         "passed": true
       },
       {
         "name": "Fails when reserving more than available stock",
-        "suite": "inventory",
+        "suite": "Inventory",
         "passed": true
       },
       {
         "name": "returns error for nonexistent product",
-        "suite": "inventory",
+        "suite": "Inventory",
         "passed": true
       }
     ],
@@ -33,36 +35,38 @@
     "total": 5
   },
   {
-    "suite": "sales",
+    "id": "starting-sales",
+    "name": "Sales",
+    "description": "Creacion de ventas, agregar/remover items, cancelar y confirmar ventas",
     "tests": [
       {
         "name": "Creates an empty order",
-        "suite": "sales",
+        "suite": "Sales",
         "passed": true
       },
       {
         "name": "Adds item to order",
-        "suite": "sales",
+        "suite": "Sales",
         "passed": true
       },
       {
         "name": "Accumulates quantity and calculates correct total",
-        "suite": "sales",
+        "suite": "Sales",
         "passed": true
       },
       {
         "name": "Removes quantity from order and calculates correct total",
-        "suite": "sales",
+        "suite": "Sales",
         "passed": true
       },
       {
         "name": "Cancels order and releases stock",
-        "suite": "sales",
+        "suite": "Sales",
         "passed": true
       },
       {
         "name": "Registers order and confirms stock",
-        "suite": "sales",
+        "suite": "Sales",
         "passed": true
       }
     ],
@@ -71,26 +75,28 @@
     "total": 6
   },
   {
-    "suite": "shared",
+    "id": "starting-shared",
+    "name": "Shared",
+    "description": "Value Objects compartidos: PriceVO, validaciones de dominio",
     "tests": [
       {
         "name": "Price Value Object: Setting price as int (10) should be 10.00",
-        "suite": "inventory",
+        "suite": "Shared",
         "passed": true
       },
       {
         "name": "Price Value Object: Setting price as float (10.0) with one decimal should be 10.00",
-        "suite": "inventory",
+        "suite": "Shared",
         "passed": true
       },
       {
         "name": "Price Value Object: Setting price as float (10.01) with two decimals should be 10.01",
-        "suite": "inventory",
+        "suite": "Shared",
         "passed": true
       },
       {
         "name": "Price Value Object: Setting price with negative value (-10) in construction should throw error",
-        "suite": "inventory",
+        "suite": "Shared",
         "passed": true
       }
     ],

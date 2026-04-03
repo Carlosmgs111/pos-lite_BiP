@@ -2,6 +2,7 @@ import { SaleItem } from "./SaleItem";
 import { SaleStates } from "./SaleStates";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
+import type { SaleItemProps } from "./SaleItem";
 
 class SaleItemNotFound extends Error {
   constructor() {
@@ -11,7 +12,7 @@ class SaleItemNotFound extends Error {
 
 interface SaleProps {
   id: string;
-  items: SaleItem[];
+  items: SaleItemProps[];
   total: PriceVO;
   createdAt: Date;
 }
@@ -24,14 +25,30 @@ export class Sale {
     private createdAt: Date,
     private state: SaleStates
   ) {}
-  static create(props: SaleProps) {
-    return new Sale(
+  static create(props: Omit<SaleProps, "total">) {
+    const saleItems: SaleItem[] = [];
+    for (let item of props.items) {
+      const saleItemResult = SaleItem.create({
+        id: item.id,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+      });
+      if (!saleItemResult.isSuccess) {
+        // TODO: Log error and notify user
+        Result.fail(saleItemResult.getError());
+      }
+      saleItems.push(saleItemResult.getValue()!);
+    }
+    const sale = new Sale(
       props.id,
-      props.items,
-      props.total,
+      saleItems,
+      PriceVO.add(saleItems.map((item) => item.getTotal())),
       props.createdAt,
       SaleStates.PENDING
     );
+    return sale;
   }
   recalculateTotal(): void {
     this.total = PriceVO.add(this.items.map((item) => item.getTotal()));
@@ -49,17 +66,26 @@ export class Sale {
   completeSale(): void {
     this.state = SaleStates.COMPLETED;
   }
-  addItem(item: SaleItem): void {
-    const itemExists = this.findItemById(item.getId());
+  addItem(item: SaleItemProps): void {
+    const itemExists = this.findItemById(item.id);
     if (itemExists.isSuccess) {
-      itemExists.getValue()!.incrementQuantity(item.getQuantity());
-    } else {
-      this.items.push(item);
+      itemExists.getValue()!.incrementQuantity(item.quantity);
+      this.recalculateTotal();
+      return;
     }
+    const saleItemResult = SaleItem.create(item);
+    if (!saleItemResult.isSuccess) {
+      // TODO: Log error and notify user
+      Result.fail(saleItemResult.getError());
+    }
+    this.items.push(saleItemResult.getValue()!);
     this.recalculateTotal();
   }
   getItems() {
     return [...this.items];
+  }
+  getTotal() {
+    return this.total;
   }
   toJSON() {
     return {

@@ -9,10 +9,11 @@ import {
 } from "../../core";
 import { productRepository } from "../../core/inventory";
 import { saleRepository } from "../../core/sales";
-import { PriceVO } from "../../core/shared/domain/Price.VO";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 
-const suiteName = "starting/sales";
+const suiteId = "starting-sales";
+const suiteName = "Sales";
+const suiteDescription = "Creacion de ventas, agregar/remover items, cancelar y confirmar ventas";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
@@ -24,13 +25,14 @@ function result(name: string, passed: boolean, message?: string): TestResult {
 }
 
 export const saleSuite: Suite = {
+  id: suiteId,
   name: suiteName,
+  description: suiteDescription,
   tests: [
     async () => {
       await createSale.execute({
         id: "test-sale-1",
-        items: [],
-        total: new PriceVO(0),
+        itemIds: [],
         createdAt: new Date(),
       });
       const sale = await saleRepository.getSaleById("test-sale-1");
@@ -50,8 +52,7 @@ export const saleSuite: Suite = {
       });
       await createSale.execute({
         id: "test-sale-2",
-        items: [],
-        total: new PriceVO(0),
+        itemIds: [],
         createdAt: new Date(),
       });
       const r = await addItemToSale.execute({
@@ -74,8 +75,7 @@ export const saleSuite: Suite = {
       });
       await createSale.execute({
         id: "test-sale-3",
-        items: [],
-        total: new PriceVO(0),
+        itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
@@ -89,7 +89,7 @@ export const saleSuite: Suite = {
         quantity: 3,
       });
       const sale = await saleRepository.getSaleById("test-sale-3");
-      const total = sale.getValue()!.toJSON().total.getValue();
+      const total = sale.getValue()!.getTotal().getValue();
       productRepository.purgeDb();
       saleRepository.purgeDb();
       return result(
@@ -108,8 +108,7 @@ export const saleSuite: Suite = {
       });
       await createSale.execute({
         id: "test-sale-4",
-        items: [],
-        total: new PriceVO(0),
+        itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
@@ -123,7 +122,7 @@ export const saleSuite: Suite = {
         quantity: 4,
       });
       const sale = await saleRepository.getSaleById("test-sale-4");
-      const total = sale.getValue()!.toJSON().total.getValue();
+      const total = sale.getValue()!.getTotal().getValue();
       productRepository.purgeDb();
       saleRepository.purgeDb();
       return result(
@@ -142,8 +141,7 @@ export const saleSuite: Suite = {
       });
       await createSale.execute({
         id: "test-sale-5",
-        items: [],
-        total: new PriceVO(0),
+        itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
@@ -152,8 +150,8 @@ export const saleSuite: Suite = {
         quantity: 7,
       });
       await cancelSale.execute("test-sale-5");
-      const product = await productRepository.getProduct(id);
-      const stock = product.getValue()!.getStock();
+      const product = await productRepository.getProducts([id]);
+      const stock = product.getValue()![0].getStock();
       productRepository.purgeDb();
       saleRepository.purgeDb();
       return result("Cancels order and releases stock", stock === 11);
@@ -169,8 +167,7 @@ export const saleSuite: Suite = {
       });
       await createSale.execute({
         id: "test-sale-6",
-        items: [],
-        total: new PriceVO(0),
+        itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
@@ -179,9 +176,8 @@ export const saleSuite: Suite = {
         quantity: 7,
       });
       await registerSale.execute("test-sale-6");
-      const product = await productRepository.getProduct(id);
-      console.log(product.getValue()!.getStock());
-      const stock = product.getValue()!.getStock();
+      const product = await productRepository.getProducts([id]);
+      const stock = product.getValue()![0].getStock();
       productRepository.purgeDb();
       saleRepository.purgeDb();
       return result("Registers order and confirms stock", stock === 3);

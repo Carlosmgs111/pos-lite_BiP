@@ -12,7 +12,12 @@ const passRate = suiteResult.total > 0 ? (suiteResult.passed / suiteResult.total
 
 <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
   <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-    <h4 class="text-sm font-bold text-gray-900 capitalize">{suiteResult.suite}</h4>
+    <div>
+      <h4 class="text-sm font-bold text-gray-900">{suiteResult.name}</h4>
+      {suiteResult.description && (
+        <p class="text-xs text-gray-500 mt-0.5">{suiteResult.description}</p>
+      )}
+    </div>
     <div class="flex items-center gap-2">
       <span class="text-xs text-green-700 font-medium">{suiteResult.passed} passed</span>
       {suiteResult.failed > 0 && (

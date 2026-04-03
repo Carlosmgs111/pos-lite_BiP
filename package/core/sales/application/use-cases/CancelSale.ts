@@ -5,7 +5,7 @@ import type { HandleStockPort } from "../ports/HandleStockPort";
 export class CancelSale {
   constructor(
     private saleRepository: SaleRepository,
-    private releaseStock: HandleStockPort
+    private handleStock: HandleStockPort
   ) {}
   async execute(saleId: string): Promise<Result<Error, void>> {
     const saleResult = await this.saleRepository.getSaleById(saleId);
@@ -14,7 +14,7 @@ export class CancelSale {
     }
     const sale = saleResult.getValue()!;
     for (const item of sale.getItems()) {
-      await this.releaseStock.releaseStock(item.getId(), item.getQuantity());
+      await this.handleStock.releaseStock(item.getId(), item.getQuantity());
     }
     await this.saleRepository.delete(saleId);
     return Result.ok();

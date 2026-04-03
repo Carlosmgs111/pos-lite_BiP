@@ -8,14 +8,14 @@ export class InMemoryProductRepository implements ProductRepository {
     this.products.push(product);
     return Result.ok(undefined);
   }
-  async getProduct(productId: string): Promise<Result<Error, Product | undefined>> {
-    const product = this.products.find(
-      (product) => product.getId().getValue() === productId
+  async getProducts(productIds: string[]): Promise<Result<Error, Product[] | undefined>> {
+    const products = this.products.filter(
+      (product) => productIds.includes(product.getId().getValue())
     );
-    if (!product) {
+    if (products.length === 0) {
       return Result.ok(undefined);
     }
-    return Result.ok(product);
+    return Result.ok(products);
   }
   async listProducts(): Promise<Result<Error, Product[]>> {
     return Result.ok(this.products);

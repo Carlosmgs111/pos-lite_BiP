@@ -1,6 +1,6 @@
 export class PriceVO {
   private readonly value: number;
-  private readonly centsPrecision: number = 2;    
+  private readonly centsPrecision: number = 2;
 
   constructor(price: number) {
     this.validate(price);
@@ -9,7 +9,10 @@ export class PriceVO {
   }
 
   static add(prices: PriceVO[]): PriceVO {
-    const totalCents = prices.reduce((total, price) => total + price.getValue(), 0);
+    const totalCents = prices.reduce(
+      (total, price) => total + price.getValue(),
+      0
+    );
     return new PriceVO(totalCents);
   }
 
@@ -26,7 +29,7 @@ export class PriceVO {
       throw new Error("Price must be a number");
     }
     if (price < 0) {
-      throw new Error("Price must be greater than 0");
+      throw new Error("Price must not be negative");
     }
     if (
       !Number.isInteger(price) &&
@@ -38,7 +41,9 @@ export class PriceVO {
 
   private convertToCents(price: number): number {
     if (!Number.isInteger(price)) {
-      return Number(String(price.toFixed(this.centsPrecision)).split(".").join(""));
+      return Number(
+        String(price.toFixed(this.centsPrecision)).split(".").join("")
+      );
     }
     return price * 100;
   }

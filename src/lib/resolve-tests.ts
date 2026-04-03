@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { SuiteResult } from '../../package/tests/runner';
 import { runSuites } from '../../package/tests/runner';
 import '../../package/tests/starting'; // Register suites
+import '../../package/tests/iter2'; // Register iter2 suites
 
 const SNAPSHOTS_DIR = join(process.cwd(), 'src/data/logbook/snapshots');
 

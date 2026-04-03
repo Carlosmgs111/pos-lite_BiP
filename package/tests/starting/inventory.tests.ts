@@ -1,9 +1,11 @@
 import type { Suite, TestResult } from "../runner";
-import { registerProduct, getProduct, handleStockForSale } from "../../core";
+import { registerProduct, getProducts  , handleStockForSale } from "../../core";
 import { productRepository } from "../../core/inventory";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 
-const suiteName = "starting/inventory";
+const suiteId = "starting-inventory";
+const suiteName = "Inventory";
+const suiteDescription = "Registro de productos, consulta por ID y reserva de stock";
 
 function result(name: string, passed: boolean, message?: string): TestResult {
   return {
@@ -15,7 +17,9 @@ function result(name: string, passed: boolean, message?: string): TestResult {
 }
 
 export const inventorySuite: Suite = {
+  id: suiteId,
   name: suiteName,
+  description: suiteDescription,
   tests: [
     async () => {
       const id = UuidVO.generate();
@@ -26,7 +30,7 @@ export const inventorySuite: Suite = {
         stock: 10,
         reservedStock: 0,
       });
-      const r = await getProduct.execute(id);
+      const r = await getProducts.execute([id]);
       productRepository.purgeDb();
       return result("Registers a product and retrieves it by id", r.isSuccess);
     },
@@ -39,11 +43,11 @@ export const inventorySuite: Suite = {
         stock: 5,
         reservedStock: 0,
       });
-      const r = await getProduct.execute(id);
+      const r = await getProducts.execute([id]);
       if (!r.isSuccess) {
         return result("Stores product with correct price", false);
       }
-      const price = r.getValue()!.getPrice();
+      const price = r.getValue()![0].getPrice();
       productRepository.purgeDb();
       return result(
         "Stores product with correct price",
@@ -83,7 +87,7 @@ export const inventorySuite: Suite = {
       );
     },
     async () => {
-      const r = await getProduct.execute("non-existent-with-invalid-uuid");
+      const r = await getProducts.execute(["non-existent-with-invalid-uuid"]); 
       productRepository.purgeDb();
       return result("returns error for nonexistent product", !r.isSuccess);
     },

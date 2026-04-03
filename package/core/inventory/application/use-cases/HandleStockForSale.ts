@@ -1,11 +1,9 @@
 import { Result } from "../../../shared/domain/Result";
-import type { GetProduct } from "./GetProduct";
 import type { ProductRepository } from "../../domain/ProductRepository";
 import { ProductNotFoundError } from "../../domain/Errors/ProductNotFoundError";
 
 export class HandleStockForSale {
   constructor(
-    private getProduct: GetProduct,
     private productRepository: ProductRepository
   ) {}
 
@@ -13,11 +11,11 @@ export class HandleStockForSale {
     productId: string,
     quantity: number
   ): Promise<Result<ProductNotFoundError, void>> {
-    const productResult = await this.getProduct.execute(productId);
+    const productResult = await this.productRepository.getProducts([productId]);
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
     }
-    const product = productResult.getValue()!;
+    const product = productResult.getValue()![0];
     const reservedResult = await product.reserveStock(quantity);
     if (!reservedResult.isSuccess) {
       return Result.fail(reservedResult.getError());
@@ -29,14 +27,14 @@ export class HandleStockForSale {
     productId: string,
     stockToRelease: number
   ): Promise<Result<ProductNotFoundError, void>> {
-    const productResult = await this.productRepository.getProduct(productId);
+    const productResult = await this.productRepository.getProducts([productId]);
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
     }
     if (!productResult.getValue()) {
       return Result.fail(new ProductNotFoundError());
     }
-    const product = productResult.getValue()!;
+    const product = productResult.getValue()![0];
     const updatedProduct = product.releaseStock(stockToRelease);
     return this.productRepository.update(productId, updatedProduct.getValue()!);
   }
@@ -45,11 +43,11 @@ export class HandleStockForSale {
     productId: string,
     quantity: number
   ): Promise<Result<ProductNotFoundError, void>> {
-    const productResult = await this.productRepository.getProduct(productId);
+    const productResult = await this.productRepository.getProducts([productId]);
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
     }
-    const product = productResult.getValue()!;
+    const product = productResult.getValue()![0];
     const updatedProduct = product.confirmStock(quantity);
     return this.productRepository.update(productId, updatedProduct.getValue()!);
   }

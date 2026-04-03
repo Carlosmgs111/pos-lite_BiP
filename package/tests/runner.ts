@@ -6,7 +6,9 @@ export interface TestResult {
 }
 
 export interface SuiteResult {
-  suite: string;
+  id: string;
+  name: string;
+  description: string;
   tests: TestResult[];
   passed: number;
   failed: number;
@@ -16,7 +18,11 @@ export interface SuiteResult {
 export type TestFn = () => Promise<TestResult>;
 
 export interface Suite {
+  id: string;
   name: string;
+  description: string;
+  setup?: () => Promise<void>;
+  teardown?: () => Promise<void>;
   tests: TestFn[];
 }
 
@@ -24,17 +30,20 @@ export interface Suite {
 const registry = new Map<string, Suite>();
 
 export function registerSuite(suite: Suite): void {
-  registry.set(suite.name, suite);
+  registry.set(suite.id, suite);
 }
 
-export async function runSuites(suiteNames: string[]): Promise<SuiteResult[]> {
+export async function runSuites(suiteIds: string[]): Promise<SuiteResult[]> {
   const results: SuiteResult[] = [];
 
-  for (const name of suiteNames) {
-    const suite = registry.get(name);
+  for (const id of suiteIds) {
+    const suite = registry.get(id);
     if (!suite) {
-      // results.push({ suite: name, tests: [], passed: 0, failed: 0, total: 0 });
       continue;
+    }
+
+    if (suite.setup) {
+      await suite.setup();
     }
 
     const tests: TestResult[] = [];
@@ -44,16 +53,20 @@ export async function runSuites(suiteNames: string[]): Promise<SuiteResult[]> {
       } catch (error) {
         tests.push({
           name: 'unknown',
-          suite: name,
+          suite: suite.name,
           passed: false,
           message: error instanceof Error ? error.message : String(error),
         });
       }
     }
 
+    if (suite.teardown) {
+      await suite.teardown();
+    }
+
     const passed = tests.filter((t) => t.passed).length;
     const failed = tests.filter((t) => !t.passed).length;
-    results.push({ suite: name, tests, passed, failed, total: tests.length });
+    results.push({ id, name: suite.name, description: suite.description, tests, passed, failed, total: tests.length });
   }
 
   return results;

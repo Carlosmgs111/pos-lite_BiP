@@ -7,12 +7,12 @@ class InvalidQuantityError extends Error {
   }
 }
 
-interface SaleItemProps {
+export interface SaleItemProps {
   id: string;
   productName: string;
   quantity: number;
-  price: PriceVO;
-  total: PriceVO;
+  price: number;
+  total: number;
 }
 export class SaleItem {
   private constructor(
@@ -29,17 +29,13 @@ export class SaleItem {
         new InvalidQuantityError("Quantity must be greater than 0")
       );
     }
+    const price = new PriceVO(props.price);
+    const total = PriceVO.multiply(price, props.quantity);
     return Result.ok(
-      new SaleItem(
-        props.id,
-        props.productName,
-        props.quantity,
-        props.price,
-        props.total
-      )
+      new SaleItem(props.id, props.productName, props.quantity, price, total)
     );
   }
-
+  
   getId() {
     return this.id;
   }

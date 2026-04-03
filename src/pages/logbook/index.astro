@@ -1,16 +1,22 @@
 ---
-import { getCollection } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
-import EntryCard from '../../components/logbook/EntryCard.astro';
-import { resolveTestResults } from '../../lib/resolve-tests';
-import type { TestSummary } from '../../types/logbook';
+import { getCollection } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import EntryCard from "../../components/logbook/EntryCard.astro";
+import { resolveTestResults } from "../../lib/resolve-tests";
+import type { TestSummary } from "../../types/logbook";
 
-const entries = await getCollection('logbook');
-const sorted = entries.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+const entries = await getCollection("logbook");
+const sorted = entries.sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
 
 const entriesWithTests = await Promise.all(
   sorted.map(async (entry) => {
-    const results = await resolveTestResults(entry.id, entry.data.testSuites, entry.data.closed);
+    const results = await resolveTestResults(
+      entry.id,
+      entry.data.testSuites,
+      entry.data.closed
+    );
     const testSummary: TestSummary = results.reduce(
       (acc, r) => ({
         passed: acc.passed + r.passed,
@@ -28,21 +34,26 @@ const entriesWithTests = await Promise.all(
   <div class="max-w-3xl mx-auto px-4 py-8">
     <header class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Bitacora de Desarrollo</h1>
-      <p class="text-gray-500 mt-2">Seguimiento del progreso de pos-lite — un sistema POS construido en publico con DDD, monolito modular y puertos/adaptadores.</p>
+      <p class="text-gray-500 mt-2">
+        Seguimiento del progreso de pos-lite — un sistema POS construido en
+        publico con DDD, monolito modular y puertos/adaptadores.
+      </p>
     </header>
 
     <div class="space-y-4">
-      {entriesWithTests.map(({ entry, testSummary }) => (
-        <EntryCard
-          id={entry.id}
-          title={entry.data.title}
-          date={entry.data.date}
-          summary={entry.data.summary}
-          tags={entry.data.tags}
-          testSummary={testSummary}
-          closed={entry.data.closed}
-        />
-      ))}
+      {
+        entriesWithTests.map(({ entry, testSummary }) => (
+          <EntryCard
+            id={entry.id}
+            title={entry.data.title}
+            date={entry.data.date}
+            summary={entry.data.summary}
+            tags={entry.data.tags}
+            testSummary={testSummary}
+            closed={entry.data.closed}
+          />
+        ))
+      }
     </div>
   </div>
 </Layout>
