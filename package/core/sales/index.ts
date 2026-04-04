@@ -20,11 +20,9 @@ export const addItemToSale = new AddItemToSale(
   saleRepository,
   getProductsInfo
 );
-export const removeItemFromSale = new RemoveItemFromSale(saleRepository);
+export const removeItemFromSale = new RemoveItemFromSale(saleRepository, handleStockForSale);
 export const registerSale = new RegisterSale(
   saleRepository,
   handleStockForSale
 );
 export const createSale = new CreateSale(saleRepository, getProductsInfo);
-
-export const createSalesContext = ({}) => {};

@@ -1,6 +1,7 @@
 import type { SaleRepository } from "../../domain/SaleRepository";
 import { Result } from "../../../shared/domain/Result";
 import type { HandleStockPort } from "../ports/HandleStockPort";
+import { SaleNotFoundError } from "../../domain/Errors/SaleNotFoundError";
 
 export class RegisterSale {
   constructor(
@@ -11,6 +12,9 @@ export class RegisterSale {
     const saleResult = await this.saleRepository.getSaleById(saleId);
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
+    }
+    if (!saleResult.getValue()) {
+      return Result.fail(new SaleNotFoundError());
     }
     const sale = saleResult.getValue()!;
     for (const item of sale.getItems()) {

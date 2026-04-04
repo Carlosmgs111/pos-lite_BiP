@@ -1,8 +1,13 @@
 import { Result } from "../../../shared/domain/Result";
 import type { SaleRepository } from "../../domain/SaleRepository";
+import type { HandleStockPort } from "../ports/HandleStockPort";
+import { SaleNotFoundError } from "../../domain/Errors/SaleNotFoundError";
 
 export class RemoveItemFromSale {
-  constructor(private saleRepository: SaleRepository) {}
+  constructor(
+    private saleRepository: SaleRepository,
+    private handleStock: HandleStockPort
+  ) {}
   async execute({
     saleId,
     itemId,
@@ -16,6 +21,9 @@ export class RemoveItemFromSale {
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
     }
+    if (!saleResult.getValue()) {
+      return Result.fail(new SaleNotFoundError());
+    }
     const sale = saleResult.getValue()!;
     const itemResult = sale.findItemById(itemId);
     if (!itemResult.isSuccess) {
@@ -25,6 +33,10 @@ export class RemoveItemFromSale {
     const decrementResult = item.decrementQuantity(quantity);
     if (!decrementResult.isSuccess) {
       return Result.fail(decrementResult.getError());
+    }
+    const releaseResult = await this.handleStock.releaseStock(itemId, quantity);
+    if (!releaseResult.isSuccess) {
+      return Result.fail(releaseResult.getError());
     }
     sale.recalculateTotal();
     await this.saleRepository.update(sale);

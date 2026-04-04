@@ -10,6 +10,9 @@ export class GetSale {
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
     }
+    if (!saleResult.getValue()) {
+      return Result.fail(new SaleNotFoundError());
+    }
     return Result.ok(saleResult.getValue()!);
   }
 }

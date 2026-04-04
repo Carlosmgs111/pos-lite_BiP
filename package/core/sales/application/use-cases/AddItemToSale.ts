@@ -2,6 +2,7 @@ import type { HandleStockPort } from "../ports/HandleStockPort";
 import type { SaleRepository } from "../../domain/SaleRepository";
 import type { GetProductsInfo } from "../ports/GetProductsInfo";
 import { Result } from "../../../shared/domain/Result";
+import { SaleNotFoundError } from "../../domain/Errors/SaleNotFoundError";
 
 interface AddItemToSaleProps {
   saleId: string;
@@ -19,6 +20,9 @@ export class AddItemToSale {
     const saleResult = await this.saleRepository.getSaleById(props.saleId);
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
+    }
+    if (!saleResult.getValue()) {
+      return Result.fail(new SaleNotFoundError());
     }
     const sale = saleResult.getValue()!;
     const reserveStockResult = await this.handleStock.reserveStock(

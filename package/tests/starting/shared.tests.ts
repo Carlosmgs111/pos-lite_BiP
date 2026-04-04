@@ -1,6 +1,5 @@
 import type { Suite, TestResult } from "../runner";
 import { PriceVO } from "../../core/shared/domain/Price.VO";
-import { componentIsHTMLElement } from "astro/runtime/server/render/dom.js";
 
 const suiteId = "starting-shared";
 const suiteName = "Shared";
