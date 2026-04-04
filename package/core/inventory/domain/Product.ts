@@ -1,39 +1,63 @@
-
 import { Result } from "../../shared/domain/Result";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { UuidVO } from "../../shared/domain/Uuid.VO";
 import { NameVO } from "./Name.VO";
+import { InsufficientStockError } from "./Errors/InsufficientStockError";
+import { InvalidStockOperationError } from "./Errors/InvalidStockOperationError";
+
+export interface ProductProps {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  reservedStock: number;
+}
 
 export class Product {
-  constructor(
+  private constructor(
     private id: UuidVO,
     private name: NameVO,
     private price: PriceVO,
     private stock: number,
     private reservedStock: number
   ) {}
-  async reserveStock(quantity: number): Promise<Result<Error, void>> {
+  static create(props: ProductProps) {
+    return new Product(
+      new UuidVO(props.id),
+      new NameVO(props.name),
+      new PriceVO(props.price),
+      props.stock,
+      props.reservedStock
+    );
+  }
+  reserveStock(quantity: number): Result<InsufficientStockError, void> {
     if (this.stock < quantity) {
-      return Result.fail(new Error("Not enough stock"));
+      return Result.fail(new InsufficientStockError());
     }
     this.reservedStock += quantity;
     this.stock -= quantity;
     return Result.ok(undefined);
   }
-  releaseStock(quantity: number) {
+  releaseStock(quantity: number): Result<InvalidStockOperationError, void> {
+    if (quantity > this.reservedStock) {
+      return Result.fail(new InvalidStockOperationError("Cannot release more stock than reserved"));
+    }
     this.reservedStock -= quantity;
     this.stock += quantity;
     return Result.ok(undefined);
   }
-  confirmStock(quantity: number) {
+  confirmStock(quantity: number): Result<InvalidStockOperationError, void> {
+    if (quantity > this.reservedStock) {
+      return Result.fail(new InvalidStockOperationError("Cannot confirm more stock than reserved"));
+    }
     this.reservedStock -= quantity;
     return Result.ok(undefined);
   }
   getStock() {
     return this.stock;
   }
-  canReserveStock(quantity: number) {
-    return this.stock >= quantity;
+  getReservedStock() {
+    return this.reservedStock;
   }
   getId() {
     return this.id;

@@ -27,6 +27,12 @@ export class InMemoryProductRepository implements ProductRepository {
     const product = this.products.find(
       (product) => product.getId().getValue() === productId
     );
+
+    if (!product) {
+      return Result.fail(new Error("Product not found"));
+    }
+    Object.assign(product, props);
+    this.products[this.products.findIndex((product) => product.getId().getValue() === productId)] = product;
     return Result.ok(undefined);
   }
   purgeDb() {

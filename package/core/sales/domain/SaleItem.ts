@@ -1,11 +1,6 @@
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
-
-class InvalidQuantityError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
+import { InvalidQuantityError } from "./Errors/InvalidQuantityError";
 
 export interface SaleItemProps {
   id: string;

@@ -3,41 +3,29 @@ import { SaleStates } from "./SaleStates";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
 import type { SaleItemProps } from "./SaleItem";
-
-class SaleItemNotFound extends Error {
-  constructor() {
-    super("Item not found");
-  }
-}
+import { SaleItemNotFoundError } from "./Errors/SaleItemNotFoundError";
+import { InvalidSaleStateError } from "./Errors/InvalidSaleStateError";
 
 interface SaleProps {
   id: string;
   items: SaleItemProps[];
-  total: PriceVO;
   createdAt: Date;
 }
 
 export class Sale {
-  constructor(
+  private constructor(
     private id: string,
     private readonly items: SaleItem[],
     private total: PriceVO,
     private createdAt: Date,
     private state: SaleStates
   ) {}
-  static create(props: Omit<SaleProps, "total">) {
+  static create(props: SaleProps): Result<Error, Sale> {
     const saleItems: SaleItem[] = [];
-    for (let item of props.items) {
-      const saleItemResult = SaleItem.create({
-        id: item.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
-      });
+    for (const item of props.items) {
+      const saleItemResult = SaleItem.create(item);
       if (!saleItemResult.isSuccess) {
-        // TODO: Log error and notify user
-        Result.fail(saleItemResult.getError());
+        return Result.fail(saleItemResult.getError());
       }
       saleItems.push(saleItemResult.getValue()!);
     }
@@ -48,45 +36,55 @@ export class Sale {
       props.createdAt,
       SaleStates.PENDING
     );
-    return sale;
+    return Result.ok(sale);
   }
   recalculateTotal(): void {
     this.total = PriceVO.add(this.items.map((item) => item.getTotal()));
   }
-  findItemById(id: string): Result<SaleItemNotFound, SaleItem> {
+  findItemById(id: string): Result<SaleItemNotFoundError, SaleItem> {
     const item = this.items.find((item) => item.getId() === id);
     if (!item) {
-      return Result.fail(new SaleItemNotFound());
+      return Result.fail(new SaleItemNotFoundError());
     }
     return Result.ok(item);
   }
   getId() {
     return this.id;
   }
-  completeSale(): void {
-    this.state = SaleStates.COMPLETED;
+  getState() {
+    return this.state;
   }
-  cancelSale(): Result<Error, void> {
-    if (this.state === SaleStates.COMPLETED) {
-      return Result.fail(new Error("Cannot cancel a completed sale"));
+  completeSale(): Result<InvalidSaleStateError, void> {
+    if (this.state !== SaleStates.PENDING) {
+      return Result.fail(new InvalidSaleStateError("Can only complete a pending sale"));
+    }
+    this.state = SaleStates.COMPLETED;
+    return Result.ok(undefined);
+  }
+  cancelSale(): Result<InvalidSaleStateError, void> {
+    if (this.state !== SaleStates.PENDING) {
+      return Result.fail(new InvalidSaleStateError("Can only cancel a pending sale"));
     }
     this.state = SaleStates.CANCELLED;
     return Result.ok(undefined);
   }
-  addItem(item: SaleItemProps): void {
+  addItem(item: SaleItemProps): Result<Error, void> {
+    if (this.state !== SaleStates.PENDING) {
+      return Result.fail(new InvalidSaleStateError("Can only add items to a pending sale"));
+    }
     const itemExists = this.findItemById(item.id);
     if (itemExists.isSuccess) {
       itemExists.getValue()!.incrementQuantity(item.quantity);
       this.recalculateTotal();
-      return;
+      return Result.ok(undefined);
     }
     const saleItemResult = SaleItem.create(item);
     if (!saleItemResult.isSuccess) {
-      // TODO: Log error and notify user
-      Result.fail(saleItemResult.getError());
+      return Result.fail(saleItemResult.getError());
     }
     this.items.push(saleItemResult.getValue()!);
     this.recalculateTotal();
+    return Result.ok(undefined);
   }
   getItems() {
     return [...this.items];

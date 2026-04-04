@@ -33,13 +33,16 @@ export class AddItemToSale {
       return Result.fail(productInfoResult.getError());
     }
     const productInfo = productInfoResult.getValue()![0];
-    sale.addItem({
+    const addItemResult = sale.addItem({
       id: props.itemId,
       productName: productInfo.name,
       quantity: props.quantity,
       price: productInfo.price,
       total: props.quantity * productInfo.price,
     });
+    if (!addItemResult.isSuccess) {
+      return Result.fail(addItemResult.getError());
+    }
     await this.saleRepository.update(sale);
     return Result.ok(sale);
   }

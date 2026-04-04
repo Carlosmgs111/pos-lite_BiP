@@ -31,11 +31,14 @@ export class CreateSale {
       total: item.price * 1,
     }));
 
-    const sale = Sale.create({
+    const saleResult = Sale.create({
       id: props.id,
       items: saleItemsProps,
       createdAt: props.createdAt,
     });
-    this.saleRepository.save(sale);
+    if (!saleResult.isSuccess) {
+      return Result.fail(saleResult.getError());
+    }
+    return this.saleRepository.save(saleResult.getValue()!);
   }
 }

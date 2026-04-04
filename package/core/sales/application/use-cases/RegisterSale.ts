@@ -22,7 +22,10 @@ export class RegisterSale {
         return Result.fail(confirmStockResult.getError());
       }
     }
-    sale.completeSale();
+    const completeResult = sale.completeSale();
+    if (!completeResult.isSuccess) {
+      return Result.fail(completeResult.getError());
+    }
     return this.saleRepository.update(sale);
   }
 }

@@ -16,26 +16,18 @@ export class InMemorySaleRepository implements SaleRepository {
     return Result.ok(sale);
   }
   async update(sale: Sale): Promise<Result<Error, void>> {
-    const saleResult = await this.getSaleById(sale.getId());
-    if (!saleResult.isSuccess) {
-      return Result.fail(saleResult.getError());
-    }
-    if (!saleResult.getValue()) {
+    const index = this.sales.findIndex((s) => s.getId() === sale.getId());
+    if (index === -1) {
       return Result.fail(new Error("Sale not found"));
     }
-    const index = this.sales.findIndex((sale) => sale.getId() === sale.getId());
     this.sales[index] = sale;
     return Result.ok();
   }
   async delete(saleId: string): Promise<Result<Error, void>> {
-    const saleResult = await this.getSaleById(saleId);
-    if (!saleResult.isSuccess) {
-      return Result.fail(saleResult.getError());
-    }
-    if (!saleResult.getValue()) {
+    const index = this.sales.findIndex((s) => s.getId() === saleId);
+    if (index === -1) {
       return Result.fail(new Error("Sale not found"));
     }
-    const index = this.sales.findIndex((sale) => sale.getId() === sale.getId());
     this.sales.splice(index, 1);
     return Result.ok();
   }
