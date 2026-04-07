@@ -1,0 +1,97 @@
+[
+  {
+    "id": "iter2-sales",
+    "name": "Sales (Iter 2)",
+    "description": "Venta completa con multiples productos y confirmacion cross-context",
+    "tests": [
+      {
+        "name": "Create sale",
+        "suite": "Sales (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Behavior cross context when register sale, all products stock decreases",
+        "suite": "Sales (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Trying to cancel a completed sale should return a controlled domain error",
+        "suite": "Sales (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Behavior cross context when add items to other sale, all products stock decreases",
+        "suite": "Sales (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Cancel current sale should release reserved stock and restore stock to state before this sale",
+        "suite": "Sales (Iter 2)",
+        "passed": true
+      }
+    ],
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  },
+  {
+    "id": "iter2-payment",
+    "name": "Payment & State Guards (Iter 2)",
+    "description": "Creacion de payment order via evento, pagos parciales/exactos/cash, fail-fast en ventas no-draft",
+    "tests": [
+      {
+        "name": "Confirming a sale publishes SalesConfirmed and creates a PaymentOrder",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Adding item to confirmed sale fails fast without reserving stock",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Adding item to cancelled sale fails fast without reserving stock",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Cancelling a confirmed sale returns a domain error",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Confirming a cancelled sale returns a domain error",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Partial payments with cash overpayment calculates correct change",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Non-cash payment that exceeds total returns domain error",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Exact payment completes the order with zero change",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Adding payment to a completed order returns domain error",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      },
+      {
+        "name": "Adding payment to non-existent order returns PaymentOrderNotFoundError",
+        "suite": "Payment & State Guards (Iter 2)",
+        "passed": true
+      }
+    ],
+    "passed": 10,
+    "failed": 0,
+    "total": 10
+  }
+]

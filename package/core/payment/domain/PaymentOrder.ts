@@ -4,6 +4,8 @@ import { PaymentOrderStatus } from "./PaymentOrderStatus";
 import { Payment } from "./Payment";
 import type { PaymentProps } from "./Payment";
 import { PaymentMethod } from "./PaymentMethod";
+import { Result } from "../../shared/domain/Result";
+import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
 
 export class PaymentOrder {
   private change: PriceVO = new PriceVO(0);
@@ -33,32 +35,45 @@ export class PaymentOrder {
       new Date()
     );
   }
-  addPayment(payment: PaymentProps) {
-    const newAmount = PriceVO.add([
-      this.totalAmount,
-      new PriceVO(payment.amount),
-    ]);
-    if (
-      PaymentMethod[payment.method] === PaymentMethod.CASH &&
-      newAmount.getValue() > this.totalAmount.getValue()
-    ) {
-      this.change = PriceVO.substract([newAmount, this.totalAmount]);
-    }
-    if (newAmount.getValue() < this.totalAmount.getValue()) {
-      throw new Error("Payment amount is less than total amount");
+  addPayment(payment: PaymentProps): Result<InvalidPaymentError, void> {
+    if (this.status === PaymentOrderStatus.COMPLETED) {
+      return Result.fail(new InvalidPaymentError("Payment order is already completed"));
     }
     if (!PaymentMethod[payment.method]) {
-      throw new Error("Payment method is not valid");
+      return Result.fail(new InvalidPaymentError("Payment method is not valid"));
     }
-    if(newAmount.getValue() === this.totalAmount.getValue()) {
+    const currentPaymentAmount = PriceVO.add(
+      this.payments.map((p) => p.getAmount())
+    );
+    const newPaymentAmount = PriceVO.add([
+      currentPaymentAmount,
+      new PriceVO(payment.amount),
+    ]);
+    const paymentGreaterThanTotal =
+      newPaymentAmount.getValue() > this.totalAmount.getValue();
+    const isCashPayment = payment.method === PaymentMethod.CASH;
+    if (paymentGreaterThanTotal && !isCashPayment) {
+      return Result.fail(new InvalidPaymentError("Non-cash payment exceeds total amount"));
+    }
+    if (paymentGreaterThanTotal && isCashPayment) {
+      this.change = PriceVO.substract(newPaymentAmount, [this.totalAmount]);
+    }
+    if (newPaymentAmount.getValue() >= this.totalAmount.getValue()) {
       this.status = PaymentOrderStatus.COMPLETED;
       this.completedAt = new Date();
     }
     const newPayment = Payment.create(payment);
     this.payments.push(newPayment);
+    return Result.ok(undefined);
   }
   getChange() {
     return this.change;
+  }
+  getStatus() {
+    return this.status;
+  }
+  getTotalAmount() {
+    return this.totalAmount;
   }
   getSaleId() {
     return this.saleId;

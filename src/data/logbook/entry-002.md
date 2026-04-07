@@ -4,7 +4,7 @@ date: 2026-04-01
 summary: "Consolidacion de puertos de stock, eliminacion de QuantityVO, guardas de estado, propagacion de errores, event bus con SalesConfirmed, y nuevo bounded context Payment."
 tags: ["ddd", "architecture", "inventory", "sales", "payment", "events", "refactor", "testing"]
 testSuites: ["iter2-sales", "iter2-payment"]
-closed: false
+closed: true
 ---
 
 ## Consolidacion de puertos de stock
@@ -59,6 +59,7 @@ Se extrajeron los errores que estaban como clases privadas dentro de los archivo
 
 - **Inventory**: `InsufficientStockError`, `InvalidStockOperationError`
 - **Sales**: `InvalidSaleStateError`, `InvalidQuantityError`, `SaleItemNotFoundError`
+- **Payment**: `PaymentOrderNotFoundError`, `InvalidPaymentError`
 
 ## Validaciones en Product
 
@@ -86,11 +87,20 @@ Se implemento un bus de eventos en memoria (`InMemoryEventBus`) como singleton, 
 
 Se agrego el contexto **Payment** para gestionar ordenes de pago asociadas a ventas confirmadas:
 
-- **Agregado `PaymentOrder`**: vinculado a un `saleId`, contiene una coleccion de `Payment`, calcula cambio para pagos en efectivo, y transiciona a `COMPLETED` cuando el monto total es cubierto
+- **Agregado `PaymentOrder`**: vinculado a un `saleId`, contiene una coleccion de `Payment`, calcula cambio para pagos en efectivo, y transiciona a `COMPLETED` cuando el monto total es cubierto. Expone `getStatus()` y `getTotalAmount()` para consultas externas
 - **Entidad `Payment`**: representa un pago individual con metodo (`CASH`, `CARD`, `TRANSFER`) y monto
 - **`PaymentCompletedEventHandler`**: suscrito a `SalesConfirmed`, crea una `PaymentOrder` automaticamente al confirmar una venta
 - **Use cases**: `CreatePaymentOrder`, `AddPayment`
 - **Infraestructura**: `InMemoryPaymentOrderRepository`
+
+### Reglas de dominio en PaymentOrder
+
+- `addPayment()` retorna `Result<InvalidPaymentError, void>` — consistente con el patron del proyecto
+- Rechaza pagos si la order ya esta `COMPLETED`
+- Pagos no-cash que excedan el total retornan error controlado
+- Solo pagos en efectivo (CASH) pueden exceder el total, generando cambio
+- `AddPayment` (use case) valida que la `PaymentOrder` exista antes de operar, retornando `PaymentOrderNotFoundError`
+- `InMemoryPaymentOrderRepository` usa `Result.fail` en vez de `throw` en `update()`/`delete()`
 
 ## Comunicacion entre contextos
 
@@ -102,3 +112,4 @@ La comunicacion Sales → Payment se da a traves de eventos de dominio, mantenie
 - `GetProductInfo` renombrado a `GetProductsInfo` — mismo cambio en el puerto de Sales
 - `CreateSale` refactorizado para aceptar `itemIds` y resolver productos internamente
 - `PriceVO.substract()` — nuevo metodo estatico para restar precios
+- `PriceVO.getValueInCents()` — nuevo getter para acceso directo al valor en centavos

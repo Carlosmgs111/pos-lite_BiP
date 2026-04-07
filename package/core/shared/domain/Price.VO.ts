@@ -10,22 +10,26 @@ export class PriceVO {
 
   static add(prices: PriceVO[]): PriceVO {
     const totalCents = prices.reduce(
-      (total, price) => total + price.getValue(),
+      (total, price) => total + price.getValueInCents(),
       0
     );
-    return new PriceVO(totalCents);
+    return new PriceVO(totalCents / 100);
   }
 
-  static substract(prices: PriceVO[]): PriceVO {
-    const totalCents = prices.reduce(
-      (total, price) => total - price.getValue(),
+  static substract(priceBase: PriceVO, prices: PriceVO[]): PriceVO {
+    const totalToSubstract = prices.reduce(
+      (total, price) => total + price.getValueInCents(),
       0
     );
-    return new PriceVO(totalCents);
+    if (totalToSubstract > priceBase.getValueInCents()) {
+      throw new Error("Total to substract is greater than price base");
+    }
+    const totalCents = priceBase.getValueInCents() - totalToSubstract;
+    return new PriceVO(totalCents / 100);
   }
 
   static multiply(price: PriceVO, quantity: number): PriceVO {
-    return new PriceVO(price.getValue() * quantity);
+    return new PriceVO(price.getValueInCents() * quantity / 100);
   }
 
   private convertToDecimals(cents: number): number {
@@ -58,5 +62,8 @@ export class PriceVO {
 
   getValue(): number {
     return this.convertToDecimals(this.value);
+  }
+  getValueInCents(): number {
+    return this.value;
   }
 }
