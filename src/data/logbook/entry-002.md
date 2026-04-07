@@ -1,9 +1,9 @@
 ---
-title: "Entry 002 - Casos de uso, guardas de estado y simplificacion del dominio"
+title: "Entry 002 - Casos de uso, guardas de estado, event bus y contexto Payment"
 date: 2026-04-01
-summary: "Consolidacion de puertos de stock, eliminacion de QuantityVO, guardas de estado, propagacion de errores de dominio, correccion de bugs en repositorios, y mejoras al sistema de tests."
-tags: ["ddd", "architecture", "inventory", "sales", "refactor", "testing"]
-testSuites: ["iter2-sales"]
+summary: "Consolidacion de puertos de stock, eliminacion de QuantityVO, guardas de estado, propagacion de errores, event bus con SalesConfirmed, y nuevo bounded context Payment."
+tags: ["ddd", "architecture", "inventory", "sales", "payment", "events", "refactor", "testing"]
+testSuites: ["iter2-sales", "iter2-payment"]
 closed: false
 ---
 
@@ -20,15 +20,27 @@ Se elimino `QuantityVO` por sobreingenieria: solo envolvia un `number` con un ge
 
 El constructor de `SaleItem` se hizo `private`, forzando el uso del factory method `create()`.
 
+## Renombramiento de estados y campos
+
+Se renombraron conceptos para reflejar mejor el lenguaje del dominio:
+
+- `SaleStates` → `SaleStatus`, con valores `DRAFT`, `CONFIRMED`, `CANCELLED` (antes `PENDING`, `COMPLETED`, `CANCELLED`)
+- `completeSale()` → `confirmSale()`
+- Campos de `SaleItem`: `id` → `productId`, `productName` → `nameSnapshot`, `price` → `priceSnapshot`, `total` → `subTotal`
+
 ## Guardas de transicion de estado en Sale
 
-Se identifico que `Sale` no protegia sus transiciones de estado. Ahora las tres operaciones sensibles solo se permiten desde `PENDING`:
+Se identifico que `Sale` no protegia sus transiciones de estado. Ahora las tres operaciones sensibles solo se permiten desde `DRAFT`:
 
-- `completeSale()` retorna `Result.fail` si no esta `PENDING`
-- `cancelSale()` retorna `Result.fail` si no esta `PENDING`
-- `addItem()` retorna `Result.fail` si no esta `PENDING`
+- `confirmSale()` retorna `Result.fail` si no esta `DRAFT`
+- `cancelSale()` retorna `Result.fail` si no esta `DRAFT`
+- `addItem()` retorna `Result.fail` si no esta `DRAFT`
 
-`CreateSale` valida que no exista una venta con el mismo ID. Esto previene escenarios como cancelar una venta ya confirmada, que causaba liberacion de stock ya committed (dejando `reservedStock` en negativo).
+`CreateSale` valida que no exista una venta con el mismo ID.
+
+## Fail-fast en AddItemToSale
+
+`AddItemToSale` ahora verifica el estado de la venta **antes** de reservar stock. Esto evita reservar inventario innecesariamente cuando la venta ya no acepta operaciones. Si `getProductInfo` falla despues de reservar, se hace rollback del stock.
 
 ## Propagacion de errores de dominio
 
@@ -66,8 +78,27 @@ Se extrajeron los errores que estaban como clases privadas dentro de los archivo
 - **Lifecycle hooks**: el runner soporta `setup` y `teardown` opcionales por suite, ejecutados antes y despues de todos los tests del suite respectivamente
 - **Tests organizados por iteracion**: `package/tests/starting/` para la iteracion inicial, `package/tests/iter2/` para esta iteracion
 
+## Event Bus y evento SalesConfirmed
+
+Se implemento un bus de eventos en memoria (`InMemoryEventBus`) como singleton, con interfaces `EventBus` y `EventHandler<T>` en `shared/domain/bus/`. Al confirmar una venta, `RegisterSale` publica un evento `SalesConfirmed` con `saleId` y `totalAmount`. Este evento es consumido por el contexto Payment para crear automaticamente una orden de pago.
+
+## Nuevo bounded context: Payment
+
+Se agrego el contexto **Payment** para gestionar ordenes de pago asociadas a ventas confirmadas:
+
+- **Agregado `PaymentOrder`**: vinculado a un `saleId`, contiene una coleccion de `Payment`, calcula cambio para pagos en efectivo, y transiciona a `COMPLETED` cuando el monto total es cubierto
+- **Entidad `Payment`**: representa un pago individual con metodo (`CASH`, `CARD`, `TRANSFER`) y monto
+- **`PaymentCompletedEventHandler`**: suscrito a `SalesConfirmed`, crea una `PaymentOrder` automaticamente al confirmar una venta
+- **Use cases**: `CreatePaymentOrder`, `AddPayment`
+- **Infraestructura**: `InMemoryPaymentOrderRepository`
+
+## Comunicacion entre contextos
+
+La comunicacion Sales → Payment se da a traves de eventos de dominio, manteniendo los contextos desacoplados. Sales publica `SalesConfirmed` sin conocer a Payment. Payment se suscribe al evento y reacciona creando la orden de pago.
+
 ## Otros cambios
 
 - `GetProduct` renombrado a `GetProducts` — acepta array de IDs
 - `GetProductInfo` renombrado a `GetProductsInfo` — mismo cambio en el puerto de Sales
 - `CreateSale` refactorizado para aceptar `itemIds` y resolver productos internamente
+- `PriceVO.substract()` — nuevo metodo estatico para restar precios
