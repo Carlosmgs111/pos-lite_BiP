@@ -60,6 +60,9 @@ export class PaymentOrder {
   getChange() {
     return this.change;
   }
+  getSaleId() {
+    return this.saleId;
+  }
   getId() {
     return this.id;
   }

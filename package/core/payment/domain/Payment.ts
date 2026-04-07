@@ -35,5 +35,8 @@ export class Payment {
   getAmount() {
     return this.amount;
   }
+  getMethod() {
+    return this.method;
+  }
 
 }

@@ -6,7 +6,6 @@ export class InMemoryPaymentOrderRepository implements PaymentRepository {
 
   async save(paymentOrder: PaymentOrder): Promise<void> {
     this.paymentOrders.push(paymentOrder);
-    console.log(this.paymentOrders);
   }
   async update(deltaPaymentOrder: PaymentOrder): Promise<void> {
     const index = this.paymentOrders.findIndex(
@@ -30,7 +29,7 @@ export class InMemoryPaymentOrderRepository implements PaymentRepository {
   }
   async findBySaleId(id: string): Promise<PaymentOrder | null> {
     const paymentOrder = this.paymentOrders.find(
-      (paymentOrder) => paymentOrder.getId().getValue() === id
+      (paymentOrder) => paymentOrder.getSaleId().getValue() === id
     );
     return paymentOrder || null;
   }
