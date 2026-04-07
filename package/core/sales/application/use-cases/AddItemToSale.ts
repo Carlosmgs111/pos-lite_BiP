@@ -3,6 +3,8 @@ import type { SaleRepository } from "../../domain/SaleRepository";
 import type { GetProductsInfo } from "../ports/GetProductsInfo";
 import { Result } from "../../../shared/domain/Result";
 import { SaleNotFoundError } from "../../domain/Errors/SaleNotFoundError";
+import { InvalidSaleStateError } from "../../domain/Errors/InvalidSaleStateError";
+import { SaleStatus } from "../../domain/SaleStatus";
 
 interface AddItemToSaleProps {
   saleId: string;
@@ -25,6 +27,9 @@ export class AddItemToSale {
       return Result.fail(new SaleNotFoundError());
     }
     const sale = saleResult.getValue()!;
+    if (sale.getStatus() !== SaleStatus.DRAFT) {
+      return Result.fail(new InvalidSaleStateError("Can only add items to a draft sale"));
+    }
     const reserveStockResult = await this.handleStock.reserveStock(
       props.itemId,
       props.quantity
@@ -34,19 +39,17 @@ export class AddItemToSale {
     }
     const productInfoResult = await this.getProductInfo.execute([props.itemId]);
     if (!productInfoResult.isSuccess) {
+      await this.handleStock.releaseStock(props.itemId, props.quantity);
       return Result.fail(productInfoResult.getError());
     }
     const productInfo = productInfoResult.getValue()![0];
-    const addItemResult = sale.addItem({
-      id: props.itemId,
-      productName: productInfo.name,
+    sale.addItem({
+      productId: props.itemId,
+      nameSnapshot: productInfo.name,
       quantity: props.quantity,
-      price: productInfo.price,
-      total: props.quantity * productInfo.price,
+      priceSnapshot: productInfo.price,
+      subTotal: props.quantity * productInfo.price,
     });
-    if (!addItemResult.isSuccess) {
-      return Result.fail(addItemResult.getError());
-    }
     await this.saleRepository.update(sale);
     return Result.ok(sale);
   }

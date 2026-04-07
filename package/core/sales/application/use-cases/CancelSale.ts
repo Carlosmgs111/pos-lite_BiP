@@ -22,7 +22,7 @@ export class CancelSale {
       return Result.fail(cancelSaleResult.getError());
     }
     for (const item of sale.getItems()) {
-      await this.handleStock.releaseStock(item.getId(), item.getQuantity());
+      await this.handleStock.releaseStock(item.getProductId(), item.getQuantity());
     }
     return Result.ok();
   }

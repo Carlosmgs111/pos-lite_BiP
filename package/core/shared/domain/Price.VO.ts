@@ -16,6 +16,14 @@ export class PriceVO {
     return new PriceVO(totalCents);
   }
 
+  static substract(prices: PriceVO[]): PriceVO {
+    const totalCents = prices.reduce(
+      (total, price) => total - price.getValue(),
+      0
+    );
+    return new PriceVO(totalCents);
+  }
+
   static multiply(price: PriceVO, quantity: number): PriceVO {
     return new PriceVO(price.getValue() * quantity);
   }

@@ -1,5 +1,5 @@
 import { SaleItem } from "./SaleItem";
-import { SaleStates } from "./SaleStates";
+import { SaleStatus } from "./SaleStatus";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
 import type { SaleItemProps } from "./SaleItem";
@@ -18,7 +18,7 @@ export class Sale {
     private readonly items: SaleItem[],
     private total: PriceVO,
     private createdAt: Date,
-    private state: SaleStates
+    private status: SaleStatus
   ) {}
   static create(props: SaleProps): Result<Error, Sale> {
     const saleItems: SaleItem[] = [];
@@ -32,17 +32,17 @@ export class Sale {
     const sale = new Sale(
       props.id,
       saleItems,
-      PriceVO.add(saleItems.map((item) => item.getTotal())),
+      PriceVO.add(saleItems.map((item) => item.getSubTotal())),
       props.createdAt,
-      SaleStates.PENDING
+      SaleStatus.DRAFT
     );
     return Result.ok(sale);
   }
   recalculateTotal(): void {
-    this.total = PriceVO.add(this.items.map((item) => item.getTotal()));
+    this.total = PriceVO.add(this.items.map((item) => item.getSubTotal()));
   }
   findItemById(id: string): Result<SaleItemNotFoundError, SaleItem> {
-    const item = this.items.find((item) => item.getId() === id);
+    const item = this.items.find((item) => item.getProductId() === id);
     if (!item) {
       return Result.fail(new SaleItemNotFoundError());
     }
@@ -51,28 +51,28 @@ export class Sale {
   getId() {
     return this.id;
   }
-  getState() {
-    return this.state;
+  getStatus() {
+    return this.status;
   }
-  completeSale(): Result<InvalidSaleStateError, void> {
-    if (this.state !== SaleStates.PENDING) {
-      return Result.fail(new InvalidSaleStateError("Can only complete a pending sale"));
+  confirmSale(): Result<InvalidSaleStateError, void> {
+    if (this.status !== SaleStatus.DRAFT) {
+      return Result.fail(new InvalidSaleStateError("Can only confirm a draft sale"));
     }
-    this.state = SaleStates.COMPLETED;
+    this.status = SaleStatus.CONFIRMED;
     return Result.ok(undefined);
   }
   cancelSale(): Result<InvalidSaleStateError, void> {
-    if (this.state !== SaleStates.PENDING) {
-      return Result.fail(new InvalidSaleStateError("Can only cancel a pending sale"));
+    if (this.status !== SaleStatus.DRAFT) {
+      return Result.fail(new InvalidSaleStateError("Can only cancel a draft sale"));
     }
-    this.state = SaleStates.CANCELLED;
+    this.status = SaleStatus.CANCELLED;
     return Result.ok(undefined);
   }
   addItem(item: SaleItemProps): Result<Error, void> {
-    if (this.state !== SaleStates.PENDING) {
-      return Result.fail(new InvalidSaleStateError("Can only add items to a pending sale"));
+    if (this.status !== SaleStatus.DRAFT) {
+      return Result.fail(new InvalidSaleStateError("Can only add items to a draft sale"));
     }
-    const itemExists = this.findItemById(item.id);
+    const itemExists = this.findItemById(item.productId);
     if (itemExists.isSuccess) {
       itemExists.getValue()!.incrementQuantity(item.quantity);
       this.recalculateTotal();
@@ -98,7 +98,7 @@ export class Sale {
       items: [...this.items],
       total: this.total,
       createdAt: this.createdAt,
-      state: this.state,
+      status: this.status,
     };
   }
 }

@@ -24,11 +24,11 @@ export class CreateSale {
       return Result.fail(saleItems.getError());
     }
     const saleItemsProps = saleItems.getValue()!.map((item) => ({
-      id: props.id,
-      productName: item.name,
+      productId: props.id,
+      nameSnapshot: item.name,
       quantity: 1,
-      price: item.price,
-      total: item.price * 1,
+      priceSnapshot: item.price,
+      subTotal: item.price * 1,
     }));
 
     const saleResult = Sale.create({

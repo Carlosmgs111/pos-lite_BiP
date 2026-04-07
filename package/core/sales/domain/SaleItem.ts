@@ -3,19 +3,19 @@ import { Result } from "../../shared/domain/Result";
 import { InvalidQuantityError } from "./Errors/InvalidQuantityError";
 
 export interface SaleItemProps {
-  id: string;
-  productName: string;
+  productId: string;
+  nameSnapshot: string;
   quantity: number;
-  price: number;
-  total: number;
+  priceSnapshot: number;
+  subTotal: number;
 }
 export class SaleItem {
   private constructor(
-    private id: string,
-    private productName: string,
+    private productId: string,
+    private nameSnapshot: string,
     private quantity: number,
-    private price: PriceVO,
-    private total: PriceVO
+    private priceSnapshot: PriceVO,
+    private subTotal: PriceVO
   ) {}
 
   static create(props: SaleItemProps): Result<InvalidQuantityError, SaleItem> {
@@ -24,26 +24,26 @@ export class SaleItem {
         new InvalidQuantityError("Quantity must be greater than 0")
       );
     }
-    const price = new PriceVO(props.price);
-    const total = PriceVO.multiply(price, props.quantity);
+    const price = new PriceVO(props.priceSnapshot);
+    const subTotal = PriceVO.multiply(price, props.quantity);
     return Result.ok(
-      new SaleItem(props.id, props.productName, props.quantity, price, total)
+      new SaleItem(props.productId, props.nameSnapshot, props.quantity, price, subTotal)
     );
-  }
+  } 
   
-  getId() {
-    return this.id;
+  getProductId() {
+    return this.productId;
   }
-  getProductName() {
-    return this.productName;
+  getNameSnapshot() {
+    return this.nameSnapshot;
   }
-  getPrice() {
-    return this.price;
+  getPriceSnapshot() {
+    return this.priceSnapshot;
   }
 
   incrementQuantity(quantity: number) {
     this.quantity += quantity;
-    this.total = PriceVO.multiply(this.price, this.quantity);
+    this.subTotal = PriceVO.multiply(this.priceSnapshot, this.quantity);
   }
 
   decrementQuantity(quantity: number): Result<InvalidQuantityError, void> {
@@ -54,12 +54,12 @@ export class SaleItem {
       );
     }
     this.quantity = newQuantity;
-    this.total = PriceVO.multiply(this.price, this.quantity);
+    this.subTotal = PriceVO.multiply(this.priceSnapshot, this.quantity);
     return Result.ok();
   }
 
-  getTotal() {
-    return this.total;
+  getSubTotal() {
+    return this.subTotal;
   }
   getQuantity() {
     return this.quantity;

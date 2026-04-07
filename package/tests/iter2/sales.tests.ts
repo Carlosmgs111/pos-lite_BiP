@@ -8,8 +8,8 @@ import {
 } from "../../core";
 import { cancelSale, saleRepository } from "../../core/sales";
 import { productRepository } from "../../core/inventory";
+import { paymentOrderRepository } from "../../core/payment";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
-import { SaleStates } from "../../core/sales/domain/SaleStates";
 
 const suiteId = "iter2-sales";
 const suiteName = "Sales (Iter 2)";
@@ -69,6 +69,7 @@ const setup = async () => {
 const teardown = async () => {
   productRepository.purgeDb();
   saleRepository.purgeDb();
+  paymentOrderRepository.purgeDb();
 };
 
 //--- Tests
@@ -117,11 +118,13 @@ const commitSaleTest = async () => {
 
 const tryingToCalcelACompletedSaleTest = async () => {
   const resultCancelSale = await cancelSale.execute(sale1Id);
-  return result("Trying to cancel a completed sale should return a controlled domain error", !resultCancelSale.isSuccess);
+  return result(
+    "Trying to cancel a completed sale should return a controlled domain error",
+    !resultCancelSale.isSuccess
+  );
 };
 
 const addItemsToOtherSaleTest = async () => {
-  await cancelSale.execute(sale2Id);
   await addItemToSale.execute({
     saleId: sale2Id,
     itemId: product1Id,
@@ -137,13 +140,12 @@ const addItemsToOtherSaleTest = async () => {
     itemId: product3Id,
     quantity: 1,
   });
-  const [product1, product2, product3] = (
+  const [product1Stock, product2Stock, product3Stock] = (
     await getProducts.execute([product1Id, product2Id, product3Id])
-  ).getValue()!;
+  )
+    .getValue()!
+    .map((product) => product.getStock());
 
-  const product1Stock = product1.getStock();
-  const product2Stock = product2.getStock();
-  const product3Stock = product3.getStock();
   return result(
     "Behavior cross context when add items to other sale, all products stock decreases",
     product1Stock === 6 && product2Stock === 6 && product3Stock === 6
@@ -152,13 +154,11 @@ const addItemsToOtherSaleTest = async () => {
 
 const cancelSaleTest = async () => {
   await cancelSale.execute(sale2Id);
-  const [product1, product2, product3] = (
+  const [product1Stock, product2Stock, product3Stock] = (
     await getProducts.execute([product1Id, product2Id, product3Id])
-  ).getValue()!;
-
-  const product1Stock = product1.getStock();
-  const product2Stock = product2.getStock();
-  const product3Stock = product3.getStock();
+  )
+    .getValue()!
+    .map((product) => product.getStock());
   return result(
     "Cancel current sale should release reserved stock and restore stock to state before this sale",
     product1Stock === 9 && product2Stock === 8 && product3Stock === 7
