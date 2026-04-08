@@ -1,6 +1,6 @@
 export enum SaleStatus {
-    DRAFT = "DRAFT",
-    CONFIRMED = "CONFIRMED",
-    CANCELLED = "CANCELLED",
-    
+  DRAFT = "DRAFT",
+  READY_TO_PAY = "READY_TO_PAY",
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED",
 }

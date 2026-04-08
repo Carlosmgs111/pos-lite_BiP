@@ -2,7 +2,7 @@ import type { SaleRepository } from "../../domain/SaleRepository";
 import { Result } from "../../../shared/domain/Result";
 import type { HandleStockPort } from "../ports/HandleStockPort";
 import { SaleNotFoundError } from "../../domain/Errors/SaleNotFoundError";
-import { SalesConfirmed } from "../../domain/events/SalesConfirmed";
+import { SalesReadyToPay } from "../../domain/events/SalesReadyToPay";
 import type { EventBus } from "../../../shared/domain/bus/EventBus";
 
 export class RegisterSale {
@@ -33,8 +33,8 @@ export class RegisterSale {
     if (!confirmResult.isSuccess) {
       return Result.fail(confirmResult.getError());
     }
-    const salesConfirmedEvent = new SalesConfirmed(saleId, sale.getTotal().getValue());
-    this.eventBus.publish(salesConfirmedEvent);
+    const salesReadyToPayEvent = new SalesReadyToPay(saleId, sale.getTotal().getValue());
+    this.eventBus.publish(salesReadyToPayEvent);
     return this.saleRepository.update(sale);
   }
 }

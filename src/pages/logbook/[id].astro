@@ -4,6 +4,8 @@ import Layout from '../../layouts/Layout.astro';
 import TestSuiteCard from '../../components/logbook/TestSuiteCard.astro';
 import EntryNavigation from '../../components/logbook/EntryNavigation.astro';
 import BoundedContextMap from '../../components/ddd/BoundedContextMap.astro';
+import DomainEventCard from '../../components/ddd/DomainEventCard.astro';
+import StateMachineCard from '../../components/ddd/StateMachineCard.astro';
 import { resolveTestResults } from '../../lib/resolve-tests';
 import type { LogbookArtifacts } from '../../types/logbook';
 import { t } from '../../i18n';
@@ -78,11 +80,35 @@ const dateStr = displayDate.toISOString().split('T')[0];
     {artifacts && (
       <section class="mb-8">
         <h2 class="text-lg font-bold text-gray-900 mb-4">DDD Artifacts</h2>
-        <BoundedContextMap
-          contexts={artifacts.boundedContexts}
-          sharedVOs={artifacts.sharedValueObjects}
-          ports={artifacts.ports}
-        />
+        <div class="space-y-6">
+          <BoundedContextMap
+            contexts={artifacts.boundedContexts}
+            sharedVOs={artifacts.sharedValueObjects}
+            ports={artifacts.ports}
+          />
+
+          {artifacts.domainEvents && artifacts.domainEvents.length > 0 && (
+            <div>
+              <h3 class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">Domain Events</h3>
+              <div class="space-y-2">
+                {artifacts.domainEvents.map((event) => (
+                  <DomainEventCard event={event} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {artifacts.stateMachines && artifacts.stateMachines.length > 0 && (
+            <div>
+              <h3 class="text-sm font-bold text-gray-600 uppercase tracking-wide mb-3">State Machines</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {artifacts.stateMachines.map((machine) => (
+                  <StateMachineCard machine={machine} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
     )}
 

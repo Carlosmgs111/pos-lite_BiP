@@ -10,6 +10,7 @@ export interface Invariant {
 
 export interface Aggregate {
   name: string;
+  kind?: 'aggregate' | 'entity';
   properties: AggregateProperty[];
   invariants: Invariant[];
   methods: string[];
@@ -34,10 +35,31 @@ export interface BoundedContext {
   valueObjects: ValueObject[];
 }
 
+export interface DomainEvent {
+  name: string;
+  publisher: string;
+  subscriber: string;
+  description: string;
+}
+
+export interface StateTransition {
+  from: string;
+  to: string;
+  trigger: string;
+}
+
+export interface StateMachine {
+  entity: string;
+  states: string[];
+  transitions: StateTransition[];
+}
+
 export interface LogbookArtifacts {
   boundedContexts: BoundedContext[];
   sharedValueObjects: ValueObject[];
   ports: Port[];
+  domainEvents?: DomainEvent[];
+  stateMachines?: StateMachine[];
 }
 
 export interface TestSummary {

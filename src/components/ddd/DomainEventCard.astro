@@ -1,0 +1,18 @@
+---
+import type { DomainEvent } from '../../types/logbook';
+
+interface Props {
+  event: DomainEvent;
+}
+
+const { event } = Astro.props;
+---
+
+<div class="flex items-center gap-2 py-2 px-3 bg-purple-50 rounded-lg border border-purple-200">
+  <span class="text-xs font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">{event.publisher}</span>
+  <span class="text-purple-400">→</span>
+  <span class="text-xs font-bold text-purple-900">{event.name}</span>
+  <span class="text-purple-400">→</span>
+  <span class="text-xs font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded">{event.subscriber}</span>
+  <span class="text-xs text-gray-500 ml-auto">{event.description}</span>
+</div>

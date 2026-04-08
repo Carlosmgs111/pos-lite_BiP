@@ -8,17 +8,21 @@ interface Props {
 }
 
 const { aggregate, contextName } = Astro.props;
+const kind = aggregate.kind || 'aggregate';
+const kindLabel = kind === 'entity' ? 'Entity' : 'Aggregate Root';
+const kindStyle = kind === 'entity' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600';
 
 const contextColors: Record<string, string> = {
   Inventory: 'bg-emerald-100 text-emerald-800',
   Order: 'bg-blue-100 text-blue-800',
+  Payment: 'bg-amber-100 text-amber-800',
 };
 ---
 
 <div class="border border-gray-200 rounded-lg bg-white overflow-hidden">
   <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
     <h3 class="text-base font-bold text-gray-900">{aggregate.name}</h3>
-    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">Aggregate Root</span>
+    <span class={`text-[10px] font-mono px-1.5 py-0.5 rounded ${kindStyle}`}>{kindLabel}</span>
     <span class={`text-[10px] font-medium px-1.5 py-0.5 rounded ${contextColors[contextName] || 'bg-gray-100 text-gray-700'}`}>
       {contextName}
     </span>

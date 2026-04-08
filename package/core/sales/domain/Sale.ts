@@ -58,7 +58,14 @@ export class Sale {
     if (this.status !== SaleStatus.DRAFT) {
       return Result.fail(new InvalidSaleStateError("Can only confirm a draft sale"));
     }
-    this.status = SaleStatus.CONFIRMED;
+    this.status = SaleStatus.READY_TO_PAY;
+    return Result.ok(undefined);
+  }
+  completeSale(): Result<InvalidSaleStateError, void> {
+    if (this.status !== SaleStatus.READY_TO_PAY) {
+      return Result.fail(new InvalidSaleStateError("Can only complete a sale that is ready to pay"));
+    }
+    this.status = SaleStatus.COMPLETED;
     return Result.ok(undefined);
   }
   cancelSale(): Result<InvalidSaleStateError, void> {

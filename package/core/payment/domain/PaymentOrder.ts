@@ -51,6 +51,8 @@ export class PaymentOrder {
     ]);
     const paymentGreaterThanTotal =
       newPaymentAmount.getValue() > this.totalAmount.getValue();
+    const paymentCoversTotal =
+      newPaymentAmount.getValue() >= this.totalAmount.getValue();
     const isCashPayment = payment.method === PaymentMethod.CASH;
     if (paymentGreaterThanTotal && !isCashPayment) {
       return Result.fail(new InvalidPaymentError("Non-cash payment exceeds total amount"));
@@ -58,12 +60,14 @@ export class PaymentOrder {
     if (paymentGreaterThanTotal && isCashPayment) {
       this.change = PriceVO.substract(newPaymentAmount, [this.totalAmount]);
     }
-    if (newPaymentAmount.getValue() >= this.totalAmount.getValue()) {
-      this.status = PaymentOrderStatus.COMPLETED;
-      this.completedAt = new Date();
-    }
     const newPayment = Payment.create(payment);
     this.payments.push(newPayment);
+    if (paymentCoversTotal) {
+      this.status = PaymentOrderStatus.COMPLETED;
+      this.completedAt = new Date();
+    } else {
+      this.status = PaymentOrderStatus.PARTIAL;
+    }
     return Result.ok(undefined);
   }
   getChange() {

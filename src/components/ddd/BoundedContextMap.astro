@@ -15,11 +15,13 @@ const { contexts, sharedVOs, ports } = Astro.props;
 const contextBorders: Record<string, string> = {
   Inventory: 'border-emerald-300',
   Sales: 'border-blue-300',
+  Payment: 'border-amber-300',
 };
 
 const contextHeaders: Record<string, string> = {
   Inventory: 'bg-emerald-50 text-emerald-800',
   Sales: 'bg-blue-50 text-blue-800',
+  Payment: 'bg-amber-50 text-amber-800',
 };
 ---
 
@@ -27,24 +29,24 @@ const contextHeaders: Record<string, string> = {
   {/* Bounded Contexts */}
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     {contexts.map((ctx) => (
-      <div class={`border-2 rounded-xl p-4 ${contextBorders[ctx.name] || 'border-gray-300'}`}>
+      <div class={`border-2 rounded-xl p-4 ${ctx.aggregates.length > 1 ? 'md:col-span-2' : ''} ${contextBorders[ctx.name] || 'border-gray-300'}`}>
         <h3 class={`text-lg font-bold mb-4 px-3 py-1 rounded-lg inline-block ${contextHeaders[ctx.name] || 'bg-gray-100 text-gray-800'}`}>
           {ctx.name}
         </h3>
 
-        <div class="space-y-3">
+        <div class={`gap-3 ${ctx.aggregates.length > 1 ? 'grid grid-cols-1 lg:grid-cols-2' : 'space-y-3'}`}>
           {ctx.aggregates.map((agg) => (
             <AggregateCard aggregate={agg} contextName={ctx.name} />
           ))}
-
-          {ctx.valueObjects.length > 0 && (
-            <div class="space-y-2 mt-3">
-              {ctx.valueObjects.map((vo) => (
-                <ValueObjectCard vo={vo} />
-              ))}
-            </div>
-          )}
         </div>
+
+        {ctx.valueObjects.length > 0 && (
+          <div class="space-y-2 mt-3">
+            {ctx.valueObjects.map((vo) => (
+              <ValueObjectCard vo={vo} />
+            ))}
+          </div>
+        )}
       </div>
     ))}
   </div>
