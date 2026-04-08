@@ -13,6 +13,9 @@ const es = {
   logbook: {
     statusOpen: "En progreso",
     statusClosed: "Cerrada",
+    navSummary: "Resumen",
+    navTests: "Tests",
+    navArtifacts: "Artefactos",
   },
 } as const;
 

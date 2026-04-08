@@ -59,14 +59,33 @@ const dateStr = displayDate.toISOString().split('T')[0];
       )}
     </header>
 
+    {/* Sticky Section Nav */}
+    <nav class="sticky top-10 z-10 bg-white/90 backdrop-blur-sm border-b border-gray-200 -mx-4 px-4 py-2 mb-8">
+      <div class="flex gap-2">
+        <a href="#summary" class="text-xs font-medium px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+          {t.logbook.navSummary}
+        </a>
+        {testResults.length > 0 && (
+          <a href="#tests" class="text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors">
+            {t.logbook.navTests}
+          </a>
+        )}
+        {artifacts && (
+          <a href="#artifacts" class="text-xs font-medium px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors">
+            {t.logbook.navArtifacts}
+          </a>
+        )}
+      </div>
+    </nav>
+
     {/* Description (markdown content) */}
-    <article class="max-w-none mb-8 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:text-gray-700 [&_p]:leading-relaxed [&_p]:mb-4 [&_strong]:font-bold [&_code]:font-mono [&_code]:text-sm [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:rounded [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_li]:text-gray-700 [&_li]:mb-1">
+    <article id="summary" class="mb-8 scroll-mt-24 border-l-4 border-blue-200 bg-blue-50/30 p-5 max-w-none [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mt-6 [&_h2]:mb-3 [&_p]:text-gray-700 [&_p]:leading-relaxed [&_p]:mb-4 [&_strong]:font-bold [&_code]:font-mono [&_code]:text-sm [&_code]:bg-blue-100/50 [&_code]:px-1 [&_code]:rounded [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_li]:text-gray-700 [&_li]:mb-1">
       <Content />
     </article>
 
     {/* Test Results */}
     {testResults.length > 0 && (
-      <section class="mb-8">
+      <section id="tests" class="mb-8 scroll-mt-24 border-l-4 border-emerald-200 bg-emerald-50/30 p-5">
         <h2 class="text-lg font-bold text-gray-900 mb-4">Test Results</h2>
         <div class="space-y-4">
           {testResults.map((suite) => (
@@ -78,7 +97,7 @@ const dateStr = displayDate.toISOString().split('T')[0];
 
     {/* DDD Artifacts */}
     {artifacts && (
-      <section class="mb-8">
+      <section id="artifacts" class="mb-8 scroll-mt-24 border-l-4 border-violet-200 bg-violet-50/30 p-5">
         <h2 class="text-lg font-bold text-gray-900 mb-4">DDD Artifacts</h2>
         <div class="space-y-6">
           <BoundedContextMap
