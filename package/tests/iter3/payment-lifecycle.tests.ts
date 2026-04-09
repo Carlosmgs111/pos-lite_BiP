@@ -137,12 +137,15 @@ const firstPaymentBelowTotalKeepsPending = async () => {
     method: PaymentMethod.CARD,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
-  const po = (
-    await paymentOrderRepository.findBySaleId(sequentialSaleId)
-  ).getValue()!;
+  const poResult = await paymentOrderRepository.findBySaleId(
+    sequentialSaleId
+  );
+  if (!poResult.isSuccess) {
+    return result("PaymentOrder not found", false);
+  }
   return result(
     "Payment below total keeps order as PENDING",
-    po.getStatus() === PaymentOrderStatus.PENDING
+    poResult.getValue()!.getStatus() === PaymentOrderStatus.PENDING
   );
 };
 
@@ -154,9 +157,13 @@ const secondPaymentStillBelowKeepsPending = async () => {
     method: PaymentMethod.TRANSFER,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
-  const po = (
-    await paymentOrderRepository.findBySaleId(sequentialSaleId)
-  ).getValue()!;
+  const poResult = await paymentOrderRepository.findBySaleId(
+    sequentialSaleId
+  );
+  if (!poResult.isSuccess) {
+    return result("PaymentOrder not found", false);
+  }
+  const po = poResult.getValue()!;
   return result(
     "Second payment still below total keeps order as PENDING",
     po.getStatus() === PaymentOrderStatus.PENDING
@@ -171,9 +178,13 @@ const coveringPaymentTransitionsToPartial = async () => {
     method: PaymentMethod.CARD,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
-  const po = (
-    await paymentOrderRepository.findBySaleId(sequentialSaleId)
-  ).getValue()!;
+  const poResult = await paymentOrderRepository.findBySaleId(
+    sequentialSaleId
+  );
+  if (!poResult.isSuccess) {
+    return result("PaymentOrder not found", false);
+  }
+  const po = poResult.getValue()!;
   return result(
     "Covering payment transitions order to PARTIAL (awaiting external confirmation)",
     po.getStatus() === PaymentOrderStatus.PARTIAL &&
@@ -193,9 +204,10 @@ const partialPaymentsConfirmedCompleteOrder = async () => {
   if (!poResult.isSuccess) {
     return result("Order not found", false);
   }
+  const po = poResult.getValue()!;
   return result(
     "Order transitions to COMPLETED once all payments are externally confirmed",
-    poResult.getValue()!.getStatus() === PaymentOrderStatus.COMPLETED
+    po.getStatus() === PaymentOrderStatus.COMPLETED
   );
 };
 

@@ -1,52 +1,105 @@
 ---
-title: "Entry 003 - Lifecycle de pagos, eventos bidireccionales y maquinas de estado"
+title: "Entry 003 - Flujo asincronico de pagos, procesamiento externo y resolucion definitiva"
 date: 2026-04-08
-summary: "Estado PARTIAL en PaymentOrder, evento PaymentOrderCompleted para cerrar el ciclo Sale, comunicacion bidireccional Sales ↔ Payment via eventos."
-tags: ["ddd", "payment", "sales", "events", "state-machine", "testing"]
+summary: "Modelado del procesamiento de pagos como operacion externa: Payment en PENDING hasta confirmacion, PaymentCommit para resolver resultados, manejo de fallos definitivos con PaymentOrderFailed y restauracion de stock."
+tags: ["ddd", "payment", "sales", "events", "state-machine", "async", "testing"]
 testSuites: ["iter3-payment-lifecycle"]
 closed: false
 ---
 
-## Estado PARTIAL en PaymentOrder
+## Reconocer el procesamiento externo del pago
 
-Se agrego el estado `PARTIAL` a `PaymentOrderStatus` para distinguir entre una order sin pagos (`PENDING`) y una con pagos parciales que no cubren el total. La transicion es:
+El iter2 asumia que agregar un pago era una operacion inmediata y determinista: `addPayment()` marcaba la order como `COMPLETED` apenas los pagos cubrian el total. Pero el procesamiento de un pago (tarjeta, transferencia, etc.) es **externo al sistema** — el resultado llega despues, desde un procesador que no controlamos.
 
-- `PENDING` → `PARTIAL`: al recibir el primer pago que no cubre el total
-- `PARTIAL` → `PARTIAL`: pagos subsiguientes que aun no cubren
-- `PENDING` o `PARTIAL` → `COMPLETED`: cuando los pagos acumulados cubren o exceden el total
+Este iter rediseña el flujo para reflejar esa realidad. El sistema **nunca declara** el exito o fallo de un pago; solo **reacciona** al resultado que le comunica el procesador externo.
 
-## Evento PaymentOrderCompleted
+## Payment como entidad asincronica
 
-Cuando `AddPayment` detecta que la `PaymentOrder` transiciono a `COMPLETED`, publica un evento `PaymentOrderCompleted(saleId)`. Este evento es consumido por el contexto Sales a traves de `SaleCompletedOnPayment`, que invoca `CompleteSale` para transicionar la venta de `READY_TO_PAY` a `COMPLETED`.
+`Payment` ahora arranca en `PENDING` cuando se registra. Se confirma via `complete()` o `fail()` solo cuando llega el resultado externo:
 
-## Comunicacion bidireccional via eventos
+- **`PENDING`**: registrado, enviado al procesador, esperando resultado
+- **`COMPLETED`**: el procesador confirmo el cobro
+- **`FAILED`**: el procesador rechazo el pago
 
-Los contextos Sales y Payment ahora se comunican bidireccionalmente sin acoplamiento directo:
+El ID del pago se recibe como parametro en la creacion (en vez de generarse internamente), permitiendo correlacionar con el procesador externo.
 
-- **Sales → Payment**: `SalesReadyToPay` — al confirmar una venta, se crea automaticamente una `PaymentOrder`
-- **Payment → Sales**: `PaymentOrderCompleted` — al completar el pago, la venta transiciona a `COMPLETED`
+## Nueva semantica de PaymentOrderStatus
 
-Ningun contexto importa directamente clases del otro. Solo conocen los eventos (DTOs simples) y reaccionan a traves del `InMemoryEventBus`.
+Con pagos asincronicos, el estado de la order depende de dos cosas: **cobertura** (suma de pagos no-fallidos) y **confirmacion** (pagos en `COMPLETED`):
 
-## Maquina de estados completa de Sale
+- **`PENDING`**: la suma de pagos no-fallidos no cubre el total
+- **`PARTIAL`**: la suma cubre el total, pero algun pago sigue `PENDING` esperando confirmacion externa
+- **`COMPLETED`**: la suma cubre el total y todos los pagos no-fallidos estan `COMPLETED`
 
-- **DRAFT** → **READY_TO_PAY** → **COMPLETED**
-- **DRAFT** → **CANCELLED**
+`CANCELLED` fue eliminado del enum — el ciclo se simplifica y la cancelacion es ahora una consecuencia del fallo definitivo de los pagos, manejada a nivel de `Sale`.
 
-Donde:
+## recalculateStatus como fuente unica de verdad
 
-- **DRAFT**: venta en construccion, se pueden agregar/remover items
-- **READY_TO_PAY**: venta confirmada, stock committed, esperando pago
-- **COMPLETED**: pago completado, ciclo cerrado
-- **CANCELLED**: venta cancelada desde DRAFT, stock liberado
+Toda transicion de estado pasa por un unico metodo privado `recalculateStatus()` que implementa las reglas de arriba. Se invoca despues de cualquier operacion que modifique los pagos (`addPayment`, `registerPayment`), garantizando consistencia.
 
-## Nuevo use case CompleteSale
+## PaymentCommit: el punto de entrada del resultado externo
 
-`CompleteSale` transiciona una venta de `READY_TO_PAY` a `COMPLETED`. Solo es invocado reactivamente por el event handler `SaleCompletedOnPayment`, no directamente por el usuario. Esto garantiza que una venta solo se completa cuando el pago esta cubierto.
+Se introdujo el use case `PaymentCommit` que recibe `(paymentId, success: boolean)`. Su responsabilidad:
 
-## Nuevos artifacts visuales
+1. Localiza la `PaymentOrder` que contiene ese pago (via `findByPaymentId`)
+2. Delega a `PaymentOrder.registerPayment(paymentId, success)`
+3. El agregado recalcula su estado
+4. Si la order transiciona a `COMPLETED`, publica `PaymentOrderCompleted`
 
-Se agregaron dos nuevos tipos de artifacts al logbook:
+Este es el unico punto donde se materializa el resultado externo en el dominio.
 
-- **Domain Events**: visualiza publisher → evento → subscriber
-- **State Machines**: visualiza estados y transiciones por entidad
+## Pago fallido hace retroceder la order
+
+Cuando un pago falla (`registerPayment(id, false)`), el pago se marca como `FAILED` y deja de contar para la cobertura. Si la suma de no-fallidos cae por debajo del total, la order **vuelve a `PENDING`** — el usuario puede agregar otro pago para cubrir la diferencia.
+
+Esto evita que la order quede en un estado inconsistente donde "estaba cubierta" pero ahora no. La cobertura siempre refleja la realidad de los pagos no-fallidos.
+
+## Fallo definitivo: PaymentOrderFailed y FailSale
+
+Cuando los reintentos se agotan (politica pendiente de implementar), el use case emite el evento `PaymentOrderFailed(saleId)`. Sales reacciona via `SaleFailedOnPayment` handler, que invoca `FailSale`:
+
+- Transiciona la `Sale` de `READY_TO_PAY` a `CANCELLED`
+- Restaura el stock committed llamando a `HandleStockPort.restoreStock()` para cada item
+
+`Product.restoreStock(quantity)` es una nueva operacion que incrementa `stock` sin tocar `reservedStock`, porque el stock ya fue confirmado (committed) al registrar la venta.
+
+## Comunicacion bidireccional entre contextos
+
+```
+Sales ──(SalesReadyToPay)──► Payment
+Sales ◄──(PaymentOrderCompleted)── Payment
+Sales ◄──(PaymentOrderFailed)── Payment
+```
+
+Los tres eventos son DTOs simples. Ningun contexto importa clases del otro. Toda la comunicacion pasa por el `InMemoryEventBus`.
+
+## Flujo completo de una venta
+
+```
+1. Sale DRAFT (agregando items, stock reservado)
+2. confirmSale() → READY_TO_PAY (stock committed)
+3. SalesReadyToPay → Payment crea PaymentOrder en PENDING
+4. addPayment(s) → pagos PENDING, order PENDING o PARTIAL
+5. paymentCommit(id, true/false) → pagos COMPLETED/FAILED
+6a. Cuando todos COMPLETED y cubierto → PaymentOrderCompleted → Sale COMPLETED
+6b. Si los pagos fallan definitivamente → PaymentOrderFailed → Sale CANCELLED + stock restaurado
+```
+
+## Maquinas de estado resultantes
+
+**Sale**: `DRAFT → READY_TO_PAY → COMPLETED`, `DRAFT → CANCELLED`, `READY_TO_PAY → CANCELLED` (via PaymentOrderFailed)
+
+**PaymentOrder**: `PENDING ↔ PARTIAL → COMPLETED` — la transicion `PARTIAL → PENDING` ocurre cuando un pago falla y reduce la cobertura.
+
+**Payment**: `PENDING → COMPLETED`, `PENDING → FAILED` — terminal en ambos casos.
+
+## Tests de la iteracion
+
+El suite `iter3-payment-lifecycle` cubre:
+
+- Transiciones sequenciales: `PENDING → PENDING → PENDING → PARTIAL → COMPLETED`
+- Pago unico que cubre el total transiciona a `PARTIAL` (no directamente a `COMPLETED`)
+- Cash overpayment calcula change correctamente en `PARTIAL`
+- Pago fallido hace retroceder a `PENDING`
+- Cross-context: Sale transiciona a `COMPLETED` solo despues de confirmar todos los pagos
+- Sale permanece en `READY_TO_PAY` mientras la order este en `PARTIAL`

@@ -63,12 +63,12 @@ export const artifacts: LogbookArtifacts = {
         {
           name: "PaymentOrderStatus",
           shared: false,
-          validations: ["PENDING | PARTIAL | COMPLETED | CANCELLED"],
+          validations: ["PENDING | PARTIAL | COMPLETED | CANCELLED | FAILED"],
         },
         {
           name: "PaymentStatus",
           shared: false,
-          validations: ["PENDING | PAID | PARTIALLY_PAID | CANCELLED"],
+          validations: ["PENDING | COMPLETED | FAILED"],
         },
       ],
     },
