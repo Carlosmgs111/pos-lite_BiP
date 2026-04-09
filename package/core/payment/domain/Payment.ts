@@ -4,9 +4,10 @@ import { PaymentStatus } from "./PaymentStatus";
 import { PriceVO } from "../../shared/domain/Price.VO";
 
 export type PaymentProps = {
-    method: PaymentMethod;
-    amount: number;
-}
+  id: string;
+  method: PaymentMethod;
+  amount: number;
+};
 
 export class Payment {
   constructor(
@@ -14,23 +15,26 @@ export class Payment {
     private method: PaymentMethod,
     private amount: PriceVO,
     private status: PaymentStatus,
-    private createdAt: Date
+    private createdAt: Date,
+    private externalReference?: string,
+    private completedAt?: Date
   ) {}
 
-  static create({
-    method,
-    amount,
-  }: {
-    method: PaymentMethod;
-    amount: number;
-  }) {
+  static create({ id, method, amount }: PaymentProps) {
     return new Payment(
-      new UuidVO(UuidVO.generate()),
+      new UuidVO(id),
       method,
       new PriceVO(amount),
       PaymentStatus.PENDING,
       new Date()
     );
+  }
+  complete() {
+    this.status = PaymentStatus.COMPLETED;
+    this.completedAt = new Date();
+  }
+  fail() {
+    this.status = PaymentStatus.FAILED;
   }
   getAmount() {
     return this.amount;
@@ -38,5 +42,13 @@ export class Payment {
   getMethod() {
     return this.method;
   }
-
+  getExternalReference() {
+    return this.externalReference;
+  }
+  getStatus() {
+    return this.status;
+  }
+  getId() {
+    return this.id;
+  }
 }

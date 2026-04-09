@@ -53,6 +53,13 @@ export class Product {
     this.reservedStock -= quantity;
     return Result.ok(undefined);
   }
+  restoreStock(quantity: number): Result<InvalidStockOperationError, void> {
+    if (quantity <= 0) {
+      return Result.fail(new InvalidStockOperationError("Quantity to restore must be positive"));
+    }
+    this.stock += quantity;
+    return Result.ok(undefined);
+  }
   getStock() {
     return this.stock;
   }

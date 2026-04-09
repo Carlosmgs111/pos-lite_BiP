@@ -8,7 +8,7 @@ import {
 } from "../../core";
 import { cancelSale, saleRepository } from "../../core/sales";
 import { productRepository } from "../../core/inventory";
-import { paymentOrderRepository, addPayment } from "../../core/payment";
+import { paymentOrderRepository, addPayment, paymentCommit } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
 import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
@@ -128,46 +128,49 @@ const confirmCancelledSaleFails = async () => {
 
 // --- Payment domain tests ---
 
-const partialPaymentsWithCashChange = async () => {
-  // total = 200 (4 items x $50)
-  await addPayment.execute(saleId, { amount: 90.9, method: PaymentMethod.CARD });
-  await addPayment.execute(saleId, { amount: 90.9, method: PaymentMethod.TRANSFER });
-  await addPayment.execute(saleId, { amount: 90.9, method: PaymentMethod.CASH });
+const coveredPaymentsBecomePartial = async () => {
+  // total = 200 (4 items x $50) — 3 payments totalling 272.7, all PENDING
+  await addPayment.execute(saleId, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CARD });
+  await addPayment.execute(saleId, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.TRANSFER });
+  await addPayment.execute(saleId, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CASH });
   const po = (await paymentOrderRepository.findBySaleId(saleId)).getValue()!;
   return result(
-    "Partial payments with cash overpayment calculates correct change",
-    po.getStatus() === PaymentOrderStatus.COMPLETED && po.getChange().getValue() === 72.7
+    "When sum of pending payments covers total, order transitions to PARTIAL with change",
+    po.getStatus() === PaymentOrderStatus.PARTIAL && po.getChange().getValue() === 72.7
   );
 };
 
 const nonCashExceedsTotalFails = async () => {
   // total = 200 (4 items x $50), first cash is fine, second transfer exceeds
-  await addPayment.execute(saleId2, { amount: 90.9, method: PaymentMethod.CASH });
-  const failResult = await addPayment.execute(saleId2, { amount: 150, method: PaymentMethod.TRANSFER });
+  await addPayment.execute(saleId2, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CASH });
+  const failResult = await addPayment.execute(saleId2, { id: UuidVO.generate(), amount: 150, method: PaymentMethod.TRANSFER });
   return result(
     "Non-cash payment that exceeds total returns domain error",
     !failResult.isSuccess
   );
 };
 
-const exactPaymentCompletesOrder = async () => {
+const exactPaymentCompletesOrderAfterResult = async () => {
   // total = 100 (2 items x $50)
-  const payResult = await addPayment.execute(saleExactPaymentId, {
+  const paymentId = UuidVO.generate();
+  await addPayment.execute(saleExactPaymentId, {
+    id: paymentId,
     amount: 100,
     method: PaymentMethod.CARD,
   });
+  // External processor confirms success
+  await paymentCommit.execute(paymentId, true);
   const po = (await paymentOrderRepository.findBySaleId(saleExactPaymentId)).getValue()!;
   return result(
-    "Exact payment completes the order with zero change",
-    payResult.isSuccess
-      && po.getStatus() === PaymentOrderStatus.COMPLETED
-      && po.getChange().getValue() === 0
+    "Exact payment completes the order with zero change after external confirmation",
+    po.getStatus() === PaymentOrderStatus.COMPLETED && po.getChange().getValue() === 0
   );
 };
 
 const paymentOnCompletedOrderFails = async () => {
   // saleExactPaymentId order is already COMPLETED from previous test
   const payResult = await addPayment.execute(saleExactPaymentId, {
+    id: UuidVO.generate(),
     amount: 10,
     method: PaymentMethod.CASH,
   });
@@ -180,6 +183,7 @@ const paymentOnCompletedOrderFails = async () => {
 const paymentOnNonExistentOrderFails = async () => {
   const fakeId = UuidVO.generate();
   const payResult = await addPayment.execute(fakeId, {
+    id: UuidVO.generate(),
     amount: 10,
     method: PaymentMethod.CASH,
   });
@@ -202,9 +206,9 @@ export const paymentSuite: Suite = {
     addItemToCancelledSaleFailsFast,
     cancelConfirmedSaleFails,
     confirmCancelledSaleFails,
-    partialPaymentsWithCashChange,
+    coveredPaymentsBecomePartial,
     nonCashExceedsTotalFails,
-    exactPaymentCompletesOrder,
+    exactPaymentCompletesOrderAfterResult,
     paymentOnCompletedOrderFails,
     paymentOnNonExistentOrderFails,
   ],

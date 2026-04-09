@@ -75,6 +75,13 @@ export class Sale {
     this.status = SaleStatus.CANCELLED;
     return Result.ok(undefined);
   }
+  failSale(): Result<InvalidSaleStateError, void> {
+    if (this.status !== SaleStatus.READY_TO_PAY) {
+      return Result.fail(new InvalidSaleStateError("Can only fail a sale that is ready to pay"));
+    }
+    this.status = SaleStatus.CANCELLED;
+    return Result.ok(undefined);
+  }
   addItem(item: SaleItemProps): Result<Error, void> {
     if (this.status !== SaleStatus.DRAFT) {
       return Result.fail(new InvalidSaleStateError("Can only add items to a draft sale"));

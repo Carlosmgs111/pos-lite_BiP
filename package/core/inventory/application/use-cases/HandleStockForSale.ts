@@ -66,4 +66,20 @@ export class HandleStockForSale {
     }
     return this.productRepository.update(productId, product);
   }
+
+  async restoreStock(
+    productId: string,
+    quantity: number
+  ): Promise<Result<Error, void>> {
+    const productResult = await this.getProductOrFail(productId);
+    if (!productResult.isSuccess) {
+      return Result.fail(productResult.getError());
+    }
+    const product = productResult.getValue()!;
+    const restoreResult = product.restoreStock(quantity);
+    if (!restoreResult.isSuccess) {
+      return Result.fail(restoreResult.getError());
+    }
+    return this.productRepository.update(productId, product);
+  }
 }

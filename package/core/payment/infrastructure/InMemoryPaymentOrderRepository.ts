@@ -1,8 +1,8 @@
-import type { PaymentRepository } from "../domain/PaymentRepository";
+import type { PaymentOrderRepository } from "../domain/PaymentOrderRepository";
 import { PaymentOrder } from "../domain/PaymentOrder";
 import { Result } from "../../shared/domain/Result";
 
-export class InMemoryPaymentOrderRepository implements PaymentRepository {
+export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
   private paymentOrders: PaymentOrder[] = [];
 
   async save(paymentOrder: PaymentOrder): Promise<Result<Error, void>> {
@@ -19,7 +19,9 @@ export class InMemoryPaymentOrderRepository implements PaymentRepository {
     this.paymentOrders[index] = deltaPaymentOrder;
     return Result.ok(undefined);
   }
-  async delete(paymentOrderToDelete: PaymentOrder): Promise<Result<Error, void>> {
+  async delete(
+    paymentOrderToDelete: PaymentOrder
+  ): Promise<Result<Error, void>> {
     const index = this.paymentOrders.findIndex(
       (po) => po.getId().getValue() === paymentOrderToDelete.getId().getValue()
     );
@@ -29,9 +31,19 @@ export class InMemoryPaymentOrderRepository implements PaymentRepository {
     this.paymentOrders.splice(index, 1);
     return Result.ok(undefined);
   }
-  async findBySaleId(id: string): Promise<Result<Error, PaymentOrder | null>> {
+  async findBySaleId(
+    saleId: string
+  ): Promise<Result<Error, PaymentOrder | null>> {
     const paymentOrder = this.paymentOrders.find(
-      (paymentOrder) => paymentOrder.getSaleId().getValue() === id
+      (paymentOrder) => paymentOrder.getSaleId().getValue() === saleId
+    );
+    return Result.ok(paymentOrder || null);
+  }
+  async findByPaymentId(
+    paymentId: string
+  ): Promise<Result<Error, PaymentOrder | null>> {
+    const paymentOrder = this.paymentOrders.find((po) =>
+      po.hasPayment(paymentId)
     );
     return Result.ok(paymentOrder || null);
   }

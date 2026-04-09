@@ -1,9 +1,9 @@
-import type { PaymentRepository } from "../../domain/PaymentRepository";
+import type { PaymentOrderRepository } from "../../domain/PaymentOrderRepository";
 import { PaymentOrder } from "../../domain/PaymentOrder";
 import { Result } from "../../../shared/domain/Result";
 
 export class CreatePaymentOrder {
-  constructor(private paymentRepository: PaymentRepository) {}
+  constructor(private paymentRepository: PaymentOrderRepository) {}
   async execute(saleId: string, totalAmount: number): Promise<Result<Error, void>> {
     const paymentOrder = PaymentOrder.create({
       saleId,
