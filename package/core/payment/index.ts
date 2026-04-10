@@ -1,8 +1,9 @@
 import { InMemoryEventBus } from "../shared/infrastructure/InMemoryEventBus";
 import { InMemoryPaymentOrderRepository } from "./infrastructure/InMemoryPaymentOrderRepository";
 import { CreatePaymentOrder } from "./application/use-cases/CreatePaymentOrder";
+import { CancelPaymentOrder } from "./application/use-cases/CancelPaymentOrder";
 import { PaymentCommit } from "./application/use-cases/PaymentCommit";
-import { PaymentCompletedEventHandler } from "./application/event-handlers/PaymentCompletedEventHandler";
+import { CreatePaymentOrderOnSaleReady } from "./application/event-handlers/CreatePaymentOrderOnSaleReady";
 import { AddPayment } from "./application/use-cases/AddPayment";
 export { PaymentMethod } from "./domain/PaymentMethod";
 export { PaymentOrderCompleted } from "./domain/events/PaymentOrderCompleted";
@@ -15,8 +16,9 @@ export const paymentOrderRepository = new InMemoryPaymentOrderRepository();
 const createPaymentOrder = new CreatePaymentOrder(paymentOrderRepository);
 export const addPayment = new AddPayment(paymentOrderRepository);
 export const paymentCommit = new PaymentCommit(paymentOrderRepository, eventBus);
+export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository);
 
 eventBus.subscribe(
   SalesReadyToPay.eventName,
-  new PaymentCompletedEventHandler(createPaymentOrder)
+  new CreatePaymentOrderOnSaleReady(createPaymentOrder)
 );

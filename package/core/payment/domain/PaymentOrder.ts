@@ -26,14 +26,26 @@ export class PaymentOrder {
   }: {
     saleId: string;
     totalAmount: number;
-  }) {
-    return new PaymentOrder(
-      new UuidVO(UuidVO.generate()),
-      new UuidVO(saleId),
-      new PriceVO(totalAmount),
-      [],
-      PaymentOrderStatus.PENDING,
-      new Date()
+  }): Result<InvalidPaymentError, PaymentOrder> {
+    if (totalAmount <= 0) {
+      return Result.fail(new InvalidPaymentError("Total amount must be greater than zero"));
+    }
+    return Result.ok(
+      new PaymentOrder(
+        new UuidVO(UuidVO.generate()),
+        new UuidVO(saleId),
+        new PriceVO(totalAmount),
+        [],
+        PaymentOrderStatus.PENDING,
+        new Date()
+      )
+    );
+  }
+  private isTerminal(): boolean {
+    return (
+      this.status === PaymentOrderStatus.COMPLETED ||
+      this.status === PaymentOrderStatus.FAILED ||
+      this.status === PaymentOrderStatus.CANCELLED
     );
   }
   private getNonFailedCoverage(): PriceVO {
@@ -54,20 +66,17 @@ export class PaymentOrder {
   private recalculateStatus(): void {
     const coverage = this.getNonFailedCoverage();
     const covered = coverage.getValue() >= this.totalAmount.getValue();
+    this.change = new PriceVO(0);
 
     if (!covered) {
       this.status = PaymentOrderStatus.PENDING;
       this.completedAt = undefined;
-      this.change = new PriceVO(0);
       return;
     }
 
     if (coverage.getValue() > this.totalAmount.getValue()) {
       this.change = PriceVO.substract(coverage, [this.totalAmount]);
-    } 
-    // else {
-    //   this.change = new PriceVO(0);
-    // }
+    }
 
     if (this.allNonFailedPaymentsCompleted()) {
       this.status = PaymentOrderStatus.COMPLETED;
@@ -77,14 +86,19 @@ export class PaymentOrder {
     }
   }
   addPayment(payment: PaymentProps): Result<InvalidPaymentError, Payment> {
-    if (this.status === PaymentOrderStatus.COMPLETED) {
+    if (this.isTerminal()) {
       return Result.fail(
-        new InvalidPaymentError("Payment order is already completed")
+        new InvalidPaymentError("Cannot add payment to a terminal order")
       );
     }
     if (!PaymentMethod[payment.method]) {
       return Result.fail(
         new InvalidPaymentError("Payment method is not valid")
+      );
+    }
+    if (payment.amount <= 0) {
+      return Result.fail(
+        new InvalidPaymentError("Payment amount must be greater than zero")
       );
     }
 
@@ -112,25 +126,40 @@ export class PaymentOrder {
     paymentId: string,
     success: boolean
   ): Result<InvalidPaymentError, void> {
+    if (this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot register payment on a terminal order")
+      );
+    }
     const payment = this.payments.find(
       (p) => p.getId().getValue() === paymentId
     );
     if (!payment) {
       return Result.fail(new InvalidPaymentError("Payment not found"));
     }
-    if (payment.getStatus() !== PaymentStatus.PENDING) {
-      return Result.fail(
-        new InvalidPaymentError(
-          "Can only register result for a pending payment"
-        )
-      );
-    }
-    if (success) {
-      payment.complete();
-    } else {
-      payment.fail();
+    const transitionResult = success ? payment.complete() : payment.fail();
+    if (!transitionResult.isSuccess) {
+      return Result.fail(transitionResult.getError());
     }
     this.recalculateStatus();
+    return Result.ok(undefined);
+  }
+  cancel(): Result<InvalidPaymentError, void> {
+    if (this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot cancel a terminal payment order")
+      );
+    }
+    this.status = PaymentOrderStatus.CANCELLED;
+    return Result.ok(undefined);
+  }
+  markAsFailed(): Result<InvalidPaymentError, void> {
+    if (this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot mark a terminal payment order as failed")
+      );
+    }
+    this.status = PaymentOrderStatus.FAILED;
     return Result.ok(undefined);
   }
   getFailedPaymentCount(): number {

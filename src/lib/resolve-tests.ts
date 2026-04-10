@@ -5,6 +5,7 @@ import { runSuites } from '../../package/tests/runner';
 import '../../package/tests/starting'; // Register suites
 import '../../package/tests/iter2'; // Register iter2 suites
 import '../../package/tests/iter3'; // Register iter3 suites
+import '../../package/tests/iter4'; // Register iter4 suites
 
 const SNAPSHOTS_DIR = join(process.cwd(), 'src/data/logbook/snapshots');
 

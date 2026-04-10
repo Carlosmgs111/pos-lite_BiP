@@ -2,6 +2,8 @@ import { UuidVO } from "../../shared/domain/Uuid.VO";
 import { PaymentMethod } from "./PaymentMethod";
 import { PaymentStatus } from "./PaymentStatus";
 import { PriceVO } from "../../shared/domain/Price.VO";
+import { Result } from "../../shared/domain/Result";
+import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
 
 export type PaymentProps = {
   id: string;
@@ -10,13 +12,12 @@ export type PaymentProps = {
 };
 
 export class Payment {
-  constructor(
+  private constructor(
     private id: UuidVO,
     private method: PaymentMethod,
     private amount: PriceVO,
     private status: PaymentStatus,
     private createdAt: Date,
-    private externalReference?: string,
     private completedAt?: Date
   ) {}
 
@@ -29,21 +30,26 @@ export class Payment {
       new Date()
     );
   }
-  complete() {
+  complete(): Result<InvalidPaymentError, void> {
+    if (this.status !== PaymentStatus.PENDING) {
+      return Result.fail(new InvalidPaymentError("Can only complete a pending payment"));
+    }
     this.status = PaymentStatus.COMPLETED;
     this.completedAt = new Date();
+    return Result.ok(undefined);
   }
-  fail() {
+  fail(): Result<InvalidPaymentError, void> {
+    if (this.status !== PaymentStatus.PENDING) {
+      return Result.fail(new InvalidPaymentError("Can only fail a pending payment"));
+    }
     this.status = PaymentStatus.FAILED;
+    return Result.ok(undefined);
   }
   getAmount() {
     return this.amount;
   }
   getMethod() {
     return this.method;
-  }
-  getExternalReference() {
-    return this.externalReference;
   }
   getStatus() {
     return this.status;

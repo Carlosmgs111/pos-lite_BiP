@@ -19,18 +19,6 @@ export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
     this.paymentOrders[index] = deltaPaymentOrder;
     return Result.ok(undefined);
   }
-  async delete(
-    paymentOrderToDelete: PaymentOrder
-  ): Promise<Result<Error, void>> {
-    const index = this.paymentOrders.findIndex(
-      (po) => po.getId().getValue() === paymentOrderToDelete.getId().getValue()
-    );
-    if (index === -1) {
-      return Result.fail(new Error("Payment order not found"));
-    }
-    this.paymentOrders.splice(index, 1);
-    return Result.ok(undefined);
-  }
   async findBySaleId(
     saleId: string
   ): Promise<Result<Error, PaymentOrder | null>> {
