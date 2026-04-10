@@ -35,8 +35,10 @@ const artifacts: LogbookArtifacts | null = artifactKey
 
 const testResults = await resolveTestResults(entry.id, entry.data.testSuites, entry.data.closed);
 
-const displayDate = entry.data.closed ? entry.data.date : new Date();
-const dateStr = displayDate.toISOString().split('T')[0];
+const startDateStr = entry.data.date.toISOString().split('T')[0];
+const closedDateStr = entry.data.closed
+  ? (entry.data.closedDate ?? entry.data.date).toISOString().split('T')[0]
+  : new Date().toISOString().split('T')[0];
 ---
 
 <Layout title={`${entry.data.title} - pos-lite`}>
@@ -44,7 +46,11 @@ const dateStr = displayDate.toISOString().split('T')[0];
     {/* Header */}
     <header class="mb-8">
       <div class="flex items-center gap-2">
-        <time class="text-sm font-mono text-gray-400">{dateStr}</time>
+        <time class="text-sm font-mono text-gray-400">{startDateStr}</time>
+        {entry.data.closed && entry.data.closedDate && (
+          <span class="text-sm text-gray-300">→</span>
+          <time class="text-sm font-mono text-gray-400">{closedDateStr}</time>
+        )}
         <span class={`text-xs font-medium px-1.5 py-0.5 rounded ${entry.data.closed ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'}`}>
           {entry.data.closed ? t.logbook.statusClosed : t.logbook.statusOpen}
         </span>

@@ -6,15 +6,18 @@ interface Props {
   id: string;
   title: string;
   date: Date;
+  closedDate?: Date;
   summary: string;
   tags: string[];
   testSummary: TestSummary;
   closed: boolean;
 }
 
-const { id, title, date, summary, tags, testSummary, closed } = Astro.props;
-const displayDate = closed ? date : new Date();
-const dateStr = displayDate.toISOString().split('T')[0];
+const { id, title, date, closedDate, summary, tags, testSummary, closed } = Astro.props;
+const dateStr = date.toISOString().split('T')[0];
+const closedDateStr = closed
+  ? (closedDate ?? date).toISOString().split('T')[0]
+  : null;
 ---
 
 <a href={`/logbook/${id}/`} class="block group">
@@ -22,7 +25,7 @@ const dateStr = displayDate.toISOString().split('T')[0];
     <div class="flex items-start justify-between gap-3">
       <div class="flex-1">
         <div class="flex items-center gap-2 mb-1">
-          <time class="text-xs font-mono text-gray-400">{dateStr}</time>
+          <time class="text-xs font-mono text-gray-400">{dateStr}{closedDateStr && closedDateStr !== dateStr && ` → ${closedDateStr}`}</time>
           <span class={`text-xs font-medium px-1.5 py-0.5 rounded ${closed ? 'bg-gray-100 text-gray-500' : 'bg-emerald-100 text-emerald-700'}`}>
             {closed ? t.logbook.statusClosed : t.logbook.statusOpen}
           </span>

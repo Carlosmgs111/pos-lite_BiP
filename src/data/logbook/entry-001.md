@@ -5,6 +5,7 @@ summary: "Identificacion inicial de los contextos Inventory y Order, definicion 
 tags: ["ddd", "architecture", "inventory", "sales"]
 testSuites: ["starting-inventory", "starting-sales", "starting-shared"]
 closed: true
+closedDate: 2026-04-01
 ---
 
 ## Contextos identificados

@@ -11,6 +11,7 @@ const logbook = defineCollection({
     tags: z.array(z.string()),
     testSuites: z.array(z.string()).default([]),
     closed: z.boolean().default(false),
+    closedDate: z.coerce.date().optional(),
   }),
 });
 

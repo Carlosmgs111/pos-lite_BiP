@@ -137,9 +137,7 @@ const firstPaymentBelowTotalKeepsPending = async () => {
     method: PaymentMethod.CARD,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
-  const poResult = await paymentOrderRepository.findBySaleId(
-    sequentialSaleId
-  );
+  const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);
   if (!poResult.isSuccess) {
     return result("PaymentOrder not found", false);
   }
@@ -157,9 +155,7 @@ const secondPaymentStillBelowKeepsPending = async () => {
     method: PaymentMethod.TRANSFER,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
-  const poResult = await paymentOrderRepository.findBySaleId(
-    sequentialSaleId
-  );
+  const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);
   if (!poResult.isSuccess) {
     return result("PaymentOrder not found", false);
   }
@@ -178,11 +174,10 @@ const coveringPaymentTransitionsToPartial = async () => {
     method: PaymentMethod.CARD,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
-  const poResult = await paymentOrderRepository.findBySaleId(
-    sequentialSaleId
-  );
+  const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);
   if (!poResult.isSuccess) {
     return result("PaymentOrder not found", false);
+    
   }
   const po = poResult.getValue()!;
   return result(
@@ -197,16 +192,16 @@ const partialPaymentsConfirmedCompleteOrder = async () => {
   for (const paymentId of sequentialPaymentIds) {
     const paymentResult = await paymentCommit.execute(paymentId, true);
     if (!paymentResult.isSuccess) {
-      return result("Payment confirmation failed", false);
+      return result(`Payment with id X-X-X-X-${paymentId.split("-")[4]} confirmation failed`, false);
     }
   }
   const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);
   if (!poResult.isSuccess) {
-    return result("Order not found", false);
+    return result("Payment Order not found", false);
   }
   const po = poResult.getValue()!;
   return result(
-    "Order transitions to COMPLETED once all payments are externally confirmed",
+    "Payment Order transitions to COMPLETED once all payments are externally confirmed",
     po.getStatus() === PaymentOrderStatus.COMPLETED
   );
 };

@@ -4,7 +4,8 @@ date: 2026-04-08
 summary: "Modelado del procesamiento de pagos como operacion externa: Payment en PENDING hasta confirmacion, PaymentCommit para resolver resultados, manejo de fallos definitivos con PaymentOrderFailed y restauracion de stock."
 tags: ["ddd", "payment", "sales", "events", "state-machine", "async", "testing"]
 testSuites: ["iter3-payment-lifecycle"]
-closed: false
+closed: true
+closedDate: 2026-04-10
 ---
 
 ## Reconocer el procesamiento externo del pago
@@ -65,25 +66,21 @@ Cuando los reintentos se agotan (politica pendiente de implementar), el use case
 
 ## Comunicacion bidireccional entre contextos
 
-```
-Sales ──(SalesReadyToPay)──► Payment
-Sales ◄──(PaymentOrderCompleted)── Payment
-Sales ◄──(PaymentOrderFailed)── Payment
-```
+- **Sales** → `SalesReadyToPay` → **Payment**
+- **Payment** → `PaymentOrderCompleted` → **Sales**
+- **Payment** → `PaymentOrderFailed` → **Sales**
 
 Los tres eventos son DTOs simples. Ningun contexto importa clases del otro. Toda la comunicacion pasa por el `InMemoryEventBus`.
 
 ## Flujo completo de una venta
 
-```
-1. Sale DRAFT (agregando items, stock reservado)
-2. confirmSale() → READY_TO_PAY (stock committed)
-3. SalesReadyToPay → Payment crea PaymentOrder en PENDING
-4. addPayment(s) → pagos PENDING, order PENDING o PARTIAL
-5. paymentCommit(id, true/false) → pagos COMPLETED/FAILED
-6a. Cuando todos COMPLETED y cubierto → PaymentOrderCompleted → Sale COMPLETED
-6b. Si los pagos fallan definitivamente → PaymentOrderFailed → Sale CANCELLED + stock restaurado
-```
+1. Sale **DRAFT** — agregando items, stock reservado
+2. `confirmSale()` → **READY_TO_PAY** — stock committed
+3. `SalesReadyToPay` → Payment crea PaymentOrder en **PENDING**
+4. `addPayment(s)` → pagos PENDING, order **PENDING** o **PARTIAL**
+5. `paymentCommit(id, true/false)` → pagos COMPLETED/FAILED
+6. Cuando todos COMPLETED y cubierto → `PaymentOrderCompleted` → Sale **COMPLETED**
+7. Si los pagos fallan definitivamente → `PaymentOrderFailed` → Sale **CANCELLED** + stock restaurado
 
 ## Maquinas de estado resultantes
 

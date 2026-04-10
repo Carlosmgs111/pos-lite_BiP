@@ -5,6 +5,7 @@ summary: "Consolidacion de puertos de stock, eliminacion de QuantityVO, guardas 
 tags: ["ddd", "architecture", "inventory", "sales", "payment", "events", "refactor", "testing"]
 testSuites: ["iter2-sales", "iter2-payment"]
 closed: true
+closedDate: 2026-04-08
 ---
 
 ## Consolidacion de puertos de stock

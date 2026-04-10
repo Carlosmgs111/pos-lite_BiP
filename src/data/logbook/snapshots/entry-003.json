@@ -1,0 +1,67 @@
+[
+  {
+    "id": "iter3-payment-lifecycle",
+    "name": "Payment Lifecycle (Iter 3)",
+    "description": "Transiciones PENDING → PARTIAL → COMPLETED con resultados externos",
+    "tests": [
+      {
+        "name": "New PaymentOrder starts as PENDING",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Payment below total keeps order as PENDING",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Second payment still below total keeps order as PENDING",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Covering payment transitions order to PARTIAL (awaiting external confirmation)",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Payment Order transitions to COMPLETED once all payments are externally confirmed",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Adding payment to COMPLETED order returns domain error",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Single payment covering full amount transitions to PARTIAL",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Cash overpayment transitions to PARTIAL with correct change",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Failed payment reverts order to PENDING (coverage dropped below total)",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Sale transitions to COMPLETED via cross-context event after all payments confirmed",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      },
+      {
+        "name": "Sale stays READY_TO_PAY while PaymentOrder is PARTIAL (awaiting confirmation)",
+        "suite": "Payment Lifecycle (Iter 3)",
+        "passed": true
+      }
+    ],
+    "passed": 11,
+    "failed": 0,
+    "total": 11
+  }
+]
