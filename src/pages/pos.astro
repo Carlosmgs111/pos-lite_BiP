@@ -1,0 +1,34 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProductGrid from '../pos/components/ProductGrid';
+import Cart from '../pos/components/Cart';
+import PaymentPanel from '../pos/components/PaymentPanel';
+import ToastContainer from '../pos/components/ToastContainer';
+---
+
+<Layout title="POS - Live Demo">
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <header class="mb-6">
+      <h1 class="text-xl font-bold text-gray-900">Live Demo — Punto de Venta</h1>
+      <p class="text-sm text-gray-500">Flujo completo: seleccionar productos, confirmar venta, procesar pago</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-180px)]">
+      <div class="overflow-y-auto border border-gray-200 rounded-lg p-4 bg-white">
+        <ProductGrid client:load />
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4 bg-white">
+        <Cart client:load />
+      </div>
+      <div class="border border-gray-200 rounded-lg p-4 bg-white">
+        <PaymentPanel client:load />
+      </div>
+    </div>
+  </div>
+  <ToastContainer client:load />
+</Layout>
+
+<script>
+  import { CatalogService } from '../pos/services/CatalogService';
+  CatalogService.init();
+</script>

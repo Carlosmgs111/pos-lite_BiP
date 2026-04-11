@@ -6,6 +6,7 @@ const es = {
     subtext: "Un sistema de punto de venta tan ligero que cabe en tu bolsillo. Construido en público, una iteración a la vez.",
     ctaPrimary: "Conocé el proyecto",
     ctaSecondary: "Ver bitácora",
+    ctaDemo: "Live Demo",
   },
   about: {
     placeholder: "Próximamente: la historia completa detrás de pos-lite.",

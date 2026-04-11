@@ -23,7 +23,9 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(pnpm build:*)",
       "Bash(npx tsx:*)",
-      "Bash(pnpm tsx:*)"
+      "Bash(pnpm tsx:*)",
+      "mcp__plugin_engram_engram__mem_search",
+      "WebSearch"
     ]
   }
 }
