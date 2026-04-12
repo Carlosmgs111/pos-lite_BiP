@@ -86,6 +86,7 @@ export const SaleService = {
       quantity: 1,
     });
     if (!result.isSuccess) {
+      console.log(result.getError());
       showToast("No se pudo reducir la cantidad", "error");
       return result;
     }
