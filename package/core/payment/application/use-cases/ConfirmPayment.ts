@@ -8,7 +8,7 @@ import type { EventBus } from "../../../shared/domain/bus/EventBus";
 
 const MAX_FAILED_PAYMENTS = 3;
 
-export class PaymentCommit {
+export class ConfirmPayment {
   constructor(
     private paymentRepository: PaymentOrderRepository,
     private eventBus: EventBus

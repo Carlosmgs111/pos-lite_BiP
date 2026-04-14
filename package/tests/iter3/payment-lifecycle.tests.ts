@@ -10,7 +10,7 @@ import { productRepository } from "../../core/inventory";
 import {
   paymentOrderRepository,
   addPayment,
-  paymentCommit,
+  confirmPayment,
 } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
 import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
@@ -190,7 +190,7 @@ const coveringPaymentTransitionsToPartial = async () => {
 const partialPaymentsConfirmedCompleteOrder = async () => {
   // Confirm all 3 payments externally
   for (const paymentId of sequentialPaymentIds) {
-    const paymentResult = await paymentCommit.execute(paymentId, true);
+    const paymentResult = await confirmPayment.execute(paymentId, true);
     if (!paymentResult.isSuccess) {
       return result(`Payment with id X-X-X-X-${paymentId.split("-")[4]} confirmation failed`, false);
     }
@@ -264,7 +264,7 @@ const failedPaymentRevertsOrderToPending = async () => {
   });
   const paymentId = addResult.getValue()!;
   // External processor reports failure
-  await paymentCommit.execute(paymentId, false);
+  await confirmPayment.execute(paymentId, false);
   const po = (
     await paymentOrderRepository.findBySaleId(failedPaymentSaleId)
   ).getValue()!;

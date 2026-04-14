@@ -11,7 +11,7 @@ import { productRepository } from "../../core/inventory";
 import {
   paymentOrderRepository,
   addPayment,
-  paymentCommit,
+  confirmPayment,
   cancelPaymentOrder,
 } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
@@ -131,13 +131,13 @@ const exhaustedRetriesFailsOrder = async () => {
   const p2 = UuidVO.generate();
   const p3 = UuidVO.generate();
   await addPayment.execute(failedRetriesSaleId, { id: p1, amount: 100, method: PaymentMethod.CARD });
-  await paymentCommit.execute(p1, false);
+  await confirmPayment.execute(p1, false);
   // After first fail, order reverts to PENDING — add new payment
   await addPayment.execute(failedRetriesSaleId, { id: p2, amount: 100, method: PaymentMethod.CARD });
-  await paymentCommit.execute(p2, false);
+  await confirmPayment.execute(p2, false);
   // After second fail, still PENDING — add third
   await addPayment.execute(failedRetriesSaleId, { id: p3, amount: 100, method: PaymentMethod.CARD });
-  await paymentCommit.execute(p3, false);
+  await confirmPayment.execute(p3, false);
   // Third fail triggers markAsFailed + PaymentOrderFailed event
 
   const po = (await paymentOrderRepository.findBySaleId(failedRetriesSaleId)).getValue()!;
@@ -189,7 +189,7 @@ const cancelCompletedFails = async () => {
     amount: 100,
     method: PaymentMethod.CARD,
   });
-  await paymentCommit.execute(paymentId, true);
+  await confirmPayment.execute(paymentId, true);
   // Try to cancel
   const cancelResult = await cancelPaymentOrder.execute(terminalGuardSaleId);
   return result(

@@ -8,7 +8,7 @@ import {
 } from "../../core";
 import { cancelSale, saleRepository } from "../../core/sales";
 import { productRepository } from "../../core/inventory";
-import { paymentOrderRepository, addPayment, paymentCommit } from "../../core/payment";
+import { paymentOrderRepository, addPayment, confirmPayment } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
 import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
@@ -159,7 +159,7 @@ const exactPaymentCompletesOrderAfterResult = async () => {
     method: PaymentMethod.CARD,
   });
   // External processor confirms success
-  await paymentCommit.execute(paymentId, true);
+  await confirmPayment.execute(paymentId, true);
   const po = (await paymentOrderRepository.findBySaleId(saleExactPaymentId)).getValue()!;
   return result(
     "Exact payment completes the order with zero change after external confirmation",

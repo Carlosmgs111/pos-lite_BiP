@@ -1,6 +1,6 @@
 import {
   addPayment,
-  paymentCommit,
+  confirmPayment,
   paymentOrderRepository,
 } from "../../../package/core/payment";
 import { PaymentMethod } from "../../../package/core/payment";
@@ -50,7 +50,7 @@ export const PaymentService = {
 
     $paymentStatus.set("processing");
 
-    const result = await paymentCommit.execute(paymentId, success);
+    const result = await confirmPayment.execute(paymentId, success);
     if (!result.isSuccess) {
       showToast("Error al procesar el pago", "error");
       return result;
