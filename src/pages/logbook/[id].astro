@@ -1,16 +1,16 @@
 ---
 import { getCollection, render } from 'astro:content';
-import Layout from '../../layouts/Layout.astro';
-import TestSuiteCard from '../../components/logbook/TestSuiteCard.astro';
-import EntryNavigation from '../../components/logbook/EntryNavigation.astro';
-import BoundedContextMap from '../../components/ddd/BoundedContextMap.astro';
-import DomainEventCard from '../../components/ddd/DomainEventCard.astro';
-import StateMachineCard from '../../components/ddd/StateMachineCard.astro';
-import { resolveTestResults } from '../../lib/resolve-tests';
-import type { LogbookArtifacts } from '../../types/logbook';
-import { t } from '../../i18n';
+import Layout from '../../shared/layouts/Layout.astro';
+import TestSuiteCard from '../../logbook/components/TestSuiteCard.astro';
+import EntryNavigation from '../../logbook/components/EntryNavigation.astro';
+import BoundedContextMap from '../../logbook/components/ddd/BoundedContextMap.astro';
+import DomainEventCard from '../../logbook/components/ddd/DomainEventCard.astro';
+import StateMachineCard from '../../logbook/components/ddd/StateMachineCard.astro';
+import { resolveTestResults } from '../../logbook/lib/resolve-tests';
+import type { LogbookArtifacts } from '../../logbook/types/logbook';
+import { t } from '../../shared/i18n';
 
-const artifactModules = import.meta.glob('../../data/logbook/artifacts/*.ts', { eager: true });
+const artifactModules = import.meta.glob('../../logbook/data/artifacts/*.ts', { eager: true });
 
 export async function getStaticPaths() {
   const entries = await getCollection('logbook');

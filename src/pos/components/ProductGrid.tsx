@@ -1,8 +1,8 @@
 import { useStore } from "@nanostores/preact";
-import { $catalog } from "../../stores/catalog";
+import { $catalog } from "../stores/catalog";
 import { SaleService } from "../services/SaleService";
 import ProductCard from "./ProductCard";
-import type { CatalogProduct } from "../../stores/catalog";
+import type { CatalogProduct } from "../stores/catalog";
 
 export default function ProductGrid() {
   const catalog = useStore($catalog);

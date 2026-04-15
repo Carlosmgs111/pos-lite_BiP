@@ -1,4 +1,4 @@
-import type { LogbookArtifacts } from "../../../types/logbook";
+import type { LogbookArtifacts } from "../../types/logbook";
 
 export const artifacts: LogbookArtifacts = {
   boundedContexts: [

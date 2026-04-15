@@ -1,5 +1,5 @@
 import { useStore } from "@nanostores/preact";
-import { $cartItems, $cartStatus, getCartTotal } from "../../stores/cart";
+import { $cartItems, $cartStatus, getCartTotal } from "../stores/cart";
 import { SaleService } from "../services/SaleService";
 import { ItemCard } from "./ItemCard";
 

@@ -5,14 +5,14 @@ import {
 } from "../../../package/core/payment";
 import { PaymentMethod } from "../../../package/core/payment";
 import { UuidVO } from "../../../package/core/shared/domain/Uuid.VO";
-import { $saleId } from "../../stores/cart";
+import { $saleId } from "../stores/cart";
 import {
   $paymentStatus,
   $payments,
   $change,
   type PaymentEntry,
-} from "../../stores/payment";
-import { showToast } from "../../stores/toast";
+} from "../stores/payment";
+import { showToast } from "../stores/toast";
 
 export const PaymentService = {
   async registerPayment(
@@ -75,19 +75,18 @@ export const PaymentService = {
     return result;
   },
 
-  async processPayment(method: string, amount: number) {
+  async processPayment(method: string, amount: number): Promise<string | null> {
     const paymentId = await this.registerPayment(method, amount);
-    if (!paymentId) return;
+    if (!paymentId) return null;
 
-    $paymentStatus.set("processing");
+    if (method === "CASH") {
+      $paymentStatus.set("processing");
+      await this.commitPayment(paymentId, true);
+      return null;
+    }
 
-    // Simulate external processor delay
-    return new Promise<void>((resolve) => {
-      setTimeout(async () => {
-        await this.commitPayment(paymentId, true);
-        resolve();
-      }, 800);
-    });
+    // Card/Transfer: return paymentId so the UI can open the modal
+    return paymentId;
   },
 
   async refreshOrderStatus(saleId: string) {

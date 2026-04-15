@@ -1,4 +1,4 @@
-import type { CatalogProduct } from "../../stores/catalog";
+import type { CatalogProduct } from "../stores/catalog";
 
 interface Props {
   product: CatalogProduct;

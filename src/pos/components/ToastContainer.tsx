@@ -1,5 +1,5 @@
 import { useStore } from "@nanostores/preact";
-import { $toasts, dismissToast } from "../../stores/toast";
+import { $toasts, dismissToast } from "../stores/toast";
 
 const typeStyles: Record<string, string> = {
   success: "bg-emerald-600 text-white",

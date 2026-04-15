@@ -18,14 +18,14 @@ import {
   clearCart,
   $getItemQuantity,
   updateItemQuantity,
-} from "../../stores/cart";   
+} from "../stores/cart";   
 import {
   $totalToPay,
   $paymentStatus,
   resetPayment,
-} from "../../stores/payment";
+} from "../stores/payment";
 import { CatalogService } from "./CatalogService";
-import { showToast } from "../../stores/toast";
+import { showToast } from "../stores/toast";
 
 CatalogService.init();
 

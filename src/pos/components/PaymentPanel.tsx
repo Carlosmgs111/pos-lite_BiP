@@ -7,9 +7,10 @@ import {
   $totalToPay,
   getRemainingAmount,
   getPaidAmount,
-} from "../../stores/payment";
+} from "../stores/payment";
 import { PaymentService } from "../services/PaymentService";
 import { SaleService } from "../services/SaleService";
+import PaymentResultModal from "./PaymentResultModal";
 
 const METHODS = [
   { key: "CASH", label: "Efectivo" },
@@ -24,6 +25,7 @@ export default function PaymentPanel() {
   const totalToPay = useStore($totalToPay);
   const [selectedMethod, setSelectedMethod] = useState("CASH");
   const [amount, setAmount] = useState("");
+  const [modal, setModal] = useState<{ paymentId: string; method: string; amount: number } | null>(null);
 
   const remaining = getRemainingAmount();
   const paid = getPaidAmount();
@@ -65,12 +67,15 @@ export default function PaymentPanel() {
     );
   }
 
-  const handleSubmit = (e: Event) => {
+  const handleSubmit = async (e: Event) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
-    PaymentService.processPayment(selectedMethod, numAmount);
+    const pendingId = await PaymentService.processPayment(selectedMethod, numAmount);
     setAmount("");
+    if (pendingId) {
+      setModal({ paymentId: pendingId, method: selectedMethod, amount: numAmount });
+    }
   };
 
   return (
@@ -146,6 +151,15 @@ export default function PaymentPanel() {
         <div class="mt-auto text-center text-sm text-amber-600 font-medium py-4">
           Procesando pago...
         </div>
+      )}
+
+      {modal && (
+        <PaymentResultModal
+          paymentId={modal.paymentId}
+          method={modal.method}
+          amount={modal.amount}
+          onClose={() => setModal(null)}
+        />
       )}
     </div>
   );

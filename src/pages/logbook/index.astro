@@ -1,9 +1,9 @@
 ---
 import { getCollection } from "astro:content";
-import Layout from "../../layouts/Layout.astro";
-import EntryCard from "../../components/logbook/EntryCard.astro";
-import { resolveTestResults } from "../../lib/resolve-tests";
-import type { TestSummary } from "../../types/logbook";
+import Layout from "../../shared/layouts/Layout.astro";
+import EntryCard from "../../logbook/components/EntryCard.astro";
+import { resolveTestResults } from "../../logbook/lib/resolve-tests";
+import type { TestSummary } from "../../logbook/types/logbook";
 
 const entries = await getCollection("logbook");
 const sorted = entries.sort(

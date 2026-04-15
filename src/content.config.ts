@@ -3,7 +3,7 @@ import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
 
 const logbook = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/data/logbook' }),
+  loader: glob({ pattern: '**/*.md', base: './src/logbook/data' }),
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),

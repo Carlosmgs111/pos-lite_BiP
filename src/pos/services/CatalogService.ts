@@ -4,7 +4,7 @@ import {
   setCatalog,
   updateProductStock,
   type CatalogProduct,
-} from "../../stores/catalog";
+} from "../stores/catalog";
 
 const DEMO_PRODUCTS = [
   { name: "Cafe Americano", price: 2.5, stock: 50 },
