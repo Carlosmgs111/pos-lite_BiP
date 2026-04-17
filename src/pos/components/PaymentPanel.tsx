@@ -10,8 +10,6 @@ import {
 } from "../stores/payment";
 import { PaymentService } from "../services/PaymentService";
 import { SaleService } from "../services/SaleService";
-import PaymentResultModal from "./PaymentResultModal";
-
 const METHODS = [
   { key: "CASH", label: "Efectivo" },
   { key: "CARD", label: "Tarjeta" },
@@ -25,7 +23,6 @@ export default function PaymentPanel() {
   const totalToPay = useStore($totalToPay);
   const [selectedMethod, setSelectedMethod] = useState("CASH");
   const [amount, setAmount] = useState("");
-  const [modal, setModal] = useState<{ paymentId: string; method: string; amount: number } | null>(null);
 
   const remaining = getRemainingAmount();
   const paid = getPaidAmount();
@@ -71,11 +68,8 @@ export default function PaymentPanel() {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) return;
-    const pendingId = await PaymentService.processPayment(selectedMethod, numAmount);
     setAmount("");
-    if (pendingId) {
-      setModal({ paymentId: pendingId, method: selectedMethod, amount: numAmount });
-    }
+    await PaymentService.processPayment(selectedMethod, numAmount);
   };
 
   return (
@@ -153,14 +147,6 @@ export default function PaymentPanel() {
         </div>
       )}
 
-      {modal && (
-        <PaymentResultModal
-          paymentId={modal.paymentId}
-          method={modal.method}
-          amount={modal.amount}
-          onClose={() => setModal(null)}
-        />
-      )}
     </div>
   );
 }

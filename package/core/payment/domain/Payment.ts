@@ -18,6 +18,7 @@ export class Payment {
     private amount: PriceVO,
     private status: PaymentStatus,
     private createdAt: Date,
+    private externalId?: string,
     private completedAt?: Date
   ) {}
 
@@ -31,19 +32,47 @@ export class Payment {
     );
   }
   complete(): Result<InvalidPaymentError, void> {
+    if (this.method !== PaymentMethod.CASH && !this.externalId) {
+      return Result.fail(
+        new InvalidPaymentError("Only cash payments can be completed without an external ID")
+      );
+    }
     if (this.status !== PaymentStatus.PENDING) {
-      return Result.fail(new InvalidPaymentError("Can only complete a pending payment"));
+      return Result.fail(
+        new InvalidPaymentError("Can only complete a pending payment")
+      );
     }
     this.status = PaymentStatus.COMPLETED;
     this.completedAt = new Date();
     return Result.ok(undefined);
   }
+  processing(externalId: string): Result<InvalidPaymentError, void> {
+    if (this.method === PaymentMethod.CASH) {
+      return Result.fail(
+        new InvalidPaymentError(
+          "Only card and transfer payments can be processed"
+        )
+      );
+    }
+    if (this.status !== PaymentStatus.PENDING) {
+      return Result.fail(
+        new InvalidPaymentError("Can only process a pending payment")
+      );
+    }
+    this.externalId = externalId;
+    return Result.ok(undefined);
+  }
   fail(): Result<InvalidPaymentError, void> {
     if (this.status !== PaymentStatus.PENDING) {
-      return Result.fail(new InvalidPaymentError("Can only fail a pending payment"));
+      return Result.fail(
+        new InvalidPaymentError("Can only fail a pending payment")
+      );
     }
     this.status = PaymentStatus.FAILED;
     return Result.ok(undefined);
+  }
+  getExternalId() {
+    return this.externalId;
   }
   getAmount() {
     return this.amount;

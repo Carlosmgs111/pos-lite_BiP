@@ -7,12 +7,14 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "dev:payment-gateway": "npx tsx externals/payment-gateway/src/index.ts",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
+    "@astrojs/node": "^10.0.5",
     "@astrojs/preact": "^5.1.1",
     "@nanostores/preact": "^1.1.0",
     "@tailwindcss/vite": "^4.2.2",
@@ -21,5 +23,8 @@
     "preact": "^10.29.1",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
   }
 }

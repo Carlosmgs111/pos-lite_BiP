@@ -2,6 +2,9 @@ import {
   addPayment,
   confirmPayment,
   paymentOrderRepository,
+  processPayment,
+  PaymentGatewayUnreachableError,
+  GatewayTransactionStatus,
 } from "../../../package/core/payment";
 import { PaymentMethod } from "../../../package/core/payment";
 import { UuidVO } from "../../../package/core/shared/domain/Uuid.VO";
@@ -57,41 +60,106 @@ export const PaymentService = {
     }
 
     $payments.set(
-      $payments
-        .get()
-        .map((p) =>
-          p.id === paymentId
-            ? {
-                ...p,
-                status: (success
-                  ? "completed"
-                  : "failed") as PaymentEntry["status"],
-              }
-            : p
-        )
+      $payments.get().map((p) =>
+        p.id === paymentId
+          ? {
+              ...p,
+              status: (success
+                ? "completed"
+                : "failed") as PaymentEntry["status"],
+            }
+          : p
+      )
     );
 
     await this.refreshOrderStatus(saleId);
     return result;
   },
 
-  async processPayment(method: string, amount: number): Promise<string | null> {
+  async processPayment(method: string, amount: number): Promise<void> {
     const paymentId = await this.registerPayment(method, amount);
-    if (!paymentId) return null;
+    if (!paymentId) return;
 
     if (method === "CASH") {
       $paymentStatus.set("processing");
       await this.commitPayment(paymentId, true);
-      return null;
+      return;
     }
 
-    // Card/Transfer: return paymentId so the UI can open the modal
-    return paymentId;
+    // Card/Transfer: fire-and-forget to the external gateway.
+    $paymentStatus.set("processing");
+
+    const result = await processPayment.execute(paymentId, {
+      paymentId,
+      amount,
+      method: PaymentMethod[method as keyof typeof PaymentMethod],
+    });
+
+    if (!result.isSuccess) {
+      const err = result.getError()!;
+      const saleId = $saleId.get();
+      if (saleId) await this.refreshOrderStatus(saleId);
+      if (err instanceof PaymentGatewayUnreachableError) {
+        showToast("El procesador de pago no está disponible", "error");
+      } else {
+        showToast("Error inesperado al enviar el pago", "error");
+      }
+      return;
+    }
+
+    // Request accepted — resolution is eventual.
+    // Webhook is the production path; this client-side watcher is a
+    // temporary bridge until the webhook endpoint is wired up.
+    const transactionId = result.getValue()!;
+    this.watchTransaction(paymentId, transactionId);
+  },
+
+  async watchTransaction(
+    paymentId: string,
+    transactionId: string
+  ): Promise<void> {
+    try {
+      const res = await fetch("/api/payment/reconcile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentId, transactionId }),
+      });
+
+      const saleId = $saleId.get();
+      if (saleId) await this.refreshOrderStatus(saleId);
+
+      if (!res.ok) {
+        showToast("No se pudo verificar el pago con el procesador", "error");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.status === GatewayTransactionStatus.PENDING) {
+        showToast("Pago en proceso — la confirmación puede tardar", "info");
+      }
+    } catch {
+      showToast("Error de conexión al verificar el pago", "error");
+    }
   },
 
   async refreshOrderStatus(saleId: string) {
     const po = (await paymentOrderRepository.findBySaleId(saleId)).getValue();
     if (!po) return;
+
+    // Sync $payments from the domain (single source of truth)
+    $payments.set(
+      po.getPayments().map((p) => ({
+        id: p.getId().getValue(),
+        method: p.getMethod(),
+        amount: p.getAmount().getValue(),
+        status:
+          p.getStatus() === "COMPLETED"
+            ? "completed"
+            : p.getStatus() === "FAILED"
+              ? "failed"
+              : "pending",
+      }))
+    );
 
     $change.set(po.getChange().getValue());
 
@@ -100,7 +168,10 @@ export const PaymentService = {
       $paymentStatus.set("completed");
       const changeAmount = po.getChange().getValue();
       if (changeAmount > 0) {
-        showToast(`Pago completado — Cambio: $${changeAmount.toFixed(2)}`, "success");
+        showToast(
+          `Pago completado — Cambio: $${changeAmount.toFixed(2)}`,
+          "success"
+        );
       } else {
         showToast("Pago completado", "success");
       }

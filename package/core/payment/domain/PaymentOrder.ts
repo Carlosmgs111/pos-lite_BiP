@@ -144,6 +144,25 @@ export class PaymentOrder {
     this.recalculateStatus();
     return Result.ok(undefined);
   }
+  processPayment(paymentId: string, transactionId: string): Result<InvalidPaymentError, void> {
+    if (this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot process payment on a terminal order")
+      );
+    }
+    const payment = this.payments.find(
+      (p) => p.getId().getValue() === paymentId
+    );
+    if (!payment) {
+      return Result.fail(new InvalidPaymentError("Payment not found"));
+    }
+    const transitionResult = payment.processing(transactionId);
+    if (!transitionResult.isSuccess) {
+      return Result.fail(transitionResult.getError());
+    }
+    this.recalculateStatus();
+    return Result.ok(undefined);
+  }
   cancel(): Result<InvalidPaymentError, void> {
     if (this.isTerminal()) {
       return Result.fail(

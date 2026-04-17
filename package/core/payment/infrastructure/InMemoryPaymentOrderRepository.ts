@@ -35,6 +35,14 @@ export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
     );
     return Result.ok(paymentOrder || null);
   }
+  async findByPaymentExternalId(
+    externalId: string
+  ): Promise<Result<Error, PaymentOrder | null>> {
+    const paymentOrder = this.paymentOrders.find((paymentOrder) =>
+      paymentOrder.getPayments().find((p) => p.getExternalId() === externalId)
+    );
+    return Result.ok(paymentOrder || null);
+  }
   purgeDb() {
     this.paymentOrders = [];
   }
