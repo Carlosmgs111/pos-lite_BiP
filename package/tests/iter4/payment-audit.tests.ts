@@ -51,24 +51,64 @@ const setup = async () => {
     reservedStock: 0,
   });
   // cancelPendingSaleId: for cancel from PENDING
-  await createSale.execute({ id: cancelPendingSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: cancelPendingSaleId, itemId: productId, quantity: 1 });
+  await createSale.execute({
+    id: cancelPendingSaleId,
+    itemIds: [],
+    createdAt: new Date(),
+  });
+  await addItemToSale.execute({
+    saleId: cancelPendingSaleId,
+    itemId: productId,
+    quantity: 1,
+  });
   await registerSale.execute(cancelPendingSaleId);
   // cancelPartialSaleId: for cancel from PARTIAL
-  await createSale.execute({ id: cancelPartialSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: cancelPartialSaleId, itemId: productId, quantity: 1 });
+  await createSale.execute({
+    id: cancelPartialSaleId,
+    itemIds: [],
+    createdAt: new Date(),
+  });
+  await addItemToSale.execute({
+    saleId: cancelPartialSaleId,
+    itemId: productId,
+    quantity: 1,
+  });
   await registerSale.execute(cancelPartialSaleId);
   // failedRetriesSaleId: for exhausted retries → FAILED
-  await createSale.execute({ id: failedRetriesSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: failedRetriesSaleId, itemId: productId, quantity: 1 });
+  await createSale.execute({
+    id: failedRetriesSaleId,
+    itemIds: [],
+    createdAt: new Date(),
+  });
+  await addItemToSale.execute({
+    saleId: failedRetriesSaleId,
+    itemId: productId,
+    quantity: 1,
+  });
   await registerSale.execute(failedRetriesSaleId);
   // terminalGuardSaleId: for terminal state guards
-  await createSale.execute({ id: terminalGuardSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: terminalGuardSaleId, itemId: productId, quantity: 1 });
+  await createSale.execute({
+    id: terminalGuardSaleId,
+    itemIds: [],
+    createdAt: new Date(),
+  });
+  await addItemToSale.execute({
+    saleId: terminalGuardSaleId,
+    itemId: productId,
+    quantity: 1,
+  });
   await registerSale.execute(terminalGuardSaleId);
   // zeroAmountSaleId: for zero amount validation
-  await createSale.execute({ id: zeroAmountSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: zeroAmountSaleId, itemId: productId, quantity: 1 });
+  await createSale.execute({
+    id: zeroAmountSaleId,
+    itemIds: [],
+    createdAt: new Date(),
+  });
+  await addItemToSale.execute({
+    saleId: zeroAmountSaleId,
+    itemId: productId,
+    quantity: 1,
+  });
   await registerSale.execute(zeroAmountSaleId);
 };
 
@@ -82,7 +122,12 @@ const teardown = async () => {
 
 const cancelFromPending = async () => {
   const cancelResult = await cancelPaymentOrder.execute(cancelPendingSaleId);
-  const po = (await paymentOrderRepository.findBySaleId(cancelPendingSaleId)).getValue()!;
+  if (!cancelResult.isSuccess) {
+    return result(cancelResult.getError() as unknown as string, false);
+  }
+  const po = (
+    await paymentOrderRepository.findBySaleId(cancelPendingSaleId)
+  ).getValue()!;
   return result(
     "Cancel payment order from PENDING transitions to CANCELLED",
     cancelResult.isSuccess && po.getStatus() === PaymentOrderStatus.CANCELLED
@@ -98,14 +143,23 @@ const cancelFromPartial = async () => {
     amount: 100,
     method: PaymentMethod.CARD,
   });
-  const poBefore = (await paymentOrderRepository.findBySaleId(cancelPartialSaleId)).getValue()!;
-  const wasPartial = poBefore.getStatus() === PaymentOrderStatus.PARTIAL;
+  const poBeforeResult =
+    await paymentOrderRepository.findBySaleId(cancelPartialSaleId);
+  if (!poBeforeResult.isSuccess) {
+    return result(poBeforeResult.getError() as unknown as string, false);
+  }
+  const wasPartial =
+    poBeforeResult.getValue()!.getStatus() === PaymentOrderStatus.PARTIAL;
 
   const cancelResult = await cancelPaymentOrder.execute(cancelPartialSaleId);
-  const poAfter = (await paymentOrderRepository.findBySaleId(cancelPartialSaleId)).getValue()!;
+  const poAfter = (
+    await paymentOrderRepository.findBySaleId(cancelPartialSaleId)
+  ).getValue()!;
   return result(
     "Cancel payment order from PARTIAL transitions to CANCELLED",
-    wasPartial && cancelResult.isSuccess && poAfter.getStatus() === PaymentOrderStatus.CANCELLED
+    wasPartial &&
+      cancelResult.isSuccess &&
+      poAfter.getStatus() === PaymentOrderStatus.CANCELLED
   );
 };
 
@@ -130,17 +184,31 @@ const exhaustedRetriesFailsOrder = async () => {
   const p1 = UuidVO.generate();
   const p2 = UuidVO.generate();
   const p3 = UuidVO.generate();
-  await addPayment.execute(failedRetriesSaleId, { id: p1, amount: 100, method: PaymentMethod.CARD });
+  await addPayment.execute(failedRetriesSaleId, {
+    id: p1,
+    amount: 100,
+    method: PaymentMethod.CARD,
+  });
   await confirmPayment.execute(p1, false);
   // After first fail, order reverts to PENDING — add new payment
-  await addPayment.execute(failedRetriesSaleId, { id: p2, amount: 100, method: PaymentMethod.CARD });
+  await addPayment.execute(failedRetriesSaleId, {
+    id: p2,
+    amount: 100,
+    method: PaymentMethod.CARD,
+  });
   await confirmPayment.execute(p2, false);
   // After second fail, still PENDING — add third
-  await addPayment.execute(failedRetriesSaleId, { id: p3, amount: 100, method: PaymentMethod.CARD });
+  await addPayment.execute(failedRetriesSaleId, {
+    id: p3,
+    amount: 100,
+    method: PaymentMethod.CARD,
+  });
   await confirmPayment.execute(p3, false);
   // Third fail triggers markAsFailed + PaymentOrderFailed event
 
-  const po = (await paymentOrderRepository.findBySaleId(failedRetriesSaleId)).getValue()!;
+  const po = (
+    await paymentOrderRepository.findBySaleId(failedRetriesSaleId)
+  ).getValue()!;
   return result(
     "3 failed payments transitions order to FAILED",
     po.getStatus() === PaymentOrderStatus.FAILED
@@ -148,7 +216,9 @@ const exhaustedRetriesFailsOrder = async () => {
 };
 
 const failedOrderCancelsSale = async () => {
-  const sale = (await saleRepository.getSaleById(failedRetriesSaleId)).getValue()!;
+  const sale = (
+    await saleRepository.getSaleById(failedRetriesSaleId)
+  ).getValue()!;
   return result(
     "PaymentOrderFailed event cancels the Sale",
     sale.getStatus() === SaleStatus.CANCELLED
@@ -156,7 +226,9 @@ const failedOrderCancelsSale = async () => {
 };
 
 const failedOrderRestoresStock = async () => {
-  const stock = (await getProducts.execute([productId])).getValue()![0].getStock();
+  const stock = (await getProducts.execute([productId]))
+    .getValue()![0]
+    .getStock();
   // Initial=50, setup reserved 5 sales x 1 item → stock=45
   // failedRetriesSaleId's 1 item restored → stock=46
   return result(
@@ -173,10 +245,7 @@ const addPaymentToFailedFails = async () => {
     amount: 50,
     method: PaymentMethod.CASH,
   });
-  return result(
-    "Cannot add payment to a FAILED order",
-    !addResult.isSuccess
-  );
+  return result("Cannot add payment to a FAILED order", !addResult.isSuccess);
 };
 
 //--- Cancel a COMPLETED order fails
@@ -206,10 +275,7 @@ const zeroAmountPaymentFails = async () => {
     amount: 0,
     method: PaymentMethod.CARD,
   });
-  return result(
-    "Payment with amount 0 is rejected",
-    !addResult.isSuccess
-  );
+  return result("Payment with amount 0 is rejected", !addResult.isSuccess);
 };
 
 // --- Export

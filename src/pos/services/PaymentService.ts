@@ -4,7 +4,6 @@ import {
   paymentOrderRepository,
   processPayment,
   PaymentGatewayUnreachableError,
-  GatewayTransactionStatus,
 } from "../../../package/core/payment";
 import { PaymentMethod } from "../../../package/core/payment";
 import { UuidVO } from "../../../package/core/shared/domain/Uuid.VO";
@@ -107,39 +106,28 @@ export const PaymentService = {
       return;
     }
 
-    // Request accepted — resolution is eventual.
-    // Webhook is the production path; this client-side watcher is a
-    // temporary bridge until the webhook endpoint is wired up.
-    const transactionId = result.getValue()!;
-    this.watchTransaction(paymentId, transactionId);
+    // Request accepted — listen for server push via SSE.
+    // The webhook or reconcile endpoint will confirm the payment
+    // server-side; the SSE channel pushes the result to us.
+    this.listenForConfirmation();
   },
 
-  async watchTransaction(
-    paymentId: string,
-    transactionId: string
-  ): Promise<void> {
-    try {
-      const res = await fetch("/api/payment/reconcile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId, transactionId }),
-      });
+  listenForConfirmation(): void {
+    const saleId = $saleId.get();
+    if (!saleId) return;
 
-      const saleId = $saleId.get();
-      if (saleId) await this.refreshOrderStatus(saleId);
+    const source = new EventSource(`/api/payment/events?saleId=${saleId}`);
 
-      if (!res.ok) {
-        showToast("No se pudo verificar el pago con el procesador", "error");
-        return;
-      }
+    source.onmessage = async () => {
+      source.close();
+      await this.refreshOrderStatus(saleId);
+    };
 
-      const data = await res.json();
-      if (data.status === GatewayTransactionStatus.PENDING) {
-        showToast("Pago en proceso — la confirmación puede tardar", "info");
-      }
-    } catch {
-      showToast("Error de conexión al verificar el pago", "error");
-    }
+    source.onerror = () => {
+      source.close();
+      showToast("Conexión con el servidor perdida", "error");
+      $paymentStatus.set("awaiting_payment");
+    };
   },
 
   async refreshOrderStatus(saleId: string) {

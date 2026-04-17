@@ -32,7 +32,7 @@ export class Payment {
     );
   }
   complete(): Result<InvalidPaymentError, void> {
-    if (this.method !== PaymentMethod.CASH && !this.externalId) {
+    if (this.method !== PaymentMethod.CASH && this.externalId) {
       return Result.fail(
         new InvalidPaymentError("Only cash payments can be completed without an external ID")
       );

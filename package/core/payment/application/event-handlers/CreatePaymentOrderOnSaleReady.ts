@@ -5,6 +5,7 @@ import type { CreatePaymentOrder } from "../../application/use-cases/CreatePayme
 export class CreatePaymentOrderOnSaleReady implements EventHandler<SalesReadyToPay> {
   constructor(private createPaymentOrder: CreatePaymentOrder) {}
   async handle(event: SalesReadyToPay): Promise<void> {
-    await this.createPaymentOrder.execute(event.saleId, event.totalAmount);
+    const { saleId, totalAmount } = event.payload;
+    await this.createPaymentOrder.execute(saleId, totalAmount);
   }
 }

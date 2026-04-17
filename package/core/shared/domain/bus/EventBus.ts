@@ -1,6 +1,10 @@
 import type { EventHandler } from "./EventHandler";
+import type { DomainEvent, EventName } from "../DomaintEvent";
 
 export interface EventBus {
-    publish(event: any): Promise<void>;
-    subscribe(event: string, handler: EventHandler<any>): void;
+  publish<K extends EventName>(event: DomainEvent<K>): Promise<void>;
+  subscribe<K extends EventName>(
+    eventName: K,
+    handler: EventHandler<DomainEvent<K>>
+  ): () => void;
 }

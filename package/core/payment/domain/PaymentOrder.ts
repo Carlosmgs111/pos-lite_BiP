@@ -77,7 +77,6 @@ export class PaymentOrder {
     if (coverage.getValue() > this.totalAmount.getValue()) {
       this.change = PriceVO.substract(coverage, [this.totalAmount]);
     }
-
     if (this.allNonFailedPaymentsCompleted()) {
       this.status = PaymentOrderStatus.COMPLETED;
       this.completedAt = new Date();

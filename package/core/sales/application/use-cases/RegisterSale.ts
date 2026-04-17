@@ -33,7 +33,10 @@ export class RegisterSale {
     if (!confirmResult.isSuccess) {
       return Result.fail(confirmResult.getError());
     }
-    const salesReadyToPayEvent = new SalesReadyToPay(saleId, sale.getTotal().getValue());
+    const salesReadyToPayEvent = new SalesReadyToPay({
+      saleId,
+      totalAmount: sale.getTotal().getValue(),
+    });
     this.eventBus.publish(salesReadyToPayEvent);
     return this.saleRepository.update(sale);
   }

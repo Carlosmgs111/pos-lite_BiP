@@ -33,7 +33,7 @@ export class ConfirmPayment {
     if (paymentOrder.getStatus() === PaymentOrderStatus.COMPLETED) {
       await this.paymentRepository.update(paymentOrder);
       await this.eventBus.publish(
-        new PaymentOrderCompleted(paymentOrder.getSaleId().getValue())
+        new PaymentOrderCompleted({ saleId: paymentOrder.getSaleId().getValue() })
       );
       return Result.ok(undefined);
     }
@@ -45,7 +45,7 @@ export class ConfirmPayment {
       }
       await this.paymentRepository.update(paymentOrder);
       await this.eventBus.publish(
-        new PaymentOrderFailed(paymentOrder.getSaleId().getValue())
+        new PaymentOrderFailed({ saleId: paymentOrder.getSaleId().getValue() })
       );
       return Result.ok(undefined);
     }

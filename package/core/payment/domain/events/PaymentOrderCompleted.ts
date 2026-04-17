@@ -1,4 +1,8 @@
-export class PaymentOrderCompleted {
-  static readonly eventName = "PaymentOrderCompleted";
-  constructor(public readonly saleId: string) {}
+import type { DomainEvent } from "../../../shared/domain/DomaintEvent";
+
+export class PaymentOrderCompleted implements DomainEvent<"payment.order.completed"> {
+  static readonly eventName = "payment.order.completed" as const;
+  readonly eventName = PaymentOrderCompleted.eventName;
+  readonly occurredAt = new Date();
+  constructor(public readonly payload: { saleId: string }) {}
 }

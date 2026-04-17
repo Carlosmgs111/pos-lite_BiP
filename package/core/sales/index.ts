@@ -11,11 +11,9 @@ import { FailSale } from "./application/use-cases/FailSale";
 import { SaleCompletedOnPayment } from "./application/event-handlers/SaleCompletedOnPayment";
 import { SaleFailedOnPayment } from "./application/event-handlers/SaleFailedOnPayment";
 import { HandleStock } from "./infrastructure/HandleStock";
-import { InMemoryEventBus } from "../shared/infrastructure/InMemoryEventBus";
+import { eventBus } from "../shared/config";
 import { PaymentOrderCompleted } from "../payment/domain/events/PaymentOrderCompleted";
 import { PaymentOrderFailed } from "../payment/domain/events/PaymentOrderFailed";
-
-const eventBus = InMemoryEventBus.create();
 
 export { SalesReadyToPay } from "./domain/events/SalesReadyToPay";
 

@@ -5,6 +5,7 @@ import type { FailSale } from "../use-cases/FailSale";
 export class SaleFailedOnPayment implements EventHandler<PaymentOrderFailed> {
   constructor(private failSale: FailSale) {}
   async handle(event: PaymentOrderFailed): Promise<void> {
-    await this.failSale.execute(event.saleId);
+    const { saleId } = event.payload;
+    await this.failSale.execute(saleId);
   }
 }

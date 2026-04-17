@@ -1,25 +1,30 @@
 import type { EventBus } from "../domain/bus/EventBus";
 import type { EventHandler } from "../domain/bus/EventHandler";
+import type { DomainEvent, EventName } from "../domain/DomaintEvent";
 
 export class InMemoryEventBus implements EventBus {
-  private handlers: Map<string, EventHandler<any>[]> = new Map();
-  private static instance: InMemoryEventBus;
+  private handlers = new Map<string, Set<EventHandler<DomainEvent<any>>>>();
 
-  private constructor() {}
-
-  static create() {
-    if (!InMemoryEventBus.instance) {
-      InMemoryEventBus.instance = new InMemoryEventBus();
+  async publish<K extends EventName>(event: DomainEvent<K>): Promise<void> {
+    const set = this.handlers.get(event.eventName);
+    if (!set) return;
+    for (const handler of set) {
+      await handler.handle(event);
     }
-    return InMemoryEventBus.instance;
   }
-  async publish(event: any): Promise<void> {
-    const eventName = event.constructor.name;
-    const handlers = this.handlers.get(eventName) || [];
-    handlers.forEach((handler) => handler.handle.call(handler, event));
-  }
-  subscribe(event: string, handler: EventHandler<any>): void {
-    const currentHandlers = this.handlers.get(event) || [];
-    this.handlers.set(event, [...currentHandlers, handler]);
+
+  subscribe<K extends EventName>(
+    eventName: K,
+    handler: EventHandler<DomainEvent<K>>
+  ): () => void {
+    if (!this.handlers.has(eventName)) {
+      this.handlers.set(eventName, new Set());
+    }
+    const set = this.handlers.get(eventName)!;
+    set.add(handler as EventHandler<DomainEvent<any>>);
+    return () => {
+      set.delete(handler as EventHandler<DomainEvent<any>>);
+      if (set.size === 0) this.handlers.delete(eventName);
+    };
   }
 }

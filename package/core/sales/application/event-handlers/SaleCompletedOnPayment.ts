@@ -5,6 +5,7 @@ import type { CompleteSale } from "../use-cases/CompleteSale";
 export class SaleCompletedOnPayment implements EventHandler<PaymentOrderCompleted> {
   constructor(private completeSale: CompleteSale) {}
   async handle(event: PaymentOrderCompleted): Promise<void> {
-    await this.completeSale.execute(event.saleId);
+    const { saleId } = event.payload;
+    await this.completeSale.execute(saleId);
   }
 }
