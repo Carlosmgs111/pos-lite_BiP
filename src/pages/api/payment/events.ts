@@ -4,6 +4,7 @@ import {
   subscribeWithFilter,
   type EventFilter,
 } from "../../../../package/core/shared/infrastructure/subscribeWithFilter";
+import { SSEStreamAdapter } from "../../../../package/core/shared/infrastructure/SSEStreamAdapter";
 
 export const prerender = false;
 
@@ -18,48 +19,32 @@ const eventTranslator: Record<string, string> = {
 };
 
 export const GET: APIRoute = async ({ request }) => {
-  const url = new URL(request.url);
-  const saleId = url.searchParams.get("saleId");
-
-  if (!saleId) {
-    return new Response(
-      JSON.stringify({ error: "Required query param: saleId" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
   const filters: EventFilter[] = PAYMENT_EVENTS.map((eventName) => ({
     eventName,
-    where: (event) => event.payload.saleId === saleId,
   }));
 
-  const encoder = new TextEncoder();
+  let sse: SSEStreamAdapter | null = null;
 
   const stream = new ReadableStream({
     start(controller) {
+      sse = new SSEStreamAdapter(controller);
+
       const unsubscribe = subscribeWithFilter(eventBus, filters, {
         handle: async (event) => {
-          const publicEvent = {
-            type: eventTranslator[event.eventName] ?? event.eventName,
-            data: event.payload,
+          const type = eventTranslator[event.eventName] ?? event.eventName;
+          sse?.sendEvent(type, {
+            ...event.payload,
             timestamp: event.occurredAt.toISOString(),
-          };
-          const chunk = `data: ${JSON.stringify(publicEvent)}\n\n`;
-          controller.enqueue(encoder.encode(chunk));
+          });
         },
       });
 
-      // * Keep the connection alive to prevent the client from timing out each 30 seconds
-      const keepAlive = setInterval(() => {
-        controller.enqueue(encoder.encode(": keep-alive\n\n"));
-      }, 30_000);
+      sse.onClose(unsubscribe);
+      request.signal.addEventListener("abort", () => sse?.close());
+    },
 
-      // * Close the connection when the client disconnects
-      request.signal.addEventListener("abort", () => {
-        unsubscribe();
-        clearInterval(keepAlive);
-        controller.close();
-      });
+    cancel() {
+      sse?.close();
     },
   });
 

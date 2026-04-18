@@ -28,7 +28,7 @@ export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository)
 const paymentGateway = new HttpPaymentGateway(GATEWAY_URL);
 export const processPayment = new ProcessPayment(paymentOrderRepository, paymentGateway);
 export const reconcilePayment = new ReconcilePayment(paymentGateway, confirmPayment);
-export const webhookHandler = new WebhookHandler(confirmPayment);
+export const webhookHandler = new WebhookHandler(confirmPayment, paymentOrderRepository);
 
 eventBus.subscribe(
   SalesReadyToPay.eventName,

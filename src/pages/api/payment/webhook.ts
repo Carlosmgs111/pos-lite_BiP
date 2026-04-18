@@ -4,6 +4,7 @@ import { webhookHandler } from "../../../../package/core/payment";
 export const prerender = false;
 
 export const POST: APIRoute = async ({ request }) => {
+  console.log("Webhook received");
   const body = await request.json().catch(() => null);
 
   if (
@@ -20,7 +21,6 @@ export const POST: APIRoute = async ({ request }) => {
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
-
   await webhookHandler.handle({
     transactionId: body.transaction_id,
     success: body.success,

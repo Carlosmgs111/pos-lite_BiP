@@ -1,20 +1,37 @@
 import {
   addPayment,
   confirmPayment,
-  paymentOrderRepository,
   processPayment,
   PaymentGatewayUnreachableError,
 } from "../../../package/core/payment";
 import { PaymentMethod } from "../../../package/core/payment";
 import { UuidVO } from "../../../package/core/shared/domain/Uuid.VO";
 import { $saleId } from "../stores/cart";
-import {
-  $paymentStatus,
-  $payments,
-  $change,
-  type PaymentEntry,
-} from "../stores/payment";
+import { $paymentStatus, $payments, $change } from "../stores/payment";
 import { showToast } from "../stores/toast";
+import { EventListener } from "./EventListener";
+
+const listener = new EventListener("/api/payment/events");
+
+listener.on("payment.completed", (data) => {
+  if (data.saleId !== $saleId.get()) return;
+  $paymentStatus.set("completed");
+  PaymentService.reconcile();
+});
+
+listener.on("payment.failed", (data) => {
+  if (data.saleId !== $saleId.get()) return;
+  $paymentStatus.set("failed");
+  PaymentService.reconcile();
+});
+
+if (typeof window !== "undefined") {
+  listener.connect();
+}
+
+if (typeof window !== "undefined") {
+  listener.connect();
+}
 
 export const PaymentService = {
   async registerPayment(
@@ -50,124 +67,86 @@ export const PaymentService = {
     const saleId = $saleId.get();
     if (!saleId) return;
 
-    $paymentStatus.set("processing");
-
     const result = await confirmPayment.execute(paymentId, success);
     if (!result.isSuccess) {
       showToast("Error al procesar el pago", "error");
-      return result;
+      return;
     }
-
-    $payments.set(
-      $payments.get().map((p) =>
-        p.id === paymentId
-          ? {
-              ...p,
-              status: (success
-                ? "completed"
-                : "failed") as PaymentEntry["status"],
-            }
-          : p
-      )
-    );
-
-    await this.refreshOrderStatus(saleId);
-    return result;
   },
 
   async processPayment(method: string, amount: number): Promise<void> {
     const paymentId = await this.registerPayment(method, amount);
     if (!paymentId) return;
 
-    if (method === "CASH") {
+    const paymentMethod = PaymentMethod[method as keyof typeof PaymentMethod];
+
+    if (paymentMethod === PaymentMethod.CASH) {
       $paymentStatus.set("processing");
       await this.commitPayment(paymentId, true);
       return;
     }
 
-    // Card/Transfer: fire-and-forget to the external gateway.
     $paymentStatus.set("processing");
 
     const result = await processPayment.execute(paymentId, {
       paymentId,
       amount,
-      method: PaymentMethod[method as keyof typeof PaymentMethod],
+      method: paymentMethod,
     });
 
     if (!result.isSuccess) {
       const err = result.getError()!;
-      const saleId = $saleId.get();
-      if (saleId) await this.refreshOrderStatus(saleId);
       if (err instanceof PaymentGatewayUnreachableError) {
         showToast("El procesador de pago no está disponible", "error");
       } else {
         showToast("Error inesperado al enviar el pago", "error");
       }
-      return;
+      $paymentStatus.set("awaiting_payment");
     }
-
-    // Request accepted — listen for server push via SSE.
-    // The webhook or reconcile endpoint will confirm the payment
-    // server-side; the SSE channel pushes the result to us.
-    this.listenForConfirmation();
   },
 
-  listenForConfirmation(): void {
+  async reconcile(): Promise<void> {
     const saleId = $saleId.get();
     if (!saleId) return;
 
-    const source = new EventSource(`/api/payment/events?saleId=${saleId}`);
+    try {
+      const res = await fetch(`/api/payment/status?saleId=${saleId}`);
+      if (!res.ok) return;
 
-    source.onmessage = async () => {
-      source.close();
-      await this.refreshOrderStatus(saleId);
-    };
+      const data = await res.json();
 
-    source.onerror = () => {
-      source.close();
-      showToast("Conexión con el servidor perdida", "error");
-      $paymentStatus.set("awaiting_payment");
-    };
-  },
+      $payments.set(
+        data.payments.map((p: any) => ({
+          id: p.id,
+          method: p.method,
+          amount: p.amount,
+          status:
+            p.status === "COMPLETED"
+              ? "completed"
+              : p.status === "FAILED"
+                ? "failed"
+                : "pending",
+        }))
+      );
 
-  async refreshOrderStatus(saleId: string) {
-    const po = (await paymentOrderRepository.findBySaleId(saleId)).getValue();
-    if (!po) return;
+      $change.set(data.change);
 
-    // Sync $payments from the domain (single source of truth)
-    $payments.set(
-      po.getPayments().map((p) => ({
-        id: p.getId().getValue(),
-        method: p.getMethod(),
-        amount: p.getAmount().getValue(),
-        status:
-          p.getStatus() === "COMPLETED"
-            ? "completed"
-            : p.getStatus() === "FAILED"
-              ? "failed"
-              : "pending",
-      }))
-    );
-
-    $change.set(po.getChange().getValue());
-
-    const status = po.getStatus();
-    if (status === "COMPLETED") {
-      $paymentStatus.set("completed");
-      const changeAmount = po.getChange().getValue();
-      if (changeAmount > 0) {
-        showToast(
-          `Pago completado — Cambio: $${changeAmount.toFixed(2)}`,
-          "success"
-        );
-      } else {
-        showToast("Pago completado", "success");
+      if (data.status === "COMPLETED") {
+        $paymentStatus.set("completed");
+        if (data.change > 0) {
+          showToast(
+            `Pago completado — Cambio: $${data.change.toFixed(2)}`,
+            "success"
+          );
+        } else {
+          showToast("Pago completado", "success");
+        }
+      } else if (data.status === "FAILED") {
+        $paymentStatus.set("failed");
+        showToast("El pago ha fallado definitivamente", "error");
       }
-    } else if (status === "FAILED") {
-      $paymentStatus.set("failed");
-      showToast("El pago ha fallado definitivamente", "error");
-    } else {
-      $paymentStatus.set("awaiting_payment");
+    } catch {
+      showToast("Error al consultar el estado del pago", "error");
     }
   },
 };
