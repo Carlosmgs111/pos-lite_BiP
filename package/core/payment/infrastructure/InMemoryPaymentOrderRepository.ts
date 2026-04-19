@@ -46,4 +46,7 @@ export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
   purgeDb() {
     this.paymentOrders = [];
   }
+  getAll() {
+    return this.paymentOrders;
+  }
 }

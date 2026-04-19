@@ -7,9 +7,11 @@ export class WebhookHandler {
     private confirmPayment: ConfirmPayment,
     private paymentRepository: PaymentOrderRepository
   ) {}
-
+  // TODO: Too much domain logic here
   async handle(event: WebhookEvent): Promise<void> {
-    const orderResult = await this.paymentRepository.findByPaymentId(event.transactionId);
+    const orderResult = await this.paymentRepository.findByPaymentExternalId(
+      event.transactionId
+    );
     if (!orderResult.isSuccess) {
       console.error("Error al buscar el pedido", orderResult.getError());
       return;
@@ -19,7 +21,20 @@ export class WebhookHandler {
       return;
     }
     const paymentOrder = orderResult.getValue()!;
+    const paymentId = paymentOrder
+      .getPaymentByExternalId(event.transactionId)
+      ?.getId()
+      .getValue();
+    if (!paymentId) {
+      console.error("Payment not found");
+      return;
+    }
     console.log("Webhook received", { paymentOrder });
-    await this.confirmPayment.execute(paymentOrder.getSaleId().getValue(), event.success);
+    const result = await this.confirmPayment.execute(paymentId, event.success);
+    if (!result.isSuccess) {
+      console.error("Error al confirmar el pago", result.getError());
+      return;
+    }
+    console.log("Payment confirmed");
   }
 }

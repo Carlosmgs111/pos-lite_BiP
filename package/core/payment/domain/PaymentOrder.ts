@@ -78,6 +78,7 @@ export class PaymentOrder {
       this.change = PriceVO.substract(coverage, [this.totalAmount]);
     }
     if (this.allNonFailedPaymentsCompleted()) {
+      console.log("All non-failed payments completed");
       this.status = PaymentOrderStatus.COMPLETED;
       this.completedAt = new Date();
     } else {
@@ -180,12 +181,15 @@ export class PaymentOrder {
     this.status = PaymentOrderStatus.FAILED;
     return Result.ok(undefined);
   }
+  getPaymentByExternalId(externalId: string): Payment | undefined {
+    return this.payments.find((p) => p.getExternalId() === externalId);
+  }
   getFailedPaymentCount(): number {
     return this.payments.filter((p) => p.getStatus() === PaymentStatus.FAILED)
       .length;
   }
   getPayments(): readonly Payment[] {
-    return this.payments;
+    return [...this.payments];
   }
   hasPayment(paymentId: string): boolean {
     return this.payments.some((p) => p.getId().getValue() === paymentId);

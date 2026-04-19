@@ -11,17 +11,21 @@ export const prerender = false;
 const PAYMENT_EVENTS = [
   "payment.order.completed",
   "payment.order.failed",
+  "payment.transaction.result",
 ] as const;
 
 const eventTranslator: Record<string, string> = {
-  "payment.order.completed": "payment.completed",
-  "payment.order.failed": "payment.failed",
+  "payment.order.completed": "payment.order.completed",
+  "payment.order.failed": "payment.order.failed",
+  "payment.transaction.result": "payment.transaction.result",
 };
 
 export const GET: APIRoute = async ({ request }) => {
   const filters: EventFilter[] = PAYMENT_EVENTS.map((eventName) => ({
     eventName,
   }));
+
+  console.log(filters);
 
   let sse: SSEStreamAdapter | null = null;
 
@@ -31,6 +35,7 @@ export const GET: APIRoute = async ({ request }) => {
 
       const unsubscribe = subscribeWithFilter(eventBus, filters, {
         handle: async (event) => {
+          console.log({event});
           const type = eventTranslator[event.eventName] ?? event.eventName;
           sse?.sendEvent(type, {
             ...event.payload,

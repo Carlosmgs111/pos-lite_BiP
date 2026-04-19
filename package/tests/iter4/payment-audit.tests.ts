@@ -13,6 +13,7 @@ import {
   addPayment,
   confirmPayment,
   cancelPaymentOrder,
+  processPayment,
 } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
 import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
@@ -258,7 +259,14 @@ const cancelCompletedFails = async () => {
     amount: 100,
     method: PaymentMethod.CARD,
   });
-  await confirmPayment.execute(paymentId, true);
+  const processResult = await processPayment.execute(paymentId, {
+    paymentId,
+    amount: 100,
+    method: PaymentMethod.CARD,
+  });
+  if (!processResult.isSuccess) {
+    return result(processResult.getError() as unknown as string, false);
+  }
   // Try to cancel
   const cancelResult = await cancelPaymentOrder.execute(terminalGuardSaleId);
   return result(
@@ -277,6 +285,7 @@ const zeroAmountPaymentFails = async () => {
   });
   return result("Payment with amount 0 is rejected", !addResult.isSuccess);
 };
+
 
 // --- Export
 export const paymentAuditSuite: Suite = {
