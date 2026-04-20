@@ -7,6 +7,7 @@ import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
 
 export type PaymentProps = {
   id: string;
+  paymentOrderId: string;
   method: PaymentMethod;
   amount: number;
 };
@@ -14,6 +15,7 @@ export type PaymentProps = {
 export class Payment {
   private constructor(
     private id: UuidVO,
+    private paymentOrderId: string,
     private method: PaymentMethod,
     private amount: PriceVO,
     private status: PaymentStatus,
@@ -22,19 +24,23 @@ export class Payment {
     private completedAt?: Date
   ) {}
 
-  static create({ id, method, amount }: PaymentProps) {
+  static create({ id, paymentOrderId, method, amount }: PaymentProps) {
     return new Payment(
       new UuidVO(id),
+      paymentOrderId,
       method,
       new PriceVO(amount),
       PaymentStatus.PENDING,
       new Date()
     );
   }
+
   complete(): Result<InvalidPaymentError, void> {
     if (this.method !== PaymentMethod.CASH && !this.externalId) {
       return Result.fail(
-        new InvalidPaymentError("Only cash payments can be completed without an external ID")
+        new InvalidPaymentError(
+          "Only cash payments can be completed without an external ID"
+        )
       );
     }
     if (this.status !== PaymentStatus.PENDING) {
@@ -46,6 +52,7 @@ export class Payment {
     this.completedAt = new Date();
     return Result.ok(undefined);
   }
+
   processing(externalId: string): Result<InvalidPaymentError, void> {
     if (this.method === PaymentMethod.CASH) {
       return Result.fail(
@@ -62,6 +69,7 @@ export class Payment {
     this.externalId = externalId;
     return Result.ok(undefined);
   }
+
   fail(): Result<InvalidPaymentError, void> {
     if (this.status !== PaymentStatus.PENDING) {
       return Result.fail(
@@ -70,6 +78,10 @@ export class Payment {
     }
     this.status = PaymentStatus.FAILED;
     return Result.ok(undefined);
+  }
+
+  getPaymentOrderId() {
+    return this.paymentOrderId;
   }
   getExternalId() {
     return this.externalId;

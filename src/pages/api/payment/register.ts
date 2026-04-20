@@ -13,8 +13,9 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const result = await addPayment.execute(body.saleId, {
-    id: body.paymentId,
+  const result = await addPayment.execute({
+    saleId: body.saleId,
+    paymentId: body.paymentId,
     method: body.method,
     amount: body.amount,
   });

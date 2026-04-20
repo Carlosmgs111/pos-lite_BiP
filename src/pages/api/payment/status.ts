@@ -1,5 +1,8 @@
 import type { APIRoute } from "astro";
-import { paymentOrderRepository } from "../../../../package/core/payment";
+import {
+  paymentOrderRepository,
+  paymentRepository,
+} from "../../../../package/core/payment";
 
 export const prerender = false;
 
@@ -14,21 +17,28 @@ export const GET: APIRoute = async ({ request }) => {
     );
   }
 
-  const result = await paymentOrderRepository.findBySaleId(saleId);
-  if (!result.isSuccess || !result.getValue()) {
-    return new Response(JSON.stringify({ error: "Payment order not found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+  const orderResult = await paymentOrderRepository.findBySaleId(saleId);
+  if (!orderResult.isSuccess || !orderResult.getValue()) {
+    return new Response(
+      JSON.stringify({ error: "Payment order not found" }),
+      { status: 404, headers: { "Content-Type": "application/json" } }
+    );
   }
 
-  const po = result.getValue()!;
+  const po = orderResult.getValue()!;
+
+  const paymentsResult = await paymentRepository.findByPaymentOrderId(
+    po.getId().getValue()
+  );
+  const payments = paymentsResult.isSuccess
+    ? paymentsResult.getValue()!
+    : [];
 
   return new Response(
     JSON.stringify({
       status: po.getStatus(),
       change: po.getChange().getValue(),
-      payments: po.getPayments().map((p) => ({
+      payments: payments.map((p) => ({
         id: p.getId().getValue(),
         method: p.getMethod(),
         amount: p.getAmount().getValue(),

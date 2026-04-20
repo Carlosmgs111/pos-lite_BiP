@@ -1,5 +1,6 @@
 import { eventBus } from "../shared/config";
 import { InMemoryPaymentOrderRepository } from "./infrastructure/InMemoryPaymentOrderRepository";
+import { InMemoryPaymentRepository } from "./infrastructure/InMemoryPaymentRepository";
 import { HttpPaymentGateway } from "./infrastructure/HttpPaymentGateway";
 import { WebhookHandler } from "./infrastructure/WebhookHandler";
 import { CreatePaymentOrder } from "./application/use-cases/CreatePaymentOrder";
@@ -20,15 +21,17 @@ import { SalesReadyToPay } from "../sales";
 const GATEWAY_URL = "http://localhost:3000";
 
 export const paymentOrderRepository = new InMemoryPaymentOrderRepository();
+export const paymentRepository = new InMemoryPaymentRepository();
+
 const createPaymentOrder = new CreatePaymentOrder(paymentOrderRepository);
-export const addPayment = new AddPayment(paymentOrderRepository);
-export const confirmPayment = new ConfirmPayment(paymentOrderRepository, eventBus);
+export const addPayment = new AddPayment(paymentOrderRepository, paymentRepository);
+export const confirmPayment = new ConfirmPayment(paymentOrderRepository, paymentRepository, eventBus);
 export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository);
 
 const paymentGateway = new HttpPaymentGateway(GATEWAY_URL);
-export const processPayment = new ProcessPayment(paymentOrderRepository, paymentGateway);
+export const processPayment = new ProcessPayment(paymentRepository, paymentGateway);
 export const reconcilePayment = new ReconcilePayment(paymentGateway, confirmPayment);
-export const webhookHandler = new WebhookHandler(confirmPayment, paymentOrderRepository);
+export const webhookHandler = new WebhookHandler(confirmPayment, paymentRepository);
 
 eventBus.subscribe(
   SalesReadyToPay.eventName,

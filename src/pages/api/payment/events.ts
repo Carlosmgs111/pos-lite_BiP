@@ -25,8 +25,6 @@ export const GET: APIRoute = async ({ request }) => {
     eventName,
   }));
 
-  console.log(filters);
-
   let sse: SSEStreamAdapter | null = null;
 
   const stream = new ReadableStream({
@@ -35,7 +33,6 @@ export const GET: APIRoute = async ({ request }) => {
 
       const unsubscribe = subscribeWithFilter(eventBus, filters, {
         handle: async (event) => {
-          console.log({event});
           const type = eventTranslator[event.eventName] ?? event.eventName;
           sse?.sendEvent(type, {
             ...event.payload,

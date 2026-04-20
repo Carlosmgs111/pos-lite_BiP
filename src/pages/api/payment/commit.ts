@@ -13,17 +13,20 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  const result = await confirmPayment.execute(body.paymentId, body.success);
+  const result = await confirmPayment.execute({
+    paymentId: body.paymentId,
+    success: body.success,
+  });
 
   if (!result.isSuccess) {
-    return new Response(
-      JSON.stringify({ error: result.getError()?.message }),
-      { status: 422, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: result.getError()?.message }), {
+      status: 422,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
-  return new Response(
-    JSON.stringify({ ok: true }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
-  );
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 };

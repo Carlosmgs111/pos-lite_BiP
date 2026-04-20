@@ -139,8 +139,9 @@ const cancelFromPending = async () => {
 
 const cancelFromPartial = async () => {
   // Add a covering payment to make it PARTIAL
-  await addPayment.execute(cancelPartialSaleId, {
-    id: UuidVO.generate(),
+  await addPayment.execute({
+    saleId: cancelPartialSaleId,
+    paymentId: UuidVO.generate(),
     amount: 100,
     method: PaymentMethod.CARD,
   });
@@ -167,8 +168,9 @@ const cancelFromPartial = async () => {
 //--- Cannot add payment to cancelled order
 
 const addPaymentToCancelledFails = async () => {
-  const addResult = await addPayment.execute(cancelPendingSaleId, {
-    id: UuidVO.generate(),
+  const addResult = await addPayment.execute({
+    saleId: cancelPendingSaleId,
+    paymentId: UuidVO.generate(),
     amount: 50,
     method: PaymentMethod.CASH,
   });
@@ -185,26 +187,38 @@ const exhaustedRetriesFailsOrder = async () => {
   const p1 = UuidVO.generate();
   const p2 = UuidVO.generate();
   const p3 = UuidVO.generate();
-  await addPayment.execute(failedRetriesSaleId, {
-    id: p1,
+  await addPayment.execute({
+    saleId: failedRetriesSaleId,
+    paymentId: p1,
     amount: 100,
     method: PaymentMethod.CARD,
   });
-  await confirmPayment.execute(p1, false);
+  await confirmPayment.execute({
+    paymentId: p1,
+    success: false,
+  });
   // After first fail, order reverts to PENDING — add new payment
-  await addPayment.execute(failedRetriesSaleId, {
-    id: p2,
+  await addPayment.execute({
+    saleId: failedRetriesSaleId,
+    paymentId: p2,
     amount: 100,
     method: PaymentMethod.CARD,
   });
-  await confirmPayment.execute(p2, false);
+  await confirmPayment.execute({
+    paymentId: p2,
+    success: false,
+  });
   // After second fail, still PENDING — add third
-  await addPayment.execute(failedRetriesSaleId, {
-    id: p3,
+  await addPayment.execute({
+    saleId: failedRetriesSaleId,
+    paymentId: p3,
     amount: 100,
     method: PaymentMethod.CARD,
   });
-  await confirmPayment.execute(p3, false);
+  await confirmPayment.execute({
+    paymentId: p3,
+    success: false,
+  });
   // Third fail triggers markAsFailed + PaymentOrderFailed event
 
   const po = (
@@ -241,8 +255,9 @@ const failedOrderRestoresStock = async () => {
 //--- Cannot add payment to FAILED order
 
 const addPaymentToFailedFails = async () => {
-  const addResult = await addPayment.execute(failedRetriesSaleId, {
-    id: UuidVO.generate(),
+  const addResult = await addPayment.execute({
+    saleId: failedRetriesSaleId,
+    paymentId: UuidVO.generate(),
     amount: 50,
     method: PaymentMethod.CASH,
   });
@@ -254,8 +269,9 @@ const addPaymentToFailedFails = async () => {
 const cancelCompletedFails = async () => {
   // Complete the terminalGuardSaleId order
   const paymentId = UuidVO.generate();
-  await addPayment.execute(terminalGuardSaleId, {
-    id: paymentId,
+  await addPayment.execute({
+    saleId: terminalGuardSaleId,
+    paymentId,
     amount: 100,
     method: PaymentMethod.CARD,
   });
@@ -278,8 +294,9 @@ const cancelCompletedFails = async () => {
 //--- Zero amount payment rejected
 
 const zeroAmountPaymentFails = async () => {
-  const addResult = await addPayment.execute(zeroAmountSaleId, {
-    id: UuidVO.generate(),
+  const addResult = await addPayment.execute({
+    saleId: zeroAmountSaleId,
+    paymentId: UuidVO.generate(),
     amount: 0,
     method: PaymentMethod.CARD,
   });

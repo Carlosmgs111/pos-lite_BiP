@@ -2,30 +2,34 @@ import type {
   PaymentGateway,
   PaymentRequest,
 } from "../../domain/PaymentGateway";
+import type { PaymentRepository } from "../../domain/PaymentRepository";
 import { Result } from "../../../shared/domain/Result";
-import type { PaymentOrderRepository } from "../../domain/PaymentOrderRepository";
 
 export class ProcessPayment {
   constructor(
-    private paymentOrderRepository: PaymentOrderRepository,
-    private gateway: PaymentGateway,
+    private paymentRepository: PaymentRepository,
+    private gateway: PaymentGateway
   ) {}
 
-  async execute(paymentId: string, request: PaymentRequest): Promise<Result<Error, string>> {
+  async execute(
+    paymentId: string,
+    request: PaymentRequest
+  ): Promise<Result<Error, string>> {
     try {
       const transactionId = await this.gateway.requestPayment(request);
 
-      const paymentOrderResult = await this.paymentOrderRepository.findByPaymentId(paymentId);
-      if (!paymentOrderResult.isSuccess) {
-        return Result.fail(paymentOrderResult.getError()!);
+      // Load Payment and link to external transaction
+      const paymentResult = await this.paymentRepository.findById(paymentId);
+      if (!paymentResult.isSuccess || !paymentResult.getValue()) {
+        return Result.fail(new Error("Payment not found"));
       }
-      const paymentOrder = paymentOrderResult.getValue()!;
-      
-      const processPaymentResult = paymentOrder.processPayment(paymentId, transactionId);
-      if (!processPaymentResult.isSuccess) {
-        return Result.fail(processPaymentResult.getError()!);
+      const payment = paymentResult.getValue()!;
+
+      const processResult = payment.processing(transactionId);
+      if (!processResult.isSuccess) {
+        return Result.fail(processResult.getError()!);
       }
-      await this.paymentOrderRepository.update(paymentOrder);
+      await this.paymentRepository.update(payment);
 
       return Result.ok(transactionId);
     } catch (err) {

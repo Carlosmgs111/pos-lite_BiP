@@ -130,9 +130,9 @@ const confirmCancelledSaleFails = async () => {
 
 const coveredPaymentsBecomePartial = async () => {
   // total = 200 (4 items x $50) — 3 payments totalling 272.7, all PENDING
-  await addPayment.execute(saleId, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CARD });
-  await addPayment.execute(saleId, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.TRANSFER });
-  await addPayment.execute(saleId, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CASH });
+  await addPayment.execute({ saleId, paymentId: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CARD });
+  await addPayment.execute({ saleId, paymentId: UuidVO.generate(), amount: 90.9, method: PaymentMethod.TRANSFER });
+  await addPayment.execute({ saleId, paymentId: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CASH });
   const po = (await paymentOrderRepository.findBySaleId(saleId)).getValue()!;
   return result(
     "When sum of pending payments covers total, order transitions to PARTIAL with change",
@@ -142,8 +142,8 @@ const coveredPaymentsBecomePartial = async () => {
 
 const nonCashExceedsTotalFails = async () => {
   // total = 200 (4 items x $50), first cash is fine, second transfer exceeds
-  await addPayment.execute(saleId2, { id: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CASH });
-  const failResult = await addPayment.execute(saleId2, { id: UuidVO.generate(), amount: 150, method: PaymentMethod.TRANSFER });
+  await addPayment.execute({ saleId: saleId2, paymentId: UuidVO.generate(), amount: 90.9, method: PaymentMethod.CASH });
+  const failResult = await addPayment.execute({ saleId: saleId2, paymentId: UuidVO.generate(), amount: 150, method: PaymentMethod.TRANSFER });
   return result(
     "Non-cash payment that exceeds total returns domain error",
     !failResult.isSuccess
@@ -153,8 +153,9 @@ const nonCashExceedsTotalFails = async () => {
 const exactPaymentCompletesOrderAfterResult = async () => {
   // total = 100 (2 items x $50)
   const paymentId = UuidVO.generate();
-  await addPayment.execute(saleExactPaymentId, {
-    id: paymentId,
+  await addPayment.execute({
+    saleId: saleExactPaymentId,
+    paymentId,
     amount: 100,
     method: PaymentMethod.CARD,
   });
@@ -169,8 +170,9 @@ const exactPaymentCompletesOrderAfterResult = async () => {
 
 const paymentOnCompletedOrderFails = async () => {
   // saleExactPaymentId order is already COMPLETED from previous test
-  const payResult = await addPayment.execute(saleExactPaymentId, {
-    id: UuidVO.generate(),
+  const payResult = await addPayment.execute({
+    saleId: saleExactPaymentId,
+    paymentId: UuidVO.generate(),
     amount: 10,
     method: PaymentMethod.CASH,
   });
@@ -182,8 +184,9 @@ const paymentOnCompletedOrderFails = async () => {
 
 const paymentOnNonExistentOrderFails = async () => {
   const fakeId = UuidVO.generate();
-  const payResult = await addPayment.execute(fakeId, {
-    id: UuidVO.generate(),
+  const payResult = await addPayment.execute({
+    saleId: fakeId,
+    paymentId: UuidVO.generate(),
     amount: 10,
     method: PaymentMethod.CASH,
   });

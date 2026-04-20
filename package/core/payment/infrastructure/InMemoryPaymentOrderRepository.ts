@@ -1,52 +1,41 @@
 import type { PaymentOrderRepository } from "../domain/PaymentOrderRepository";
-import { PaymentOrder } from "../domain/PaymentOrder";
+import type { PaymentOrder } from "../domain/PaymentOrder";
 import { Result } from "../../shared/domain/Result";
 
 export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
-  private paymentOrders: PaymentOrder[] = [];
+  /* private */ orders: PaymentOrder[] = [];
 
   async save(paymentOrder: PaymentOrder): Promise<Result<Error, void>> {
-    this.paymentOrders.push(paymentOrder);
+    this.orders.push(paymentOrder);
     return Result.ok(undefined);
   }
-  async update(deltaPaymentOrder: PaymentOrder): Promise<Result<Error, void>> {
-    const index = this.paymentOrders.findIndex(
-      (po) => po.getId().getValue() === deltaPaymentOrder.getId().getValue()
+
+  async update(paymentOrder: PaymentOrder): Promise<Result<Error, void>> {
+    const index = this.orders.findIndex(
+      (o) => o.getId().getValue() === paymentOrder.getId().getValue()
     );
     if (index === -1) {
-      return Result.fail(new Error("Payment order not found"));
+      return Result.fail(new Error("PaymentOrder not found"));
     }
-    this.paymentOrders[index] = deltaPaymentOrder;
+    this.orders[index] = paymentOrder;
     return Result.ok(undefined);
   }
+
+  async findById(id: string): Promise<Result<Error, PaymentOrder | null>> {
+    const order = this.orders.find((o) => o.getId().getValue() === id);
+    return Result.ok(order ?? null);
+  }
+
   async findBySaleId(
     saleId: string
   ): Promise<Result<Error, PaymentOrder | null>> {
-    const paymentOrder = this.paymentOrders.find(
-      (paymentOrder) => paymentOrder.getSaleId().getValue() === saleId
+    const order = this.orders.find(
+      (o) => o.getSaleId().getValue() === saleId
     );
-    return Result.ok(paymentOrder || null);
+    return Result.ok(order ?? null);
   }
-  async findByPaymentId(
-    paymentId: string
-  ): Promise<Result<Error, PaymentOrder | null>> {
-    const paymentOrder = this.paymentOrders.find((po) =>
-      po.hasPayment(paymentId)
-    );
-    return Result.ok(paymentOrder || null);
-  }
-  async findByPaymentExternalId(
-    externalId: string
-  ): Promise<Result<Error, PaymentOrder | null>> {
-    const paymentOrder = this.paymentOrders.find((paymentOrder) =>
-      paymentOrder.getPayments().find((p) => p.getExternalId() === externalId)
-    );
-    return Result.ok(paymentOrder || null);
-  }
-  purgeDb() {
-    this.paymentOrders = [];
-  }
-  getAll() {
-    return this.paymentOrders;
+
+  purgeDb(): void {
+    this.orders = [];
   }
 }

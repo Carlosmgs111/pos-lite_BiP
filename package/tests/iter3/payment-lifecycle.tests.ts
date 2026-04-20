@@ -131,8 +131,9 @@ const newOrderIsPending = async () => {
 
 const firstPaymentBelowTotalKeepsPending = async () => {
   // Pay $80 of $200
-  const addResult = await addPayment.execute(sequentialSaleId, {
-    id: payment1Id,
+  const addResult = await addPayment.execute({
+    saleId: sequentialSaleId,
+    paymentId: payment1Id,
     amount: 80,
     method: PaymentMethod.CARD,
   });
@@ -149,8 +150,9 @@ const firstPaymentBelowTotalKeepsPending = async () => {
 
 const secondPaymentStillBelowKeepsPending = async () => {
   // Pay $60 more → total $140 of $200
-  const addResult = await addPayment.execute(sequentialSaleId, {
-    id: payment2Id,
+  const addResult = await addPayment.execute({
+    saleId: sequentialSaleId,
+    paymentId: payment2Id,
     amount: 60,
     method: PaymentMethod.TRANSFER,
   });
@@ -168,8 +170,9 @@ const secondPaymentStillBelowKeepsPending = async () => {
 
 const coveringPaymentTransitionsToPartial = async () => {
   // Pay $60 more → total $200 of $200 — coverage reached, all payments still PENDING
-  const addResult = await addPayment.execute(sequentialSaleId, {
-    id: payment3Id,
+  const addResult = await addPayment.execute({
+    saleId: sequentialSaleId,
+    paymentId: payment3Id,
     amount: 60,
     method: PaymentMethod.CARD,
   });
@@ -208,8 +211,9 @@ const partialPaymentsConfirmedCompleteOrder = async () => {
 
 const paymentOnCompletedOrderFails = async () => {
   // sequentialSaleId is already COMPLETED
-  const payResult = await addPayment.execute(sequentialSaleId, {
-    id: payment4Id,
+  const payResult = await addPayment.execute({
+    saleId: sequentialSaleId,
+    paymentId: payment4Id,
     amount: 10,
     method: PaymentMethod.CASH,
   });
@@ -223,8 +227,9 @@ const paymentOnCompletedOrderFails = async () => {
 
 const singleFullPaymentBecomesPartial = async () => {
   // Pay $100 of $100 in one shot — PARTIAL, not COMPLETED yet
-  await addPayment.execute(fullPaymentSaleId, {
-    id: payment4Id,
+  await addPayment.execute({
+    saleId: fullPaymentSaleId,
+    paymentId: payment4Id,
     amount: 100,
     method: PaymentMethod.CARD,
   });
@@ -240,8 +245,9 @@ const singleFullPaymentBecomesPartial = async () => {
 
 const cashOverpaymentBecomesPartialWithChange = async () => {
   // Pay $150 cash on $100 — PARTIAL with change 50
-  await addPayment.execute(cashOverpaySaleId, {
-    id: payment5Id,
+  await addPayment.execute({
+    saleId: cashOverpaySaleId,
+    paymentId: payment5Id,
     amount: 150,
     method: PaymentMethod.CASH,
   });
@@ -257,8 +263,9 @@ const cashOverpaymentBecomesPartialWithChange = async () => {
 
 const failedPaymentRevertsOrderToPending = async () => {
   // Add a covering payment → PARTIAL
-  const addResult = await addPayment.execute(failedPaymentSaleId, {
-    id: payment6Id,
+  const addResult = await addPayment.execute({
+    saleId: failedPaymentSaleId,
+    paymentId: payment6Id,
     amount: 100,
     method: PaymentMethod.CARD,
   });
