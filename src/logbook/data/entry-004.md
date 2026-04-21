@@ -4,7 +4,7 @@ date: 2026-04-10
 summary: "Auditoria y endurecimiento del contexto Payment, Live Demo interactivo con Preact Islands y Nanostores, capa de servicios para separar UI del dominio."
 tags: ["ddd", "payment", "audit", "state-machine", "testing", "frontend", "preact", "live-demo"]
 testSuites: ["iter4-payment-audit"]
-closed: false
+closed: true
 ---
 
 ## Auditoria del contexto Payment

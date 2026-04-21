@@ -13,9 +13,13 @@ export enum GatewayTransactionStatus {
   NOT_FOUND = "NOT_FOUND",
 }
 
-export interface WebhookEvent {
+export interface ExternalPaymentPayload {
   transactionId: string;
   success: boolean;
+}
+export interface ExternalPaymentEvent {
+  provider: string;
+  payload: ExternalPaymentPayload;
 }
 export interface PaymentGateway {
   requestPayment(request: PaymentRequest): Promise<string>;

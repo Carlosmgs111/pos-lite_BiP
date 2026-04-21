@@ -23,9 +23,9 @@ export class ReconcilePayment {
     }
 
     if (status === GatewayTransactionStatus.SUCCEEDED) {
-      await this.confirmPayment.execute(paymentId, true);
+      await this.confirmPayment.execute({ transactionId, success: true });
     } else if (status === GatewayTransactionStatus.FAILED) {
-      await this.confirmPayment.execute(paymentId, false);
+      await this.confirmPayment.execute({ transactionId, success: false });
     }
 
     return Result.ok(status);

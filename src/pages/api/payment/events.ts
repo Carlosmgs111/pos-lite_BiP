@@ -1,29 +1,10 @@
 import type { APIRoute } from "astro";
-import { eventBus } from "../../../../package/core/shared/config";
-import {
-  subscribeWithFilter,
-  type EventFilter,
-} from "../../../../package/core/shared/infrastructure/subscribeWithFilter";
 import { SSEStreamAdapter } from "../../../../package/core/shared/infrastructure/SSEStreamAdapter";
+import { subscribeToPaymentEvents } from "../../../../package/core/payment/application/outbound/PaymentEventStream";
 
 export const prerender = false;
 
-const PAYMENT_EVENTS = [
-  "payment.order.completed",
-  "payment.order.failed",
-  "payment.transaction.result",
-] as const;
-
-const eventTranslator: Record<string, string> = {
-  "payment.order.completed": "payment.order.completed",
-  "payment.order.failed": "payment.order.failed",
-  "payment.transaction.result": "payment.transaction.result",
-};
-
 export const GET: APIRoute = async ({ request }) => {
-  const filters: EventFilter[] = PAYMENT_EVENTS.map((eventName) => ({
-    eventName,
-  }));
 
   let sse: SSEStreamAdapter | null = null;
 
@@ -31,14 +12,11 @@ export const GET: APIRoute = async ({ request }) => {
     start(controller) {
       sse = new SSEStreamAdapter(controller);
 
-      const unsubscribe = subscribeWithFilter(eventBus, filters, {
-        handle: async (event) => {
-          const type = eventTranslator[event.eventName] ?? event.eventName;
-          sse?.sendEvent(type, {
-            ...event.payload,
-            timestamp: event.occurredAt.toISOString(),
-          });
-        },
+      const unsubscribe = subscribeToPaymentEvents((event) => {
+        sse?.sendEvent(event.type, {
+          ...event.payload,
+          timestamp: event.occurredAt,
+        });
       });
 
       sse.onClose(unsubscribe);

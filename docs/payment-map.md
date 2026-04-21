@@ -6,15 +6,21 @@
   - [CreatePaymentOrder](#createpaymentorder)
   - [CancelPaymentOrder](#cancelpaymentorder)
   - [AddPayment](#addpayment)
-  - [PaymentCommit](#paymentcommit)
-- [Entities](#entities)
-  - [PaymentOrder (Aggregate Root)](#paymentorder-aggregate-root)
+  - [ConfirmPayment](#confirmpayment)
+  - [ProcessPayment](#processpayment)
+  - [ReconcilePayment](#reconcilepayment)
+- [Aggregates](#aggregates)
+  - [PaymentOrder](#paymentorder)
   - [Payment](#payment)
 - [Domain Events](#domain-events)
   - [PaymentOrderCompleted](#paymentordercompleted)
   - [PaymentOrderFailed](#paymentorderfailed)
-- [Value Objects](#value-objects)
+  - [PaymentTransactionResult](#paymenttransactionresult)
+- [Domain Ports](#domain-ports)
+  - [PaymentGateway](#paymentgateway)
+- [Value Objects / Enums](#value-objects--enums)
   - [PaymentMethod](#paymentmethod)
+  - [PaymentOrderStatus](#paymentorderstatus)
   - [PaymentStatus](#paymentstatus)
   - [Price](./shared-map.md#price)
 
@@ -28,105 +34,154 @@
 ### Capabilities
 
 - #### CreatePaymentOrder
-  Use: [PaymentOrderRepository](#paymentorderrepository)  
-  Entities: [PaymentOrder](#paymentorder-aggregate-root)  
-  Intent: Creates a new payment order and stores it in the repository
+  Use: [PaymentOrderRepository](#paymentorderrepository)
+  Aggregates: [PaymentOrder](#paymentorder)
+  Intent: Creates a new payment order for a sale
   Consistency: Strong(Aggregate)
+
 - #### CancelPaymentOrder
-  Use: [PaymentOrderRepository](#paymentorderrepository)  
-  Entities: [PaymentOrder](#paymentorder-aggregate-root)  
-  Intent: Cancels a payment order and updates its state in the repository
-- #### RegisterPayment
-  Use: [PaymentOrderRepository](#paymentorderrepository)  
-  Entities: [PaymentOrder](#paymentorder-aggregate-root), [Payment](#payment)  
-  Intent: Adds a payment to a payment order ready to be confirmed and updates its state in the repository
+  Use: [PaymentOrderRepository](#paymentorderrepository)
+  Aggregates: [PaymentOrder](#paymentorder)
+  Intent: Cancels a payment order
+
+- #### AddPayment
+  Use: [PaymentOrderRepository](#paymentorderrepository), [PaymentRepository](#paymentrepository)
+  Aggregates: [PaymentOrder](#paymentorder) (validates), [Payment](#payment) (creates)
+  Intent: PaymentOrder validates the intent (`assertCanAcceptPayment`), then Payment is created in its own repository. PaymentOrder updates accumulated state (`registerPendingPayment`).
+  Consistency: Cross-aggregate coordination in Application Service
+
 - #### ConfirmPayment
-  Use: [PaymentOrderRepository](#paymentorderrepository)  
-  Entities: [PaymentOrder](#paymentorder-aggregate-root), [Payment](#payment)  
-  Intent: Confirms a payment and updates its state in the repository
-- #### ConfirmExternalPayment
-  Use: [PaymentOrderRepository](#paymentorderrepository)  
-  Entities: [PaymentOrder](#paymentorder-aggregate-root)  
-  Intent: Recieves the result of external transaction and updates the payment order state depending on the result, success or failure
+  Use: [PaymentRepository](#paymentrepository), [PaymentOrderRepository](#paymentorderrepository), [EventBus](#eventbus)
+  Aggregates: [Payment](#payment) (transitions), [PaymentOrder](#paymentorder) (incremental update)
+  Intent: Transitions Payment to COMPLETED/FAILED. Then applies incremental update to PaymentOrder (`applyPayment` or `registerFailedAttempt`). Publishes domain events.
+  Input: `{ paymentId?, transactionId?, success }` — supports lookup by internal ID or external transaction ID (webhook path)
+
+- #### ProcessPayment
+  Use: [PaymentRepository](#paymentrepository), [PaymentGateway](#paymentgateway)
+  Aggregates: [Payment](#payment)
+  Intent: Fire-and-forget — submits payment to external gateway, links external transaction ID to Payment via `processing(transactionId)`
+
+- #### ReconcilePayment
+  Use: [PaymentGateway](#paymentgateway), [ConfirmPayment](#confirmpayment)
+  Intent: Single-check query against gateway, confirms if resolved. Used by polling workers and cron jobs. Retry policy lives in the gateway adapter (infrastructure).
 
 ### Domain Ports
 
+- #### PaymentGateway
+  `requestPayment(request): Promise<string>` — submits to external processor
+  `queryStatus(transactionId): Promise<GatewayTransactionStatus>` — single status check
+
 ## Domain Layer
 
-### Entities
+### Aggregates
 
-- #### PaymentOrder (Aggregate Root)
+- #### PaymentOrder
+  **Aggregate Root — self-sufficient, no dependency on Payment[]**
 
-  What it is: A payment order is an aggregate root that represents the payment process for a sale
-  What it does: Manages multiple payments for a sale  
-  What it has:
-  - [Id](#uuid)
-  - [SaleId](#uuid)
-  - [TotalAmount](./shared-map.md#price)
-  - [Status](#paymentorderstatus)
-  - [Payments](#payment)
-  - [CreatedAt](DateTime)
-  - [CompletedAt](DateTime)
+  What it is: Represents the payment process for a sale
+  What it does: Validates payment intent, tracks accumulated state, determines order completion
+
+  State (accumulated, not computed):
+  - Id, SaleId, TotalAmount
+  - **PaidAmount** — sum of confirmed payments
+  - **PendingAmount** — sum of registered but unresolved payments
+  - **FailedAttempts** — counter
+  - Change, Status, CreatedAt, CompletedAt
+
+  Operations (all O(1), no queries):
+  - `assertCanAcceptPayment(amount, method)` — validates against accumulated state
+  - `registerPendingPayment(amount)` — increments pendingAmount on payment creation
+  - `applyPayment(amount)` — moves from pending to paid, detects COMPLETED
+  - `registerFailedAttempt(amount)` — decrements pending, increments counter
+  - `cancel()`, `markAsFailed()` — terminal transitions
 
   Invariants:
-  - paidAmount <= totalAmount (excepto cash con cambio)
-  - Solo cuando paidAmount == totalAmount → COMPLETED
+  - paidAmount + pendingAmount <= totalAmount (except cash with change)
+  - COMPLETED when paidAmount >= totalAmount
+  - FAILED after MAX_FAILED_ATTEMPTS (3)
 
 - #### Payment
-  What it is: A payment is an entity that represents a payment
-  What it does: Manages the state of a payment
-  What it has:
-  - [Id](#uuid)
-  - [RequestedAmount](./shared-map.md#price)
-  - [ConfirmedAmount](./shared-map.md#price)
-  - [Method](#paymentmethod)
-  - [Status](#paymentstatus)
+  **Independent aggregate — own lifecycle, own repository**
+
+  What it is: Represents an individual payment attempt
+  What it does: Manages its own state transitions independently
+
+  State:
+  - Id, **PaymentOrderId** (reference, not ownership)
+  - Amount, Method, Status
+  - ExternalId (linked after gateway submission)
+  - CreatedAt, CompletedAt
+
+  Operations:
+  - `complete()` — PENDING → COMPLETED (requires externalId for non-cash)
+  - `fail()` — PENDING → FAILED
+  - `processing(externalId)` — links to external transaction (card/transfer only)
 
 ### Domain Ports
 
 - #### PaymentOrderRepository
-  **What it is:** A repository that stores payment orders  
-  **What it does:** Stores payment orders in a database
+  `save`, `update`, `findById`, `findBySaleId`
+
+- #### PaymentRepository
+  `save`, `update`, `findById`, `findByPaymentOrderId`, `findByExternalId`
 
 ### Domain Events
 
 - #### PaymentOrderCompleted
-  Emitted: When a payment order reaches full payment
-  Intent: The order is now immutable and finalized
-  What contains:
-  - [SaleId](./sales-map.md#sale)
-- #### PaymentOrderFailed
-  Emitted: When a payment order fails  
-  Intent: The order is now immutable and finalized
-  What contains:
-  - [SaleId](./sales-map.md#sale)
+  Emitted: When PaymentOrder.applyPayment results in COMPLETED status
+  Payload: `{ saleId: string }`
 
-### Primitives
+- #### PaymentOrderFailed
+  Emitted: When failedAttempts >= MAX_FAILED_ATTEMPTS
+  Payload: `{ saleId: string }`
+
+- #### PaymentTransactionResult
+  Emitted: After each individual payment confirmation
+  Payload: `{ paymentId: string, success: boolean }`
+
+### Value Objects / Enums
 
 - #### PaymentMethod(enum)
   CARD | CASH | TRANSFER
 - #### PaymentOrderStatus(enum)
-  PENDING | partial | COMPLETED | FAILED | CANCELLED
+  PENDING | PARTIAL | COMPLETED | FAILED | CANCELLED
 - #### PaymentStatus(enum)
   PENDING | COMPLETED | FAILED
+- #### GatewayTransactionStatus(enum)
+  PENDING | SUCCEEDED | FAILED | NOT_FOUND
 
-### State Machine
+## Infrastructure
 
-- [PaymentOrderCompleted](#paymentordercompleted)
-  - [PENDING -> COMPLETED](#paymentorderstatus)
-- [PaymentOrderFailed](#paymentorderfailed)
-  - [PENDING -> FAILED](#paymentorderstatus)
-- [PaymentOrderCancelled](#paymentordercancelled)
-  - [PENDING -> CANCELLED](#paymentorderstatus)
+### Adapters
+
+- **InMemoryPaymentOrderRepository** — implements PaymentOrderRepository
+- **InMemoryPaymentRepository** — implements PaymentRepository
+- **HttpPaymentGateway** — implements PaymentGateway (HTTP + retry/backoff in queryStatus)
+- **WebhookHandler** — receives external gateway callbacks, delegates to ConfirmPayment
+- **SSEStreamAdapter** — encapsulates SSE stream lifecycle for payment events endpoint
+
+### API Endpoints
+
+- `POST /api/payment/register` — AddPayment
+- `POST /api/payment/process` — ProcessPayment (fire-and-forget to gateway)
+- `POST /api/payment/commit` — ConfirmPayment (cash confirmation)
+- `POST /api/payment/webhook` — WebhookHandler (gateway callback)
+- `POST /api/payment/reconcile` — ReconcilePayment
+- `GET /api/payment/status` — query PaymentOrder + Payments state
+- `GET /api/payment/events` — SSE stream (payment.completed, payment.failed, payment.transaction.result)
 
 ## Integrations
 
 ### Event Handlers
 
-- ### CreatePaymentOrderEventHandler
-  Consumes:[SalesReadyToPay](./sales-map.md#salesreadytopay)
-  Consistensy: eventual
-  Idempotency: required (by SaleId)
-  Retry: yes
-  Failure handling: DLQ / retry policy
-  Intent: Creates a new payment order using the [CreatePaymentOrder](#createpaymentorder) capability
+- #### CreatePaymentOrderOnSaleReady
+  Consumes: [SalesReadyToPay](./sales-map.md#salesreadytopay)
+  Consistency: eventual
+  Intent: Creates a new payment order using CreatePaymentOrder
+
+### Design Decisions
+
+- **Dominance in creation**: PaymentOrder validates whether a Payment can be accepted. Payment does NOT validate against PaymentOrder on its own.
+- **Autonomy in confirmation**: Payment transitions independently. PaymentOrder is updated incrementally via events/use case, not by querying all Payments.
+- **No inverse dependencies**: Payment references PaymentOrder via `paymentOrderId`. PaymentOrder never references Payment[].
+- **External events always accepted**: A webhook confirming a payment is never rejected by PaymentOrder — the real world wins.

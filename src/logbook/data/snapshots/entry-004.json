@@ -1,0 +1,57 @@
+[
+  {
+    "id": "iter4-payment-audit",
+    "name": "Payment Audit (Iter 4)",
+    "description": "Cancelacion, fallo por reintentos, guardas de estado terminal, validaciones",
+    "tests": [
+      {
+        "name": "Cancel payment order from PENDING transitions to CANCELLED",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "Cancel payment order from PARTIAL transitions to CANCELLED",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "Cannot add payment to a CANCELLED order",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "3 failed payments transitions order to FAILED",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "PaymentOrderFailed event cancels the Sale",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "Stock is restored after payment order fails definitively",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": false
+      },
+      {
+        "name": "Cannot add payment to a FAILED order",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "Cannot cancel a COMPLETED payment order",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      },
+      {
+        "name": "Payment with amount 0 is rejected",
+        "suite": "Payment Audit (Iter 4)",
+        "passed": true
+      }
+    ],
+    "passed": 8,
+    "failed": 1,
+    "total": 9
+  }
+]

@@ -22,8 +22,11 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
   await webhookHandler.handle({
-    transactionId: body.transaction_id,
-    success: body.success,
+    provider: "mockProvider",
+    payload: {
+      transactionId: body.transaction_id,
+      success: body.success,
+    },
   });
 
   return new Response(

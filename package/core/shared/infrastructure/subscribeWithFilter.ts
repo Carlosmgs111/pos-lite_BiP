@@ -15,6 +15,8 @@ export function subscribeWithFilter(
   const unsubscribers = filters.map((filter) =>
     bus.subscribe(filter.eventName, {
       handle: async (event) => {
+        console.log({ event });
+        console.log({ filter });
         if (filter.where && !filter.where(event)) return;
         await handler.handle(event);
       },

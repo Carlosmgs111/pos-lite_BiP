@@ -160,7 +160,7 @@ const exactPaymentCompletesOrderAfterResult = async () => {
     method: PaymentMethod.CARD,
   });
   // External processor confirms success
-  await confirmPayment.execute(paymentId, true);
+  await confirmPayment.execute({ paymentId, success: true });
   const po = (await paymentOrderRepository.findBySaleId(saleExactPaymentId)).getValue()!;
   return result(
     "Exact payment completes the order with zero change after external confirmation",

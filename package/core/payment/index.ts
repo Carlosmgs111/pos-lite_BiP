@@ -2,7 +2,7 @@ import { eventBus } from "../shared/config";
 import { InMemoryPaymentOrderRepository } from "./infrastructure/InMemoryPaymentOrderRepository";
 import { InMemoryPaymentRepository } from "./infrastructure/InMemoryPaymentRepository";
 import { HttpPaymentGateway } from "./infrastructure/HttpPaymentGateway";
-import { WebhookHandler } from "./infrastructure/WebhookHandler";
+import { PaymentWebhookHandler } from "./infrastructure/PaymentWebhookHandler";
 import { CreatePaymentOrder } from "./application/use-cases/CreatePaymentOrder";
 import { CancelPaymentOrder } from "./application/use-cases/CancelPaymentOrder";
 import { ConfirmPayment } from "./application/use-cases/ConfirmPayment";
@@ -31,7 +31,7 @@ export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository)
 const paymentGateway = new HttpPaymentGateway(GATEWAY_URL);
 export const processPayment = new ProcessPayment(paymentRepository, paymentGateway);
 export const reconcilePayment = new ReconcilePayment(paymentGateway, confirmPayment);
-export const webhookHandler = new WebhookHandler(confirmPayment, paymentRepository);
+export const webhookHandler = new PaymentWebhookHandler(confirmPayment);
 
 eventBus.subscribe(
   SalesReadyToPay.eventName,
