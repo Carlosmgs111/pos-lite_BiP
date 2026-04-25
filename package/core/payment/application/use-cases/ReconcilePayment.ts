@@ -21,11 +21,14 @@ export class ReconcilePayment {
     } catch (err) {
       return Result.fail(err as Error);
     }
+    const success = status === GatewayTransactionStatus.SUCCEEDED;
 
-    if (status === GatewayTransactionStatus.SUCCEEDED) {
-      await this.confirmPayment.execute({ transactionId, success: true });
-    } else if (status === GatewayTransactionStatus.FAILED) {
-      await this.confirmPayment.execute({ transactionId, success: false });
+    const confirmResult = await this.confirmPayment.execute({
+      transactionId,
+      success,
+    });
+    if (!confirmResult.isSuccess) {
+      return Result.fail(confirmResult.getError()!);
     }
 
     return Result.ok(status);

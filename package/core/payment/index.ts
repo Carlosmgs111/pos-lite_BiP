@@ -10,7 +10,7 @@ import { ProcessPayment } from "./application/use-cases/ProcessPayment";
 import { ReconcilePayment } from "./application/use-cases/ReconcilePayment";
 import { CreatePaymentOrderOnSaleReady } from "./application/event-handlers/CreatePaymentOrderOnSaleReady";
 import { AddPayment } from "./application/use-cases/AddPayment";
-export { PaymentMethod } from "./domain/PaymentMethod";
+export { PaymentMethod } from "./domain/Payment";
 import { PaymentOrderCompleted } from "./domain/events/PaymentOrderCompleted";
 import { PaymentOrderFailed } from "./domain/events/PaymentOrderFailed";
 export { PaymentOrderCompleted, PaymentOrderFailed };

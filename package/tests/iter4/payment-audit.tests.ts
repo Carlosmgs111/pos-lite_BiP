@@ -16,7 +16,7 @@ import {
   processPayment,
 } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
-import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
+import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrder";
 import { SaleStatus } from "../../core/sales/domain/SaleStatus";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 
@@ -234,6 +234,7 @@ const failedOrderCancelsSale = async () => {
   const sale = (
     await saleRepository.getSaleById(failedRetriesSaleId)
   ).getValue()!;
+  console.log(sale.getStatus());
   return result(
     "PaymentOrderFailed event cancels the Sale",
     sale.getStatus() === SaleStatus.CANCELLED

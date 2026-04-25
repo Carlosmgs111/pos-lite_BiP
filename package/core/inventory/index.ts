@@ -2,6 +2,7 @@ import { InMemoryProductRepository } from "./infrastructure/InMemoryProductRepos
 import { GetProducts } from "./application/use-cases/GetProducts";
 import { RegisterProduct } from "./application/use-cases/RegisterProduct";
 import { HandleStockForSale } from "./application/use-cases/HandleStockForSale";
+export { type HandleStockForSalesPort } from "./application/ports/HandleStockForSales";
 
 export const productRepository = new InMemoryProductRepository();
 export const getProducts = new GetProducts(productRepository);

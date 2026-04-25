@@ -25,16 +25,16 @@ export class RemoveItemFromSale {
       return Result.fail(new SaleNotFoundError());
     }
     const sale = saleResult.getValue()!;
+    const releaseStockResult = await this.handleStock.releaseStock(itemId, quantity);
+    if (!releaseStockResult.isSuccess) {
+      return Result.fail(releaseStockResult.getError());
+    }
     const removeItemResult = sale.removeItem({
       itemId,
       quantity,
     });
     if (!removeItemResult.isSuccess) {
       return Result.fail(removeItemResult.getError());
-    }
-    const releaseStockResult = await this.handleStock.releaseStock(itemId, quantity);
-    if (!releaseStockResult.isSuccess) {
-      return Result.fail(releaseStockResult.getError());
     } 
     await this.saleRepository.update(sale);
     return Result.ok(true);

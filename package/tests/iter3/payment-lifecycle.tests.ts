@@ -13,7 +13,7 @@ import {
   confirmPayment,
 } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
-import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
+import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrder";
 import { SaleStatus } from "../../core/sales/domain/SaleStatus";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 

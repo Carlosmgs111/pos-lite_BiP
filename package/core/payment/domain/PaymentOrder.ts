@@ -1,9 +1,16 @@
 import { UuidVO } from "../../shared/domain/Uuid.VO";
 import { PriceVO } from "../../shared/domain/Price.VO";
-import { PaymentOrderStatus } from "./PaymentOrderStatus";
-import { PaymentMethod } from "./PaymentMethod";
+import { PaymentMethod } from "./Payment";
 import { Result } from "../../shared/domain/Result";
 import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
+
+export enum PaymentOrderStatus {
+  PENDING = "PENDING",
+  PARTIAL = "PARTIAL",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
+}
 
 export class PaymentOrder {
   private constructor(
@@ -58,7 +65,7 @@ export class PaymentOrder {
         new InvalidPaymentError("Cannot add payment to a terminal order")
       );
     }
-    if (!PaymentMethod[method]) {
+    if (!Object.values(PaymentMethod).includes(method)) {
       return Result.fail(
         new InvalidPaymentError("Payment method is not valid")
       );
@@ -83,8 +90,26 @@ export class PaymentOrder {
     return Result.ok(undefined);
   }
 
+  private recalculateChange(): void {
+    const coverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
+    if (coverage.getValue() > this.totalAmount.getValue()) {
+      const substractResult = PriceVO.substract(coverage, [this.totalAmount])
+      if (!substractResult.isSuccess) {
+        throw new Error(substractResult.getError());
+      }
+      this.change = substractResult.getValue()!;
+    } else {
+      this.change = new PriceVO(0);
+    }
+  }
+
   /** Called when a new Payment is created and linked to this order. */
-  registerPendingPayment(amount: number): void {
+  registerPendingPayment(amount: number): Result<InvalidPaymentError, void> {
+    if(this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot add payment to a terminal order")
+      );
+    }
     this.pendingAmount = PriceVO.add([this.pendingAmount, new PriceVO(amount)]);
     if (
       PriceVO.add([this.paidAmount, this.pendingAmount]).getValue() >=
@@ -92,39 +117,60 @@ export class PaymentOrder {
     ) {
       this.status = PaymentOrderStatus.PARTIAL;
     }
+    this.recalculateChange();
     this.version++;
+    return Result.ok(undefined);
   }
 
   /** Called when a Payment is confirmed as successful. */
-  applyPayment(amount: number): void {
+  applyPayment(amount: number): Result<InvalidPaymentError, void> {
+    if(this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot apply payment to a terminal order")
+      );
+    }
     this.paidAmount = PriceVO.add([this.paidAmount, new PriceVO(amount)]);
-    this.pendingAmount = PriceVO.substract(this.pendingAmount, [
+    const substractResult = PriceVO.substract(this.pendingAmount, [
       new PriceVO(amount),
     ]);
+    if (!substractResult.isSuccess) {
+      throw new Error(substractResult.getError());
+    }
+    this.pendingAmount = substractResult.getValue()!;
 
     if (this.paidAmount.getValue() >= this.totalAmount.getValue()) {
       this.status = PaymentOrderStatus.COMPLETED;
       this.completedAt = new Date();
-      if (this.paidAmount.getValue() > this.totalAmount.getValue()) {
-        this.change = PriceVO.substract(this.paidAmount, [this.totalAmount]);
-      }
     }
+    this.recalculateChange();
     this.version++;
+    return Result.ok(undefined);
   }
 
   /** Called when a Payment fails. */
-  registerFailedAttempt(amount: number): void {
+  registerFailedAttempt(amount: number): Result<InvalidPaymentError, void> {
+    if(this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot register failed attempt to a terminal order")
+      );
+    }
     this.failedAttempts++;
-    this.pendingAmount = PriceVO.substract(this.pendingAmount, [
+    const substractResult = PriceVO.substract(this.pendingAmount, [
       new PriceVO(amount),
     ]);
+    if (!substractResult.isSuccess) {
+      throw new Error(substractResult.getError());
+    }
+    this.pendingAmount = substractResult.getValue()!;
 
     // Recalculate: if no pending coverage remains, revert to PENDING
     const coverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
     if (coverage.getValue() < this.totalAmount.getValue()) {
       this.status = PaymentOrderStatus.PENDING;
     }
+    this.recalculateChange();
     this.version++;
+    return Result.ok(undefined);
   }
 
   markAsFailed(): Result<InvalidPaymentError, void> {

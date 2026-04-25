@@ -10,7 +10,7 @@ import { cancelSale, saleRepository } from "../../core/sales";
 import { productRepository } from "../../core/inventory";
 import { paymentOrderRepository, addPayment, confirmPayment } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
-import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrderStatus";
+import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrder";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 
 const suiteId = "iter2-payment";

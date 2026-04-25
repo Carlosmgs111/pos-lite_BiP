@@ -1,3 +1,5 @@
+import { Result } from "./Result";
+
 export class PriceVO {
   private readonly value: number;
   private readonly centsPrecision: number = 2;
@@ -16,16 +18,16 @@ export class PriceVO {
     return new PriceVO(totalCents / 100);
   }
 
-  static substract(priceBase: PriceVO, prices: PriceVO[]): PriceVO {
+  static substract(priceBase: PriceVO, prices: PriceVO[]): Result<string, PriceVO> {
     const totalToSubstract = prices.reduce(
       (total, price) => total + price.getValueInCents(),
       0
     );
     if (totalToSubstract > priceBase.getValueInCents()) {
-      throw new Error("Total to substract is greater than price base");
+      return Result.fail("Total to substract is greater than price base");
     }
     const totalCents = priceBase.getValueInCents() - totalToSubstract;
-    return new PriceVO(totalCents / 100);
+    return Result.ok(new PriceVO(totalCents / 100));
   }
 
   static multiply(price: PriceVO, quantity: number): PriceVO {

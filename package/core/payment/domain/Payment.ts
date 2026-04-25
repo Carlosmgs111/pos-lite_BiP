@@ -1,9 +1,20 @@
 import { UuidVO } from "../../shared/domain/Uuid.VO";
-import { PaymentMethod } from "./PaymentMethod";
-import { PaymentStatus } from "./PaymentStatus";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
 import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
+
+export enum PaymentMethod {
+  CASH = "CASH",
+  CARD = "CARD",
+  TRANSFER = "TRANSFER"
+}
+
+export enum PaymentStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+}
 
 export type PaymentProps = {
   id: string;
@@ -70,6 +81,7 @@ export class Payment {
       );
     }
     this.externalId = externalId;
+    this.status = PaymentStatus.PROCESSING;
     this.version++;
     return Result.ok(undefined);
   }

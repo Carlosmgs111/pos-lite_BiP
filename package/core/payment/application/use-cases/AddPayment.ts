@@ -1,7 +1,6 @@
 import type { PaymentOrderRepository } from "../../domain/PaymentOrderRepository";
 import type { PaymentRepository } from "../../domain/PaymentRepository";
-import { Payment } from "../../domain/Payment";
-import type { PaymentMethod } from "../../domain/PaymentMethod";
+import { Payment, PaymentMethod } from "../../domain/Payment";
 import { Result } from "../../../shared/domain/Result";
 import { PaymentOrderNotFoundError } from "../../domain/Errors/PaymentOrderNotFoundError";
 

@@ -5,26 +5,33 @@ import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
 
 export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
   private orders: PaymentOrder[] = [];
+  private persistedVersions = new Map<string, number>();
 
   async save(paymentOrder: PaymentOrder): Promise<Result<Error, void>> {
     this.orders.push(paymentOrder);
+    this.persistedVersions.set(
+      paymentOrder.getId().getValue(),
+      paymentOrder.getVersion()
+    );
     return Result.ok(undefined);
   }
 
   async update(paymentOrder: PaymentOrder): Promise<Result<Error, void>> {
+    const id = paymentOrder.getId().getValue();
     const index = this.orders.findIndex(
-      (o) => o.getId().getValue() === paymentOrder.getId().getValue()
+      (o) => o.getId().getValue() === id
     );
     if (index === -1) {
       return Result.fail(new Error("PaymentOrder not found"));
     }
 
-    const stored = this.orders[index];
-    if (paymentOrder.getVersion() !== stored.getVersion() + 1) {
+    const persistedVersion = this.persistedVersions.get(id) ?? 0;
+    if (paymentOrder.getVersion() <= persistedVersion) {
       return Result.fail(new ConcurrencyError("PaymentOrder"));
     }
 
     this.orders[index] = paymentOrder;
+    this.persistedVersions.set(id, paymentOrder.getVersion());
     return Result.ok(undefined);
   }
 
@@ -44,5 +51,6 @@ export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
 
   purgeDb(): void {
     this.orders = [];
+    this.persistedVersions.clear();
   }
 }

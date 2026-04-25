@@ -5,26 +5,33 @@ import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
 
 export class InMemoryPaymentRepository implements PaymentRepository {
   private payments: Payment[] = [];
+  private persistedVersions = new Map<string, number>();
 
   async save(payment: Payment): Promise<Result<Error, void>> {
     this.payments.push(payment);
+    this.persistedVersions.set(
+      payment.getId().getValue(),
+      payment.getVersion()
+    );
     return Result.ok(undefined);
   }
 
   async update(payment: Payment): Promise<Result<Error, void>> {
+    const id = payment.getId().getValue();
     const index = this.payments.findIndex(
-      (p) => p.getId().getValue() === payment.getId().getValue()
+      (p) => p.getId().getValue() === id
     );
     if (index === -1) {
       return Result.fail(new Error("Payment not found"));
     }
 
-    const stored = this.payments[index];
-    if (payment.getVersion() !== stored.getVersion() + 1) {
+    const persistedVersion = this.persistedVersions.get(id) ?? 0;
+    if (payment.getVersion() !== persistedVersion + 1) {
       return Result.fail(new ConcurrencyError("Payment"));
     }
 
     this.payments[index] = payment;
+    this.persistedVersions.set(id, payment.getVersion());
     return Result.ok(undefined);
   }
 
@@ -51,5 +58,6 @@ export class InMemoryPaymentRepository implements PaymentRepository {
 
   purgeDb(): void {
     this.payments = [];
+    this.persistedVersions.clear();
   }
 }

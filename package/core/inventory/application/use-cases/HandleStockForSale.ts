@@ -2,10 +2,11 @@ import { Result } from "../../../shared/domain/Result";
 import type { ProductRepository } from "../../domain/ProductRepository";
 import type { Product } from "../../domain/Product";
 import { ProductNotFoundError } from "../../domain/Errors/ProductNotFoundError";
+import type { HandleStockForSalesPort } from "../ports/HandleStockForSales";
 
-export class HandleStockForSale {
+export class HandleStockForSale implements HandleStockForSalesPort {
   constructor(
-    private productRepository: ProductRepository
+    private productRepository: ProductRepository,
   ) {}
 
   private async getProductOrFail(productId: string): Promise<Result<Error, Product>> {

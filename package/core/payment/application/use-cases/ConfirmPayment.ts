@@ -2,7 +2,7 @@ import type { PaymentOrderRepository } from "../../domain/PaymentOrderRepository
 import type { PaymentRepository } from "../../domain/PaymentRepository";
 import { Result } from "../../../shared/domain/Result";
 import { PaymentOrderNotFoundError } from "../../domain/Errors/PaymentOrderNotFoundError";
-import { PaymentOrderStatus } from "../../domain/PaymentOrderStatus";
+import { PaymentOrderStatus } from "../../domain/PaymentOrder";
 import { PaymentOrderCompleted } from "../../domain/events/PaymentOrderCompleted";
 import { PaymentOrderFailed } from "../../domain/events/PaymentOrderFailed";
 import { PaymentTransactionResult } from "../../domain/events/PaymentTransactionResult";

@@ -1,4 +1,4 @@
-import type { PaymentMethod } from "./PaymentMethod";
+import { PaymentMethod } from "./Payment";
 
 export interface PaymentRequest {
   paymentId: string;
