@@ -29,4 +29,10 @@ export class HandleStock implements HandleStockPort {
   ): Promise<Result<Error, void>> {
     return await handleStockForSale.restoreStock(itemId, quantity);
   }
+  async revertCommitStock(
+    itemId: string,
+    quantity: number
+  ): Promise<Result<Error, void>> {
+    return await handleStockForSale.revertCommitStock(itemId, quantity);
+  }
 }

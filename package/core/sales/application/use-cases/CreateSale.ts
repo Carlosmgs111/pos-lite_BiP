@@ -24,7 +24,7 @@ export class CreateSale {
       return Result.fail(saleItems.getError());
     }
     const saleItemsProps = saleItems.getValue()!.map((item) => ({
-      productId: props.id,
+      productId: item.id,
       nameSnapshot: item.name,
       quantity: 1,
       priceSnapshot: item.price,

@@ -1,6 +1,7 @@
 import type { PaymentRepository } from "../domain/PaymentRepository";
 import type { Payment } from "../domain/Payment";
 import { Result } from "../../shared/domain/Result";
+import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
 
 export class InMemoryPaymentRepository implements PaymentRepository {
   private payments: Payment[] = [];
@@ -17,6 +18,12 @@ export class InMemoryPaymentRepository implements PaymentRepository {
     if (index === -1) {
       return Result.fail(new Error("Payment not found"));
     }
+
+    const stored = this.payments[index];
+    if (payment.getVersion() !== stored.getVersion() + 1) {
+      return Result.fail(new ConcurrencyError("Payment"));
+    }
+
     this.payments[index] = payment;
     return Result.ok(undefined);
   }

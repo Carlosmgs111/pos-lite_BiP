@@ -19,6 +19,7 @@ export class Payment {
     private method: PaymentMethod,
     private amount: PriceVO,
     private status: PaymentStatus,
+    private version: number,
     private createdAt: Date,
     private externalId?: string,
     private completedAt?: Date
@@ -31,6 +32,7 @@ export class Payment {
       method,
       new PriceVO(amount),
       PaymentStatus.PENDING,
+      0,
       new Date()
     );
   }
@@ -50,6 +52,7 @@ export class Payment {
     }
     this.status = PaymentStatus.COMPLETED;
     this.completedAt = new Date();
+    this.version++;
     return Result.ok(undefined);
   }
 
@@ -67,6 +70,7 @@ export class Payment {
       );
     }
     this.externalId = externalId;
+    this.version++;
     return Result.ok(undefined);
   }
 
@@ -77,9 +81,13 @@ export class Payment {
       );
     }
     this.status = PaymentStatus.FAILED;
+    this.version++;
     return Result.ok(undefined);
   }
 
+  getVersion() {
+    return this.version;
+  }
   getPaymentOrderId() {
     return this.paymentOrderId;
   }

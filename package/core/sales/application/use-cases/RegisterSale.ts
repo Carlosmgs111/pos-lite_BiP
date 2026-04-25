@@ -11,6 +11,8 @@ export class RegisterSale {
     private handleStock: HandleStockPort,
     private eventBus: EventBus
   ) {}
+
+  // TODO: implement non reserved stock check
   async execute(saleId: string): Promise<Result<Error, void>> {
     const saleResult = await this.saleRepository.getSaleById(saleId);
     if (!saleResult.isSuccess) {
@@ -20,14 +22,31 @@ export class RegisterSale {
       return Result.fail(new SaleNotFoundError());
     }
     const sale = saleResult.getValue()!;
+    const committed: Array<{ productId: string; quantity: number }> = [];
     for (const item of sale.getItems()) {
       const confirmStockResult = await this.handleStock.commitStock(
         item.getProductId(),
         item.getQuantity()
       );
       if (!confirmStockResult.isSuccess) {
+        for (const c of committed) {
+          const revertResult = await this.handleStock.revertCommitStock(
+            c.productId,
+            c.quantity
+          );
+          if (!revertResult.isSuccess) {
+            console.error(
+              `[RegisterSale] failed to revert commit for ${c.productId}:`,
+              revertResult.getError()
+            );
+          }
+        }
         return Result.fail(confirmStockResult.getError());
       }
+      committed.push({
+        productId: item.getProductId(),
+        quantity: item.getQuantity(),
+      });
     }
     const confirmResult = sale.confirmSale();
     if (!confirmResult.isSuccess) {
@@ -37,7 +56,11 @@ export class RegisterSale {
       saleId,
       totalAmount: sale.getTotal().getValue(),
     });
-    this.eventBus.publish(salesReadyToPayEvent);
-    return this.saleRepository.update(sale);
+    const updateResult = await this.saleRepository.update(sale);
+    if (!updateResult.isSuccess) {
+      return Result.fail(updateResult.getError());
+    }
+    await this.eventBus.publish(salesReadyToPayEvent);
+    return Result.ok(undefined);
   }
 }

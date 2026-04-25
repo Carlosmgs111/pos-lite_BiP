@@ -1,9 +1,10 @@
 import type { PaymentOrderRepository } from "../domain/PaymentOrderRepository";
 import type { PaymentOrder } from "../domain/PaymentOrder";
 import { Result } from "../../shared/domain/Result";
+import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
 
 export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
-  /* private */ orders: PaymentOrder[] = [];
+  private orders: PaymentOrder[] = [];
 
   async save(paymentOrder: PaymentOrder): Promise<Result<Error, void>> {
     this.orders.push(paymentOrder);
@@ -17,6 +18,12 @@ export class InMemoryPaymentOrderRepository implements PaymentOrderRepository {
     if (index === -1) {
       return Result.fail(new Error("PaymentOrder not found"));
     }
+
+    const stored = this.orders[index];
+    if (paymentOrder.getVersion() !== stored.getVersion() + 1) {
+      return Result.fail(new ConcurrencyError("PaymentOrder"));
+    }
+
     this.orders[index] = paymentOrder;
     return Result.ok(undefined);
   }

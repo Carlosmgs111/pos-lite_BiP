@@ -15,6 +15,7 @@ export class PaymentOrder {
     private failedAttempts: number,
     private change: PriceVO,
     private status: PaymentOrderStatus,
+    private version: number,
     private createdAt: Date,
     private completedAt?: Date
   ) {}
@@ -41,6 +42,7 @@ export class PaymentOrder {
         0,
         new PriceVO(0),
         PaymentOrderStatus.PENDING,
+        0,
         new Date()
       )
     );
@@ -90,6 +92,7 @@ export class PaymentOrder {
     ) {
       this.status = PaymentOrderStatus.PARTIAL;
     }
+    this.version++;
   }
 
   /** Called when a Payment is confirmed as successful. */
@@ -106,6 +109,7 @@ export class PaymentOrder {
         this.change = PriceVO.substract(this.paidAmount, [this.totalAmount]);
       }
     }
+    this.version++;
   }
 
   /** Called when a Payment fails. */
@@ -120,6 +124,7 @@ export class PaymentOrder {
     if (coverage.getValue() < this.totalAmount.getValue()) {
       this.status = PaymentOrderStatus.PENDING;
     }
+    this.version++;
   }
 
   markAsFailed(): Result<InvalidPaymentError, void> {
@@ -131,6 +136,7 @@ export class PaymentOrder {
       );
     }
     this.status = PaymentOrderStatus.FAILED;
+    this.version++;
     return Result.ok(undefined);
   }
 
@@ -141,6 +147,7 @@ export class PaymentOrder {
       );
     }
     this.status = PaymentOrderStatus.CANCELLED;
+    this.version++;
     return Result.ok(undefined);
   }
 
@@ -152,6 +159,9 @@ export class PaymentOrder {
     );
   }
 
+  getVersion() {
+    return this.version;
+  }
   getFailedAttempts() {
     return this.failedAttempts;
   }

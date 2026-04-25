@@ -43,23 +43,6 @@ export class ConfirmPayment {
     }
     const payment = paymentResult.getValue()!;
 
-    const transitionResult = input.success
-      ? payment.complete()
-      : payment.fail();
-    if (!transitionResult.isSuccess) {
-      return Result.fail(transitionResult.getError());
-    }
-    await this.paymentRepository.update(payment);
-
-    // 2. Notify transaction result
-    await this.eventBus.publish(
-      new PaymentTransactionResult({
-        paymentId: payment.getId().getValue(),
-        success: input.success,
-      })
-    );
-
-    // 3. Load PaymentOrder and apply incremental update
     const orderResult = await this.paymentOrderRepository.findById(
       payment.getPaymentOrderId()
     );
@@ -70,38 +53,51 @@ export class ConfirmPayment {
       return Result.fail(new PaymentOrderNotFoundError());
     }
     const order = orderResult.getValue()!;
-    const amount = payment.getAmount().getValue();
 
+    const transitionResult = input.success
+      ? payment.complete()
+      : payment.fail();
+    if (!transitionResult.isSuccess) {
+      return Result.fail(transitionResult.getError());
+    }
+
+    const amount = payment.getAmount().getValue();
     if (input.success) {
       order.applyPayment(amount);
     } else {
       order.registerFailedAttempt(amount);
     }
 
-    // 4. Check terminal transitions
+    let orderTerminalEvent: PaymentOrderCompleted | PaymentOrderFailed | null = null;
     if (order.getStatus() === PaymentOrderStatus.COMPLETED) {
-      await this.paymentOrderRepository.update(order);
-      await this.eventBus.publish(
-        new PaymentOrderCompleted({
-          saleId: order.getSaleId().getValue(),
-        })
-      );
-      return Result.ok(undefined);
-    }
-
-    if (!input.success && order.getFailedAttempts() >= MAX_FAILED_ATTEMPTS) {
+      orderTerminalEvent = new PaymentOrderCompleted({
+        saleId: order.getSaleId().getValue(),
+      });
+    } else if (
+      !input.success &&
+      order.getFailedAttempts() >= MAX_FAILED_ATTEMPTS
+    ) {
       const failResult = order.markAsFailed();
       if (!failResult.isSuccess) return Result.fail(failResult.getError());
-      await this.paymentOrderRepository.update(order);
-      await this.eventBus.publish(
-        new PaymentOrderFailed({
-          saleId: order.getSaleId().getValue(),
-        })
-      );
-      return Result.ok(undefined);
+      orderTerminalEvent = new PaymentOrderFailed({
+        saleId: order.getSaleId().getValue(),
+      });
     }
 
-    await this.paymentOrderRepository.update(order);
+    const paymentUpdate = await this.paymentRepository.update(payment);
+    if (!paymentUpdate.isSuccess) return Result.fail(paymentUpdate.getError());
+    const orderUpdate = await this.paymentOrderRepository.update(order);
+    if (!orderUpdate.isSuccess) return Result.fail(orderUpdate.getError());
+
+    await this.eventBus.publish(
+      new PaymentTransactionResult({
+        paymentId: payment.getId().getValue(),
+        success: input.success,
+      })
+    );
+    if (orderTerminalEvent) {
+      await this.eventBus.publish(orderTerminalEvent);
+    }
     return Result.ok(undefined);
   }
 }

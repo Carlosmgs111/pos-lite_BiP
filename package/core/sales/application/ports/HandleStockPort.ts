@@ -5,4 +5,5 @@ export interface HandleStockPort {
   releaseStock(itemId: string, stockToRelease: number): Promise<Result<Error, void>>;
   commitStock(itemId: string, quantity: number): Promise<Result<Error, void>>;
   restoreStock(itemId: string, quantity: number): Promise<Result<Error, void>>;
+  revertCommitStock(itemId: string, quantity: number): Promise<Result<Error, void>>;
 }

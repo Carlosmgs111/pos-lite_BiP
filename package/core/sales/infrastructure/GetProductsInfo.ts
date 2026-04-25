@@ -6,7 +6,7 @@ export class GetProductsInfo implements GetProductsInfoPort {
   constructor() {}
   async execute(
     productIds: string[]
-  ): Promise<Result<Error, { name: string; price: number }[]>> {
+  ): Promise<Result<Error, { id: string; name: string; price: number }[]>> {
     const productResult = await getProducts.execute(productIds);
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
@@ -14,6 +14,7 @@ export class GetProductsInfo implements GetProductsInfoPort {
     const products = productResult.getValue()!;
     return Result.ok(
       products.map((product) => ({
+        id: product.getId().getValue(),
         name: product.getName(),
         price: product.getPrice(),
       }))

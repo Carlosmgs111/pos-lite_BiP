@@ -53,6 +53,13 @@ export class Product {
     this.reservedStock -= quantity;
     return Result.ok(undefined);
   }
+  revertCommit(quantity: number): Result<InvalidStockOperationError, void> {
+    if (quantity <= 0) {
+      return Result.fail(new InvalidStockOperationError("Quantity to revert must be positive"));
+    }
+    this.reservedStock += quantity;
+    return Result.ok(undefined);
+  }
   restoreStock(quantity: number): Result<InvalidStockOperationError, void> {
     if (quantity <= 0) {
       return Result.fail(new InvalidStockOperationError("Quantity to restore must be positive"));

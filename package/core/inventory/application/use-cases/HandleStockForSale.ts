@@ -82,4 +82,20 @@ export class HandleStockForSale {
     }
     return this.productRepository.update(productId, product);
   }
+
+  async revertCommitStock(
+    productId: string,
+    quantity: number
+  ): Promise<Result<Error, void>> {
+    const productResult = await this.getProductOrFail(productId);
+    if (!productResult.isSuccess) {
+      return Result.fail(productResult.getError());
+    }
+    const product = productResult.getValue()!;
+    const revertResult = product.revertCommit(quantity);
+    if (!revertResult.isSuccess) {
+      return Result.fail(revertResult.getError());
+    }
+    return this.productRepository.update(productId, product);
+  }
 }
