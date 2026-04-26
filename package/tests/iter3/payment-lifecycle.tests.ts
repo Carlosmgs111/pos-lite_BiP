@@ -130,12 +130,13 @@ const newOrderIsPending = async () => {
 };
 
 const firstPaymentBelowTotalKeepsPending = async () => {
-  // Pay $80 of $200
+  // Pay $80 of $200. Uses CASH across the sequential flow so confirmPayment can
+  // complete() synchronously (CARD/TRANSFER would require a prior processPayment to set externalId).
   const addResult = await addPayment.execute({
     saleId: sequentialSaleId,
     paymentId: payment1Id,
     amount: 80,
-    method: PaymentMethod.CARD,
+    method: PaymentMethod.CASH,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
   const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);
@@ -154,7 +155,7 @@ const secondPaymentStillBelowKeepsPending = async () => {
     saleId: sequentialSaleId,
     paymentId: payment2Id,
     amount: 60,
-    method: PaymentMethod.TRANSFER,
+    method: PaymentMethod.CASH,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
   const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);
@@ -174,7 +175,7 @@ const coveringPaymentTransitionsToPartial = async () => {
     saleId: sequentialSaleId,
     paymentId: payment3Id,
     amount: 60,
-    method: PaymentMethod.CARD,
+    method: PaymentMethod.CASH,
   });
   sequentialPaymentIds.push(addResult.getValue()!);
   const poResult = await paymentOrderRepository.findBySaleId(sequentialSaleId);

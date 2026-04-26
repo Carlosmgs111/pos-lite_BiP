@@ -151,15 +151,15 @@ const nonCashExceedsTotalFails = async () => {
 };
 
 const exactPaymentCompletesOrderAfterResult = async () => {
-  // total = 100 (2 items x $50)
+  // total = 100 (2 items x $50). Uses CASH so confirmPayment can complete()
+  // synchronously without going through the gateway's processPayment → externalId flow.
   const paymentId = UuidVO.generate();
   await addPayment.execute({
     saleId: saleExactPaymentId,
     paymentId,
     amount: 100,
-    method: PaymentMethod.CARD,
+    method: PaymentMethod.CASH,
   });
-  // External processor confirms success
   await confirmPayment.execute({ paymentId, success: true });
   const po = (await paymentOrderRepository.findBySaleId(saleExactPaymentId)).getValue()!;
   return result(

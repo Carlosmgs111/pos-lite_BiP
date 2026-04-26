@@ -13,7 +13,6 @@ import {
   addPayment,
   confirmPayment,
   cancelPaymentOrder,
-  processPayment,
 } from "../../core/payment";
 import { PaymentMethod } from "../../core/payment";
 import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrder";
@@ -268,23 +267,23 @@ const addPaymentToFailedFails = async () => {
 //--- Cancel a COMPLETED order fails
 
 const cancelCompletedFails = async () => {
-  // Complete the terminalGuardSaleId order
+  // Complete the terminalGuardSaleId order using CASH so confirmPayment can complete()
+  // synchronously (CARD/TRANSFER require processPayment → gateway → webhook).
   const paymentId = UuidVO.generate();
   await addPayment.execute({
     saleId: terminalGuardSaleId,
     paymentId,
     amount: 100,
-    method: PaymentMethod.CARD,
+    method: PaymentMethod.CASH,
   });
-  const processResult = await processPayment.execute(paymentId, {
+  const confirmResult = await confirmPayment.execute({
     paymentId,
-    amount: 100,
-    method: PaymentMethod.CARD,
+    success: true,
   });
-  if (!processResult.isSuccess) {
-    return result(processResult.getError() as unknown as string, false);
+  if (!confirmResult.isSuccess) {
+    return result(confirmResult.getError() as unknown as string, false);
   }
-  // Try to cancel
+  // Order is now COMPLETED. Try to cancel — must fail.
   const cancelResult = await cancelPaymentOrder.execute(terminalGuardSaleId);
   return result(
     "Cannot cancel a COMPLETED payment order",
