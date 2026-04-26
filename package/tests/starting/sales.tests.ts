@@ -30,12 +30,13 @@ export const saleSuite: Suite = {
   description: suiteDescription,
   tests: [
     async () => {
+      const saleId = UuidVO.generate();
       await createSale.execute({
-        id: "test-sale-1",
+        id: saleId,
         itemIds: [],
         createdAt: new Date(),
       });
-      const sale = await saleRepository.getSaleById("test-sale-1");
+      const sale = await saleRepository.getSaleById(saleId);
       const exists = sale !== undefined && sale !== null;
       productRepository.purgeDb();
       saleRepository.purgeDb();
@@ -43,6 +44,7 @@ export const saleSuite: Suite = {
     },
     async () => {
       const id = UuidVO.generate();
+      const saleId = UuidVO.generate();
       await registerProduct.execute({
         id,
         name: "Item A",
@@ -51,12 +53,12 @@ export const saleSuite: Suite = {
         reservedStock: 0,
       });
       await createSale.execute({
-        id: "test-sale-2",
+        id: saleId,
         itemIds: [],
         createdAt: new Date(),
       });
       const r = await addItemToSale.execute({
-        saleId: "test-sale-2",
+        saleId,
         itemId: id,
         quantity: 2,
       });
@@ -66,6 +68,7 @@ export const saleSuite: Suite = {
     },
     async () => {
       const id = UuidVO.generate();
+      const saleId = UuidVO.generate();
       await registerProduct.execute({
         id,
         name: "Item B",
@@ -74,21 +77,21 @@ export const saleSuite: Suite = {
         reservedStock: 0,
       });
       await createSale.execute({
-        id: "test-sale-3",
+        id: saleId,
         itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
-        saleId: "test-sale-3",
+        saleId,
         itemId: id,
         quantity: 2,
       });
       await addItemToSale.execute({
-        saleId: "test-sale-3",
+        saleId,
         itemId: id,
         quantity: 3,
       });
-      const sale = await saleRepository.getSaleById("test-sale-3");
+      const sale = await saleRepository.getSaleById(saleId);
       const total = sale.getValue()!.getTotal().getValue();
       productRepository.purgeDb();
       saleRepository.purgeDb();
@@ -99,6 +102,7 @@ export const saleSuite: Suite = {
     },
     async () => {
       const id = UuidVO.generate();
+      const saleId = UuidVO.generate();
       await registerProduct.execute({
         id,
         name: "Item C",
@@ -107,21 +111,21 @@ export const saleSuite: Suite = {
         reservedStock: 0,
       });
       await createSale.execute({
-        id: "test-sale-4",
+        id: saleId,
         itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
-        saleId: "test-sale-4",
+        saleId,
         itemId: id,
         quantity: 7,
       });
       await removeItemFromSale.execute({
-        saleId: "test-sale-4",
+        saleId,
         itemId: id,
         quantity: 4,
       });
-      const sale = await saleRepository.getSaleById("test-sale-4");
+      const sale = await saleRepository.getSaleById(saleId);
       const total = sale.getValue()!.getTotal().getValue();
       productRepository.purgeDb();
       saleRepository.purgeDb();
@@ -132,6 +136,7 @@ export const saleSuite: Suite = {
     },
     async () => {
       const id = UuidVO.generate();
+      const saleId = UuidVO.generate();
       await registerProduct.execute({
         id,
         name: "Item D",
@@ -140,16 +145,16 @@ export const saleSuite: Suite = {
         reservedStock: 0,
       });
       await createSale.execute({
-        id: "test-sale-5",
+        id: saleId,
         itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
-        saleId: "test-sale-5",
+        saleId,
         itemId: id,
         quantity: 7,
       });
-      await cancelSale.execute("test-sale-5");
+      await cancelSale.execute(saleId);
       const product = await productRepository.getProducts([id]);
       const stock = product.getValue()![0].getStock();
       productRepository.purgeDb();
@@ -158,6 +163,7 @@ export const saleSuite: Suite = {
     },
     async () => {
       const id = UuidVO.generate();
+      const saleId = UuidVO.generate();
       await registerProduct.execute({
         id,
         name: "Item E",
@@ -166,16 +172,16 @@ export const saleSuite: Suite = {
         reservedStock: 0,
       });
       await createSale.execute({
-        id: "test-sale-6",
+        id: saleId,
         itemIds: [],
         createdAt: new Date(),
       });
       await addItemToSale.execute({
-        saleId: "test-sale-6",
+        saleId,
         itemId: id,
         quantity: 7,
       });
-      await registerSale.execute("test-sale-6");
+      await registerSale.execute(saleId);
       const product = await productRepository.getProducts([id]);
       const stock = product.getValue()![0].getStock();
       productRepository.purgeDb();

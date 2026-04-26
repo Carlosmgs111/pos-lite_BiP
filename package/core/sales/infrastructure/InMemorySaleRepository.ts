@@ -6,7 +6,7 @@ export class InMemorySaleRepository implements SaleRepository {
   private sales: Sale[] = [];
   save(sale: Sale): Promise<Result<Error, void>> {
     this.sales.push(sale);
-    return Promise.resolve(Result.ok());
+    return Promise.resolve(Result.ok(undefined));
   }
   async getSaleById(id: string): Promise<Result<Error, Sale | undefined>> {
     const sale = this.sales.find((sale) => sale.getId() === id);
@@ -21,7 +21,7 @@ export class InMemorySaleRepository implements SaleRepository {
       return Result.fail(new Error("Sale not found"));
     }
     this.sales[index] = sale;
-    return Result.ok();
+    return Result.ok(undefined);
   }
   async delete(saleId: string): Promise<Result<Error, void>> {
     const index = this.sales.findIndex((s) => s.getId() === saleId);
@@ -29,7 +29,7 @@ export class InMemorySaleRepository implements SaleRepository {
       return Result.fail(new Error("Sale not found"));
     }
     this.sales.splice(index, 1);
-    return Result.ok();
+    return Result.ok(undefined);
   }
   purgeDb() {
     this.sales = [];

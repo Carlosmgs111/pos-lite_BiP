@@ -1,6 +1,7 @@
 import { SaleItem } from "./SaleItem";
 import { SaleStatus } from "./SaleStatus";
 import { PriceVO } from "../../shared/domain/Price.VO";
+import { UuidVO } from "../../shared/domain/Uuid.VO";
 import { Result } from "../../shared/domain/Result";
 import type { SaleItemProps } from "./SaleItem";
 import { SaleItemNotFoundError } from "./Errors/SaleItemNotFoundError";
@@ -14,13 +15,19 @@ interface SaleProps {
 
 export class Sale {
   private constructor(
-    private id: string,
+    private id: UuidVO,
     private readonly items: SaleItem[],
     private total: PriceVO,
     private createdAt: Date,
     private status: SaleStatus
   ) {}
   static create(props: SaleProps): Result<Error, Sale> {
+    let id: UuidVO;
+    try {
+      id = new UuidVO(props.id);
+    } catch (err) {
+      return Result.fail(err as Error);
+    }
     const saleItems: SaleItem[] = [];
     for (const item of props.items) {
       const saleItemResult = SaleItem.create(item);
@@ -30,7 +37,7 @@ export class Sale {
       saleItems.push(saleItemResult.getValue()!);
     }
     const sale = new Sale(
-      props.id,
+      id,
       saleItems,
       PriceVO.add(saleItems.map((item) => item.getSubTotal())),
       props.createdAt,
@@ -48,8 +55,8 @@ export class Sale {
   recalculateTotal(): void {
     this.total = PriceVO.add(this.items.map((item) => item.getSubTotal()));
   }
-  getId() {
-    return this.id;
+  getId(): string {
+    return this.id.getValue();
   }
   getStatus() {
     return this.status;
@@ -128,10 +135,10 @@ export class Sale {
       return Result.fail(itemExists.getError());
     }
     const itemExistsResult = itemExists.getValue();
-    if (itemExistsResult!.getQuantity() - item.quantity <= 0) {
-      this.items.splice(this.items.indexOf(itemExistsResult!), 1);
+    if (itemExistsResult.getQuantity() - item.quantity <= 0) {
+      this.items.splice(this.items.indexOf(itemExistsResult), 1);
     } else {
-      itemExistsResult!.decrementQuantity(item.quantity);
+      itemExistsResult.decrementQuantity(item.quantity);
     }
     this.recalculateTotal();
     return Result.ok(undefined);
@@ -142,13 +149,23 @@ export class Sale {
   getTotal() {
     return this.total;
   }
+  // * 🔎 [AUDIT-13-START] HIGH · toJSON expone SaleItem por referencia (rompe encapsulación)
+  // ! Problem: `[...this.items]` clona el array, pero cada SaleItem sigue siendo el mismo objeto
+  // !   con métodos públicos `incrementQuantity`/`decrementQuantity`. Cualquier consumer de
+  // !   toJSON (e.g. cliente JSON.stringify, capa de presentación) puede invocarlos y mutar el
+  // !   estado del agregado desde fuera, saltándose las invariantes de Sale (status DRAFT, etc.).
+  // ? Solution: serializar a DTOs primitivos:
+  // ?   items: this.items.map(i => ({ productId: i.getProductId(), name: i.getNameSnapshot(),
+  // ?     quantity: i.getQuantity(), price: i.getPriceSnapshot().getValue(), subTotal: i.getSubTotal().getValue() }))
+  // ?   y total/price como número (getValue()). toJSON debe ser snapshot inmutable.
   toJSON() {
     return {
-      id: this.id,
-      items: [...this.items],
-      total: this.total,
+      id: this.id.getValue(),
+      items: this.items.map(i => i.serialize()),
+      total: this.total.getValue(),
       createdAt: this.createdAt,
       status: this.status,
     };
   }
+  // 🔎 [AUDIT-13-END]
 }

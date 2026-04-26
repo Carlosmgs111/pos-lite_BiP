@@ -25,6 +25,6 @@ export class CancelSale {
       await this.handleStock.releaseStock(item.getProductId(), item.getQuantity());
     }
     await this.saleRepository.update(sale);
-    return Result.ok();
+    return Result.ok(undefined);
   }
 }

@@ -1,33 +1,37 @@
 export class Result<E, T> {
   public isSuccess: boolean;
-  private error?: E;
-  private value?: T;
+  private error: E;
+  private value: T;
 
-  private constructor(isSuccess: boolean, error?: E, value?: T) {
+  private constructor(isSuccess: boolean, error: E, value: T) {
     this.value = value;
     this.error = error;
     this.isSuccess = isSuccess;
   }
 
-  public static ok<F, U>(value?: U): Result<F, U> {
-    return new Result<F, U>(true, undefined, value);
+  public static ok<F>(value: F): Result<never, F> {
+    return new Result<never, F>(true, undefined as never, value);
   }
 
-  public static fail<F, U>(error?: F): Result<F, U> {
-    return new Result<F, U>(false, error);
+  public static fail<F>(error: F): Result<F, never> {
+    return new Result<F, never>(false, error, undefined as never);
   }
 
-  public getValue() {
+  public getValue(): T {
     if (!this.isSuccess) {
-      throw new Error("Invalid Operation: Can't get value from a failed result");
+      throw new Error(
+        "Invalid Operation: Can't get value from a failed result"
+      );
     }
-    return this.value;
+    return this.value as T;
   }
 
-  public getError() {
+  public getError(): E {
     if (this.isSuccess) {
-      throw new Error("Invalid Operation: Can't get error from a success result");
+      throw new Error(
+        "Invalid Operation: Can't get error from a success result"
+      );
     }
-    return this.error;
+    return this.error as E;
   }
 }

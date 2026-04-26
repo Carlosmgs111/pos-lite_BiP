@@ -32,7 +32,7 @@
       {
         "name": "Stock is restored after payment order fails definitively",
         "suite": "Payment Audit (Iter 4)",
-        "passed": false
+        "passed": true
       },
       {
         "name": "Cannot add payment to a FAILED order",
@@ -50,8 +50,8 @@
         "passed": true
       }
     ],
-    "passed": 8,
-    "failed": 1,
+    "passed": 9,
+    "failed": 0,
     "total": 9
   }
 ]

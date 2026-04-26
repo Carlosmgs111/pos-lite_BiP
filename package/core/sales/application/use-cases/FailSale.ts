@@ -21,6 +21,17 @@ export class FailSale {
     if (!failResult.isSuccess) {
       return Result.fail(failResult.getError());
     }
+    // * 🔎 [AUDIT-23-START] MED · sin compensación si restoreStock falla a media iteración
+    // ! Problem: si el bucle restaura stock para items 0..N-1 y falla en el ítem N, retornamos
+    // !   fail pero los items previos ya consumieron `restoreStock` (stock += quantity).
+    // !   Además, `sale.failSale()` ya marcó el agregado como CANCELLED en memoria pero NO se
+    // !   persiste (saleRepository.update solo se invoca al final). Resultado: stock desbalanceado
+    // !   + venta in-memory CANCELLED pero en repo aún READY_TO_PAY → próximo retry duplica el
+    // !   restore.
+    // ? Solution: o (a) acumular items restaurados y revertirlos en error (simétrico al
+    // ?   patrón de RegisterSale + revertCommitStock), o (b) persistir CANCELLED primero
+    // ?   (failSale + update) y luego restaurar stock como tarea idempotente best-effort
+    // ?   con logging del error.
     for (const item of sale.getItems()) {
       const restoreResult = await this.handleStock.restoreStock(
         item.getProductId(),
@@ -31,5 +42,6 @@ export class FailSale {
       }
     }
     return this.saleRepository.update(sale);
+    // 🔎 [AUDIT-23-END]
   }
 }
