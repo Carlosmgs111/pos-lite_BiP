@@ -1,9 +1,9 @@
 import type { HandleStockPort } from "../application/ports/HandleStockPort";
 import type { Result } from "../../shared/domain/Result";
-import type { HandleStockForSalesPort } from "../../inventory";
+import type { HandleStockForSalePort } from "../../inventory";
 
 export class HandleStock implements HandleStockPort {
-  constructor(private handleStockForSale: HandleStockForSalesPort) {}
+  constructor(private handleStockForSale: HandleStockForSalePort) {}
 
   async reserveStock(
     itemId: string,

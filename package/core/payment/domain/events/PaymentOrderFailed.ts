@@ -1,4 +1,4 @@
-import type { DomainEvent } from "../../../shared/domain/DomaintEvent";
+import type { DomainEvent } from "../../../shared/domain/DomainEvent";
 
 export class PaymentOrderFailed implements DomainEvent<"payment.order.failed"> {
   static readonly eventName = "payment.order.failed" as const;

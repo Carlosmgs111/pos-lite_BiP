@@ -63,12 +63,17 @@ export class ConfirmPayment {
 
     const amount = payment.getAmount().getValue();
     if (input.success) {
-      order.applyPayment(amount);
+      const applyPaymentResult = order.applyPayment(amount);
+      if (!applyPaymentResult.isSuccess)
+        return Result.fail(applyPaymentResult.getError());
     } else {
-      order.registerFailedAttempt(amount);
+      const registerFailedAttemptResult = order.registerFailedAttempt(amount);
+      if (!registerFailedAttemptResult.isSuccess)
+        return Result.fail(registerFailedAttemptResult.getError());
     }
 
-    let orderTerminalEvent: PaymentOrderCompleted | PaymentOrderFailed | null = null;
+    let orderTerminalEvent: PaymentOrderCompleted | PaymentOrderFailed | null =
+      null;
     if (order.getStatus() === PaymentOrderStatus.COMPLETED) {
       orderTerminalEvent = new PaymentOrderCompleted({
         saleId: order.getSaleId().getValue(),

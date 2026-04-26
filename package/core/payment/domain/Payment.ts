@@ -4,16 +4,15 @@ import { Result } from "../../shared/domain/Result";
 import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
 
 export enum PaymentMethod {
-  CASH = "CASH",
-  CARD = "CARD",
-  TRANSFER = "TRANSFER"
+  CASH,
+  CARD,
+  TRANSFER,
 }
 
 export enum PaymentStatus {
-  PENDING = "PENDING",
-  PROCESSING = "PROCESSING",
-  COMPLETED = "COMPLETED",
-  FAILED = "FAILED",
+  PENDING,
+  COMPLETED,
+  FAILED,
 }
 
 export type PaymentProps = {
@@ -81,7 +80,6 @@ export class Payment {
       );
     }
     this.externalId = externalId;
-    this.status = PaymentStatus.PROCESSING;
     this.version++;
     return Result.ok(undefined);
   }

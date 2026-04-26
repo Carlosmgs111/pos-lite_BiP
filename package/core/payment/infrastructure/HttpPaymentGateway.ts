@@ -74,7 +74,10 @@ export class HttpPaymentGateway implements PaymentGateway {
       }
     }
 
+    // Retries exhausted. If the last attempt errored, propagate; otherwise the gateway
+    // kept replying PROCESSING — return TIMEOUT (distinct from PENDING) so the caller can
+    // reconcile later or alert.
     if (lastError) throw lastError;
-    return GatewayTransactionStatus.PENDING;
+    return GatewayTransactionStatus.TIMEOUT;
   }
 }

@@ -1,6 +1,6 @@
 import type { EventBus } from "../domain/bus/EventBus";
 import type { EventHandler } from "../domain/bus/EventHandler";
-import type { DomainEvent, EventName } from "../domain/DomaintEvent";
+import type { DomainEvent, EventName } from "../domain/DomainEvent";
 
 export class InMemoryEventBus implements EventBus {
   private handlers = new Map<string, Set<EventHandler<DomainEvent<any>>>>();

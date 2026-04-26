@@ -2,9 +2,9 @@ import { Result } from "../../../shared/domain/Result";
 import type { ProductRepository } from "../../domain/ProductRepository";
 import type { Product } from "../../domain/Product";
 import { ProductNotFoundError } from "../../domain/Errors/ProductNotFoundError";
-import type { HandleStockForSalesPort } from "../ports/HandleStockForSales";
+import type { HandleStockForSalePort } from "../ports/HandleStockForSale";
 
-export class HandleStockForSale implements HandleStockForSalesPort {
+export class HandleStockForSale implements HandleStockForSalePort {
   constructor(
     private productRepository: ProductRepository,
   ) {}

@@ -11,6 +11,10 @@ export enum GatewayTransactionStatus {
   SUCCEEDED = "SUCCEEDED",
   FAILED = "FAILED",
   NOT_FOUND = "NOT_FOUND",
+  /** queryStatus exhausted its retry budget without ever observing a terminal status.
+   *  Distinct from PENDING (gateway said "still processing") to let callers decide between
+   *  "wait longer / reconcile later" and "alert + manual review". */
+  TIMEOUT = "TIMEOUT",
 }
 
 export interface ExternalPaymentPayload {

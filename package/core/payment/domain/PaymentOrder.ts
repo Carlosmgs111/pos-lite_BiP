@@ -95,7 +95,7 @@ export class PaymentOrder {
     if (coverage.getValue() > this.totalAmount.getValue()) {
       const substractResult = PriceVO.substract(coverage, [this.totalAmount])
       if (!substractResult.isSuccess) {
-        throw new Error(substractResult.getError());
+        throw substractResult.getError() ?? new Error("PriceVO.substract failed");
       }
       this.change = substractResult.getValue()!;
     } else {
@@ -134,7 +134,7 @@ export class PaymentOrder {
       new PriceVO(amount),
     ]);
     if (!substractResult.isSuccess) {
-      throw new Error(substractResult.getError());
+      throw substractResult.getError() ?? new Error("PriceVO.substract failed");
     }
     this.pendingAmount = substractResult.getValue()!;
 
@@ -159,7 +159,7 @@ export class PaymentOrder {
       new PriceVO(amount),
     ]);
     if (!substractResult.isSuccess) {
-      throw new Error(substractResult.getError());
+      throw substractResult.getError() ?? new Error("PriceVO.substract failed");
     }
     this.pendingAmount = substractResult.getValue()!;
 

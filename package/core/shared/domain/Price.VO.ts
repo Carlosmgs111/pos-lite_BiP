@@ -1,4 +1,5 @@
 import { Result } from "./Result";
+import { InvalidPriceOperationError } from "./Errors/InvalidPriceOperationError";
 
 export class PriceVO {
   private readonly value: number;
@@ -18,13 +19,13 @@ export class PriceVO {
     return new PriceVO(totalCents / 100);
   }
 
-  static substract(priceBase: PriceVO, prices: PriceVO[]): Result<string, PriceVO> {
+  static substract(priceBase: PriceVO, prices: PriceVO[]): Result<Error, PriceVO> {
     const totalToSubstract = prices.reduce(
       (total, price) => total + price.getValueInCents(),
       0
     );
     if (totalToSubstract > priceBase.getValueInCents()) {
-      return Result.fail("Total to substract is greater than price base");
+      return Result.fail(new InvalidPriceOperationError());
     }
     const totalCents = priceBase.getValueInCents() - totalToSubstract;
     return Result.ok(new PriceVO(totalCents / 100));

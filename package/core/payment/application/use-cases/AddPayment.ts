@@ -16,7 +16,6 @@ export class AddPayment {
     method: PaymentMethod;
     amount: number;
   }): Promise<Result<Error, string>> {
-    // 1. Load PaymentOrder
     const orderResult = await this.paymentOrderRepository.findBySaleId(
       input.saleId
     );
@@ -26,26 +25,30 @@ export class AddPayment {
     }
     const order = orderResult.getValue()!;
 
-    // 2. PaymentOrder decides — using its own accumulated state
     const assertResult = order.assertCanAcceptPayment(
       input.amount,
       input.method
     );
     if (!assertResult.isSuccess) return Result.fail(assertResult.getError());
 
-    // 3. Create Payment in its own repo
+    const registerPendingPaymentResult = order.registerPendingPayment(input.amount);
+    if (!registerPendingPaymentResult.isSuccess) {
+      return Result.fail(registerPendingPaymentResult.getError());
+    }
+    const updateOrderResult = await this.paymentOrderRepository.update(order);
+    if (!updateOrderResult.isSuccess) {
+      return Result.fail(updateOrderResult.getError());
+    }
     const payment = Payment.create({
       id: input.paymentId,
       paymentOrderId: order.getId().getValue(),
       method: input.method,
       amount: input.amount,
     });
-    await this.paymentRepository.save(payment);
-
-    // 4. Update PaymentOrder accumulated state
-    order.registerPendingPayment(input.amount);
-    await this.paymentOrderRepository.update(order);
-
+    const savePaymentResult = await this.paymentRepository.save(payment);
+    if (!savePaymentResult.isSuccess) {
+      return Result.fail(savePaymentResult.getError());
+    }
     return Result.ok(payment.getId().getValue());
   }
 }
