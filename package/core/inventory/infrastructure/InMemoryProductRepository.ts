@@ -1,56 +1,50 @@
 import { Product } from "../domain/Product";
 import type { ProductRepository } from "../domain/ProductRepository";
 import { Result } from "../../shared/domain/Result";
+import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
 
 export class InMemoryProductRepository implements ProductRepository {
   private products: Product[] = [];
+  // Espejo del patrón de InMemoryPayment*Repository: tracking del último version persistido
+  // por entidad en un Map separado (los Product en `products` son el live ref que el caller
+  // muta tras getProducts; comparar `version` sobre el mismo objeto siempre coincidiría).
+  private persistedVersions = new Map<string, number>();
+
   async registry(product: Product): Promise<Result<Error, void>> {
     this.products.push(product);
+    this.persistedVersions.set(
+      product.getId().getValue(),
+      product.getVersion()
+    );
     return Result.ok(undefined);
   }
-  // * 🔎 [AUDIT-20-START] LOW · getProducts retorna undefined cuando no hay matches
-  // ! Problem: `Result.ok(undefined)` para conjunto vacío rompe el tipo idiomático "lista vacía".
-  // !   Forzaba a callers (GetProducts, HandleStockForSale.getProductOrFail) a chequear
-  // !   `!getValue()` además de `!isSuccess` y a fabricar ProductNotFoundError. Mezcla
-  // !   "no encontré nada" (resultado válido) con "fallo de infra".
-  // ? Solution: devolver `Result.ok([])` para vacío. La decisión "tratar vacío como error" es
-  // ?   del use case, no del repo. Cambiar tipo de retorno a `Result<Error, Product[]>`.
   async getProducts(productIds: string[]): Promise<Result<Error, Product[]>> {
     const products = this.products.filter(
       (product) => productIds.includes(product.getId().getValue())
     );
     return Result.ok(products);
   }
-  // 🔎 [AUDIT-20-END]
   async listProducts(): Promise<Result<Error, Product[]>> {
     return Result.ok(this.products);
   }
-  // * 🔎 [AUDIT-19-START] MED · update con Partial<Product> + Object.assign + reasignación inútil
-  // ! Problem: (1) la firma `Partial<Product>` permite a callers pasar fragmentos, pero todos los
-  // !   callers reales (HandleStockForSale.*) pasan el Product completo — la firma es un type lie.
-  // !   (2) Partial<Product> expone TODOS los campos privados (id, name, price, stock, reservedStock)
-  // !   como mutables, rompiendo encapsulación. (3) `Object.assign(product, props)` muta el objeto
-  // !   ya encontrado en el array — la línea `this.products[index] = product` que sigue es no-op
-  // !   redundante (mismo ref). (4) Sin clonar, no hay snapshot semantics → optimistic locking
-  // !   futuro estará condenado al mismo bug que tuvieron Payment/PaymentOrder repos.
-  // ? Solution: cambiar firma a `update(product: Product): Promise<Result<Error, void>>`. Buscar
-  // ?   por `product.getId()`, reemplazar el slot del array. (Opcional para futuro: clone-on-read
-  // ?   en getProducts para que update con version check funcione correctamente.)
   async update(product: Product): Promise<Result<Error, void>> {
     const productId = product.getId().getValue();
-    const deltaProduct = this.products.find(
-      (product) => product.getId().getValue() === productId
+    const index = this.products.findIndex(
+      (p) => p.getId().getValue() === productId
     );
-
-    if (!deltaProduct) {
+    if (index === -1) {
       return Result.fail(new Error("Product not found"));
     }
-    Object.assign(deltaProduct, product);
-    this.products[this.products.findIndex((product) => product.getId().getValue() === productId)] = deltaProduct;
+    const persistedVersion = this.persistedVersions.get(productId) ?? 0;
+    if (product.getVersion() <= persistedVersion) {
+      return Result.fail(new ConcurrencyError("Product"));
+    }
+    this.products[index] = product;
+    this.persistedVersions.set(productId, product.getVersion());
     return Result.ok(undefined);
   }
-  // 🔎 [AUDIT-19-END]
   purgeDb() {
     this.products = [];
+    this.persistedVersions.clear();
   }
 }

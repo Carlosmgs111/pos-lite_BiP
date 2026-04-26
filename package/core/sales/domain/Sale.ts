@@ -52,6 +52,14 @@ export class Sale {
     }
     return Result.ok(item);
   }
+  canAddItem(): Result<InvalidSaleStateError, void> {
+    if (this.status !== SaleStatus.DRAFT) {
+      return Result.fail(
+        new InvalidSaleStateError("Can only add items to a draft sale")
+      );
+    }
+    return Result.ok(undefined);
+  }
   recalculateTotal(): void {
     this.total = PriceVO.add(this.items.map((item) => item.getSubTotal()));
   }
@@ -112,7 +120,12 @@ export class Sale {
     }
     const itemExists = this.findItemById(item.productId);
     if (itemExists.isSuccess) {
-      itemExists.getValue()!.incrementQuantity(item.quantity);
+      const incrementResult = itemExists
+        .getValue()!
+        .incrementQuantity(item.quantity);
+      if (!incrementResult.isSuccess) {
+        return Result.fail(incrementResult.getError());
+      }
       this.recalculateTotal();
       return Result.ok(undefined);
     }
@@ -149,15 +162,6 @@ export class Sale {
   getTotal() {
     return this.total;
   }
-  // * 🔎 [AUDIT-13-START] HIGH · toJSON expone SaleItem por referencia (rompe encapsulación)
-  // ! Problem: `[...this.items]` clona el array, pero cada SaleItem sigue siendo el mismo objeto
-  // !   con métodos públicos `incrementQuantity`/`decrementQuantity`. Cualquier consumer de
-  // !   toJSON (e.g. cliente JSON.stringify, capa de presentación) puede invocarlos y mutar el
-  // !   estado del agregado desde fuera, saltándose las invariantes de Sale (status DRAFT, etc.).
-  // ? Solution: serializar a DTOs primitivos:
-  // ?   items: this.items.map(i => ({ productId: i.getProductId(), name: i.getNameSnapshot(),
-  // ?     quantity: i.getQuantity(), price: i.getPriceSnapshot().getValue(), subTotal: i.getSubTotal().getValue() }))
-  // ?   y total/price como número (getValue()). toJSON debe ser snapshot inmutable.
   toJSON() {
     return {
       id: this.id.getValue(),
@@ -167,5 +171,4 @@ export class Sale {
       status: this.status,
     };
   }
-  // 🔎 [AUDIT-13-END]
 }

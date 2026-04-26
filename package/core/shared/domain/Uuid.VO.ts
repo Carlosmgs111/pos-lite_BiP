@@ -1,15 +1,7 @@
-// * 🔎 [AUDIT-24-START] LOW · regex case-insensitive pero version range estricto (1-7)
-// ! Problem: (1) `[1-7]` para el dígito de versión rechaza UUIDs v8/v9 (existen en futuras specs);
-// !   más importante, rechaza el UUID nil "00000000-0000-0000-0000-000000000000" que algunos
-// !   tests/seeds usan. Si el test failing `Invalid UUID format` en starting-sales pasa un nil
-// !   o un v0, esta es la causa. (2) Regex con /i + value almacenado en lowercase: aceptas
-// !   "AAAA-..." pero almacenas "aaaa-..." — comportamiento correcto pero asimétrico (validas
-// !   amplio, normalizas estrecho). Funciona, pero confunde al onboarding.
-// ? Solution: (1) ampliar versión a `[1-9a-f]` o documentar restricción. Investigar el test
-// ?   fallido para confirmar que esta sea la causa. (2) decidir convención: o aceptar solo
-// ?   lowercase (regex sin /i) o normalizar en validación, no en construcción.
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-7][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-// 🔎 [AUDIT-24-END]
+// Acepta UUID v1-v9 (cubre versiones actuales y futuras inmediatas). Nil UUID
+// (00000000-...) sigue rechazado intencionalmente: no debería usarse como identificador
+// de dominio. Variant nibble [89ab] mantiene la restricción de RFC 4122.
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-9][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class UuidVO {
   private readonly value: string;

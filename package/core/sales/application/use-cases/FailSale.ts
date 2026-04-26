@@ -21,27 +21,27 @@ export class FailSale {
     if (!failResult.isSuccess) {
       return Result.fail(failResult.getError());
     }
-    // * 🔎 [AUDIT-23-START] MED · sin compensación si restoreStock falla a media iteración
-    // ! Problem: si el bucle restaura stock para items 0..N-1 y falla en el ítem N, retornamos
-    // !   fail pero los items previos ya consumieron `restoreStock` (stock += quantity).
-    // !   Además, `sale.failSale()` ya marcó el agregado como CANCELLED en memoria pero NO se
-    // !   persiste (saleRepository.update solo se invoca al final). Resultado: stock desbalanceado
-    // !   + venta in-memory CANCELLED pero en repo aún READY_TO_PAY → próximo retry duplica el
-    // !   restore.
-    // ? Solution: o (a) acumular items restaurados y revertirlos en error (simétrico al
-    // ?   patrón de RegisterSale + revertCommitStock), o (b) persistir CANCELLED primero
-    // ?   (failSale + update) y luego restaurar stock como tarea idempotente best-effort
-    // ?   con logging del error.
+
+    // Persist CANCELLED first so a retry does not re-trigger this path on the same sale.
+    // Stock restoration is then best-effort: failures are logged but not propagated, since
+    // the sale is already terminal and a partial restore is preferable to a stuck retry loop.
+    const updateResult = await this.saleRepository.update(sale);
+    if (!updateResult.isSuccess) {
+      return Result.fail(updateResult.getError());
+    }
+
     for (const item of sale.getItems()) {
       const restoreResult = await this.handleStock.restoreStock(
         item.getProductId(),
         item.getQuantity()
       );
       if (!restoreResult.isSuccess) {
-        return Result.fail(restoreResult.getError());
+        console.error(
+          `[FailSale] failed to restore stock for ${item.getProductId()} on sale ${sale.getId()}:`,
+          restoreResult.getError()
+        );
       }
     }
-    return this.saleRepository.update(sale);
-    // 🔎 [AUDIT-23-END]
+    return Result.ok(undefined);
   }
 }
