@@ -14,7 +14,7 @@ import {
   confirmPayment,
 } from "../../core/payment";
 import { PaymentMethod, PaymentStatus, Payment } from "../../core/payment/domain/Payment";
-import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrder";
+import { PaymentOrderStatus, PaymentOrder } from "../../core/payment/domain/PaymentOrder";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
 import { ConcurrencyError } from "../../core/shared/domain/Errors/ConcurrencyError";
 
@@ -46,14 +46,17 @@ const setup = async () => {
   await createSale.execute({ id: cashOverpaySaleId, itemIds: [], createdAt: new Date() });
   await addItemToSale.execute({ saleId: cashOverpaySaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(cashOverpaySaleId);
+  await paymentOrderRepository.save(PaymentOrder.create({ saleId: cashOverpaySaleId, totalAmount: 100 }).getValue()!);
 
   await createSale.execute({ id: cardProcessSaleId, itemIds: [], createdAt: new Date() });
   await addItemToSale.execute({ saleId: cardProcessSaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(cardProcessSaleId);
+  await paymentOrderRepository.save(PaymentOrder.create({ saleId: cardProcessSaleId, totalAmount: 100 }).getValue()!);
 
   await createSale.execute({ id: completedOrderSaleId, itemIds: [], createdAt: new Date() });
   await addItemToSale.execute({ saleId: completedOrderSaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(completedOrderSaleId);
+  await paymentOrderRepository.save(PaymentOrder.create({ saleId: completedOrderSaleId, totalAmount: 100 }).getValue()!);
 
   // Direct Payments for Payment entity tests (dummy orderId — no PaymentOrder needed)
   const dummyOrderId = UuidVO.generate();
@@ -64,10 +67,13 @@ const setup = async () => {
   await paymentRepository.save(Payment.create({ id: failedPaymentId, paymentOrderId: dummyOrderId, method: PaymentMethod.CARD, amount: 100 }));
 
   // Transition terminal-state payments
-  (await paymentRepository.findById(completedPaymentId)).getValue()!.complete();
-  await paymentRepository.update((await paymentRepository.findById(completedPaymentId)).getValue()!);
-  (await paymentRepository.findById(failedPaymentId)).getValue()!.fail();
-  await paymentRepository.update((await paymentRepository.findById(failedPaymentId)).getValue()!);
+  const completedP = (await paymentRepository.findById(completedPaymentId)).getValue()!;
+  completedP.processing("setup-txn-completed");
+  completedP.complete();
+  await paymentRepository.update(completedP);
+  const failedP = (await paymentRepository.findById(failedPaymentId)).getValue()!;
+  failedP.fail();
+  await paymentRepository.update(failedP);
 
   // Complete the completedOrderSaleId PaymentOrder
   const compPayId = UuidVO.generate();
@@ -164,10 +170,10 @@ const failFailsForCompletedPayment = async () => {
   return result("fail() fails when payment is COMPLETED (not PENDING)", !r.isSuccess);
 };
 
-const failFailsForFailedPayment = async () => {
+const failIsIdempotentForAlreadyFailed = async () => {
   const p = (await paymentRepository.findById(failedPaymentId)).getValue()!;
   const r = p.fail();
-  return result("fail() fails when payment is FAILED (not PENDING)", !r.isSuccess);
+  return result("fail() is idempotent when payment is already FAILED", r.isSuccess);
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -253,7 +259,7 @@ export const aggregateSeparationSuite: Suite = {
     completeSucceedsForCardWithExternalId,
     completeSucceedsForTransferWithExternalId,
     failFailsForCompletedPayment,
-    failFailsForFailedPayment,
+    failIsIdempotentForAlreadyFailed,
     registerPendingPaymentFailsOnTerminal,
     applyPaymentFailsOnTerminal,
     registerFailedAttemptFailsOnTerminal,

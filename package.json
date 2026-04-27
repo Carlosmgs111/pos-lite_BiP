@@ -22,7 +22,8 @@
     "nanostores": "^1.2.0",
     "preact": "^10.29.1",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "@astrojs/vercel": "^10.0.5"
   },
   "devDependencies": {
     "@types/node": "^25.6.0"

@@ -15,7 +15,7 @@ import {
   webhookHandler,
 } from "../../core/payment";
 import { PaymentMethod, PaymentStatus, Payment } from "../../core/payment/domain/Payment";
-import { PaymentOrderStatus } from "../../core/payment/domain/PaymentOrder";
+import { PaymentOrderStatus, PaymentOrder } from "../../core/payment/domain/PaymentOrder";
 import { ProcessPayment } from "../../core/payment/application/use-cases/ProcessPayment";
 import { ReconcilePayment } from "../../core/payment/application/use-cases/ReconcilePayment";
 import type { PaymentGateway, PaymentRequest } from "../../core/payment/domain/PaymentGateway";
@@ -63,10 +63,12 @@ const setup = async () => {
   await createSale.execute({ id: reconcileSaleId, itemIds: [], createdAt: new Date() });
   await addItemToSale.execute({ saleId: reconcileSaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(reconcileSaleId);
+  await paymentOrderRepository.save(PaymentOrder.create({ saleId: reconcileSaleId, totalAmount: 100 }).getValue()!);
 
   await createSale.execute({ id: webhookSaleId, itemIds: [], createdAt: new Date() });
   await addItemToSale.execute({ saleId: webhookSaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(webhookSaleId);
+  await paymentOrderRepository.save(PaymentOrder.create({ saleId: webhookSaleId, totalAmount: 100 }).getValue()!);
 };
 
 const teardown = async () => {
