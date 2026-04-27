@@ -3,6 +3,7 @@
 import { eventBus } from "../../../shared/config";
 import { subscribeWithFilter } from "../../../shared/infrastructure/subscribeWithFilter";
 import type { EventFilter } from "../../../shared/infrastructure/subscribeWithFilter";
+import { Result } from "../../../shared/domain/Result";
 
 export type IntegrationEvent = {
   type: string;
@@ -51,10 +52,11 @@ export function subscribeToPaymentEvents(
           event.eventName as keyof typeof DOMAIN_TO_INTEGRATION
         ];
 
-      if (!mapper) return;
+      if (!mapper) return Result.ok(undefined);
 
       const integrationEvent = mapper(event);
       onEvent(integrationEvent);
+      return Result.ok(undefined);
     },
   });
 }

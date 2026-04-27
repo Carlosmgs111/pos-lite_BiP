@@ -22,6 +22,7 @@ export class RegisterSale {
       return Result.fail(new SaleNotFoundError());
     }
     const sale = saleResult.getValue()!;
+
     const committed: Array<{ productId: string; quantity: number }> = [];
     for (const item of sale.getItems()) {
       const confirmStockResult = await this.handleStock.commitStock(

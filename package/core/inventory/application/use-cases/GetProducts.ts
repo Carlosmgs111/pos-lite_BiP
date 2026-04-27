@@ -1,7 +1,7 @@
 import type { ProductRepository } from "../../domain/ProductRepository";
 import type { Product } from "../../domain/Product";
 import { Result } from "../../../shared/domain/Result";
-import { ProductNotFoundError } from "../../domain/Errors/ProductNotFoundError";
+import { PartialProductsFoundError } from "../../domain/Errors/PartialProductsFoundError";
 
 export class GetProducts {
   constructor(private productRepository: ProductRepository) {}
@@ -13,8 +13,8 @@ export class GetProducts {
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
     }
-    if (!productResult.getValue().length) {
-      return Result.fail(new ProductNotFoundError());
+    if (productResult.getValue().length !== productIds.length) {
+      return Result.fail(new PartialProductsFoundError());
     }
     return Result.ok(productResult.getValue());
   }

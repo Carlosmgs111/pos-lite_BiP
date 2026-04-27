@@ -13,15 +13,13 @@ export class PaymentWebhookHandler {
     if (this.processedTransactionIds.has(payload.transactionId)) {
       return;
     }
+    this.processedTransactionIds.add(payload.transactionId);
     const result = await this.confirmPayment.execute({
       transactionId: payload.transactionId,
       success: payload.success,
     });
     if (!result.isSuccess) {
-      // Non-idempotent failure (unknown transactionId, repo failure, etc.) —
-      // rethrow so the gateway can apply its retry/dead-letter policy.
       throw result.getError() ?? new Error("Webhook confirmation failed");
     }
-    this.processedTransactionIds.add(payload.transactionId);
   }
 }

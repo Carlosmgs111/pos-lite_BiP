@@ -28,7 +28,6 @@ export class CreateSale {
       nameSnapshot: item.name,
       quantity: 1,
       priceSnapshot: item.price,
-      subTotal: item.price * 1,
     }));
 
     const saleResult = Sale.create({

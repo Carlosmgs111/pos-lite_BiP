@@ -90,17 +90,18 @@ export class PaymentOrder {
     return Result.ok(undefined);
   }
 
-  private recalculateChange(): void {
+  private recalculateChange(): Result<InvalidPaymentError, void> {
     const coverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
     if (coverage.getValue() > this.totalAmount.getValue()) {
       const substractResult = PriceVO.substract(coverage, [this.totalAmount])
       if (!substractResult.isSuccess) {
-        throw substractResult.getError() ?? new Error("PriceVO.substract failed");
+        return Result.fail(new InvalidPaymentError("PriceVO.substract failed"));
       }
       this.change = substractResult.getValue()!;
     } else {
       this.change = new PriceVO(0);
     }
+    return Result.ok(undefined);
   }
 
   /** Called when a new Payment is created and linked to this order. */
@@ -117,7 +118,8 @@ export class PaymentOrder {
     ) {
       this.status = PaymentOrderStatus.PARTIAL;
     }
-    this.recalculateChange();
+    const recalcResult = this.recalculateChange();
+    if (!recalcResult.isSuccess) return Result.fail(recalcResult.getError());
     this.version++;
     return Result.ok(undefined);
   }
@@ -129,20 +131,21 @@ export class PaymentOrder {
         new InvalidPaymentError("Cannot apply payment to a terminal order")
       );
     }
-    this.paidAmount = PriceVO.add([this.paidAmount, new PriceVO(amount)]);
     const substractResult = PriceVO.substract(this.pendingAmount, [
       new PriceVO(amount),
     ]);
     if (!substractResult.isSuccess) {
-      throw substractResult.getError() ?? new Error("PriceVO.substract failed");
+      return Result.fail(new InvalidPaymentError("PriceVO.substract failed"));
     }
+    this.paidAmount = PriceVO.add([this.paidAmount, new PriceVO(amount)]);
     this.pendingAmount = substractResult.getValue()!;
 
     if (this.paidAmount.getValue() >= this.totalAmount.getValue()) {
       this.status = PaymentOrderStatus.COMPLETED;
       this.completedAt = new Date();
     }
-    this.recalculateChange();
+    const recalcResult = this.recalculateChange();
+    if (!recalcResult.isSuccess) return Result.fail(recalcResult.getError());
     this.version++;
     return Result.ok(undefined);
   }
@@ -154,21 +157,21 @@ export class PaymentOrder {
         new InvalidPaymentError("Cannot register failed attempt to a terminal order")
       );
     }
-    this.failedAttempts++;
     const substractResult = PriceVO.substract(this.pendingAmount, [
       new PriceVO(amount),
     ]);
     if (!substractResult.isSuccess) {
-      throw substractResult.getError() ?? new Error("PriceVO.substract failed");
+      return Result.fail(new InvalidPaymentError("PriceVO.substract failed"));
     }
+    this.failedAttempts++;
     this.pendingAmount = substractResult.getValue()!;
 
-    // Recalculate: if no pending coverage remains, revert to PENDING
     const coverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
     if (coverage.getValue() < this.totalAmount.getValue()) {
       this.status = PaymentOrderStatus.PENDING;
     }
-    this.recalculateChange();
+    const recalcResult = this.recalculateChange();
+    if (!recalcResult.isSuccess) return Result.fail(recalcResult.getError());
     this.version++;
     return Result.ok(undefined);
   }

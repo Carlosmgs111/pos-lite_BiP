@@ -39,7 +39,10 @@ export class InMemoryPaymentRepository implements PaymentRepository {
     const payment = this.payments.find(
       (p) => p.getId().getValue() === id
     );
-    return Result.ok(payment ?? null);
+    if (!payment) {
+      return Result.fail(new Error("Payment not found"));
+    }
+    return Result.ok(payment);
   }
 
   async findByPaymentOrderId(orderId: string): Promise<Result<Error, Payment[]>> {

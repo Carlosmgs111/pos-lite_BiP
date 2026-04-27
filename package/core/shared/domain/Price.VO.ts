@@ -40,6 +40,9 @@ export class PriceVO {
   }
 
   private validate(price: number): void {
+    if (!Number.isFinite(price)) {
+      throw new Error("Price must be a finite number");
+    }
     if (isNaN(price)) {
       throw new Error("Price must be a number");
     }
@@ -48,7 +51,7 @@ export class PriceVO {
     }
     if (
       !Number.isInteger(price) &&
-      String(price).split(".")[1].length > this.centsPrecision
+      String(price.toFixed(this.centsPrecision + 1)).split(".")[1].length > this.centsPrecision
     ) {
       throw new Error("Price must have at most 2 decimal places");
     }

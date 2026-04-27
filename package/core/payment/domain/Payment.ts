@@ -55,6 +55,9 @@ export class Payment {
         )
       );
     }
+    if (this.status === PaymentStatus.COMPLETED) {
+      return Result.ok(undefined);
+    }
     if (this.status !== PaymentStatus.PENDING) {
       return Result.fail(
         new InvalidPaymentError("Can only complete a pending payment")
@@ -79,12 +82,19 @@ export class Payment {
         new InvalidPaymentError("Can only process a pending payment")
       );
     }
+    if (this.externalId) {
+      if (this.externalId === externalId) return Result.ok(undefined);
+      return Result.fail(new InvalidPaymentError("Payment already has an external ID"));
+    }
     this.externalId = externalId;
     this.version++;
     return Result.ok(undefined);
   }
 
   fail(): Result<InvalidPaymentError, void> {
+    if (this.status === PaymentStatus.FAILED) {
+      return Result.ok(undefined);
+    }
     if (this.status !== PaymentStatus.PENDING) {
       return Result.fail(
         new InvalidPaymentError("Can only fail a pending payment")

@@ -19,11 +19,12 @@ export class Sale {
     private readonly items: SaleItem[],
     private total: PriceVO,
     private createdAt: Date,
-    private status: SaleStatus
+    private status: SaleStatus,
+    private version: number
   ) {}
   static create(props: SaleProps): Result<Error, Sale> {
     let id: UuidVO;
-    try {
+    try { 
       id = new UuidVO(props.id);
     } catch (err) {
       return Result.fail(err as Error);
@@ -41,7 +42,8 @@ export class Sale {
       saleItems,
       PriceVO.add(saleItems.map((item) => item.getSubTotal())),
       props.createdAt,
-      SaleStatus.DRAFT
+      SaleStatus.DRAFT,
+      0
     );
     return Result.ok(sale);
   }
@@ -69,6 +71,9 @@ export class Sale {
   getStatus() {
     return this.status;
   }
+  getVersion() {
+    return this.version;
+  }
   confirmSale(): Result<InvalidSaleStateError, void> {
     if (this.items.length === 0) {
       return Result.fail(
@@ -81,6 +86,7 @@ export class Sale {
       );
     }
     this.status = SaleStatus.READY_TO_PAY;
+    this.version++;
     return Result.ok(undefined);
   }
   completeSale(): Result<InvalidSaleStateError, void> {
@@ -92,6 +98,7 @@ export class Sale {
       );
     }
     this.status = SaleStatus.COMPLETED;
+    this.version++;
     return Result.ok(undefined);
   }
   cancelSale(): Result<InvalidSaleStateError, void> {
@@ -101,6 +108,7 @@ export class Sale {
       );
     }
     this.status = SaleStatus.CANCELLED;
+    this.version++;
     return Result.ok(undefined);
   }
   failSale(): Result<InvalidSaleStateError, void> {
@@ -110,6 +118,7 @@ export class Sale {
       );
     }
     this.status = SaleStatus.CANCELLED;
+    this.version++;
     return Result.ok(undefined);
   }
   addItem(item: SaleItemProps): Result<Error, void> {
@@ -127,6 +136,7 @@ export class Sale {
         return Result.fail(incrementResult.getError());
       }
       this.recalculateTotal();
+      this.version++;
       return Result.ok(undefined);
     }
     const saleItemResult = SaleItem.create(item);
@@ -135,6 +145,7 @@ export class Sale {
     }
     this.items.push(saleItemResult.getValue()!);
     this.recalculateTotal();
+    this.version++;
     return Result.ok(undefined);
   }
   removeItem(item: { itemId: string; quantity: number }): Result<Error, void> {
@@ -154,6 +165,7 @@ export class Sale {
       itemExistsResult.decrementQuantity(item.quantity);
     }
     this.recalculateTotal();
+    this.version++;
     return Result.ok(undefined);
   }
   getItems() {

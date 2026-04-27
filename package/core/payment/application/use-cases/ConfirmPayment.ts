@@ -89,10 +89,10 @@ export class ConfirmPayment {
       });
     }
 
-    const paymentUpdate = await this.paymentRepository.update(payment);
-    if (!paymentUpdate.isSuccess) return Result.fail(paymentUpdate.getError());
     const orderUpdate = await this.paymentOrderRepository.update(order);
     if (!orderUpdate.isSuccess) return Result.fail(orderUpdate.getError());
+    const paymentUpdate = await this.paymentRepository.update(payment);
+    if (!paymentUpdate.isSuccess) return Result.fail(paymentUpdate.getError());
 
     await this.eventBus.publish(
       new PaymentTransactionResult({

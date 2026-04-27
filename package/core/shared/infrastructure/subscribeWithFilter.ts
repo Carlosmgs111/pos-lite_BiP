@@ -1,6 +1,7 @@
 import type { EventBus } from "../domain/bus/EventBus";
 import type { EventHandler } from "../domain/bus/EventHandler";
 import type { DomainEvent, EventName } from "../domain/DomainEvent";
+import { Result } from "../domain/Result";
 
 export interface EventFilter<K extends EventName = EventName> {
   eventName: K;
@@ -15,8 +16,8 @@ export function subscribeWithFilter(
   const unsubscribers = filters.map((filter) =>
     bus.subscribe(filter.eventName, {
       handle: async (event) => {
-        if (filter.where && !filter.where(event)) return;
-        await handler.handle(event);
+        if (filter.where && !filter.where(event)) return Result.ok(undefined);
+        return await handler.handle(event);
       },
     })
   );

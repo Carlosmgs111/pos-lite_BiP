@@ -20,6 +20,7 @@ export class Product {
     private price: PriceVO,
     private stock: number,
     private reservedStock: number,
+    private committedStock: number,
     private version: number
   ) {}
   static create(props: ProductProps) {
@@ -29,6 +30,7 @@ export class Product {
       new PriceVO(props.price),
       props.stock,
       props.reservedStock,
+      0,
       0
     );
   }
@@ -55,6 +57,7 @@ export class Product {
       return Result.fail(new InvalidStockOperationError("Cannot commit more stock than reserved"));
     }
     this.reservedStock -= quantity;
+    this.committedStock += quantity;
     this.version++;
     return Result.ok(undefined);
   }
@@ -62,7 +65,11 @@ export class Product {
     if (quantity <= 0) {
       return Result.fail(new InvalidStockOperationError("Quantity to revert must be positive"));
     }
+    if (quantity > this.committedStock) {
+      return Result.fail(new InvalidStockOperationError("Cannot revert more stock than committed"));
+    }
     this.reservedStock += quantity;
+    this.committedStock -= quantity;
     this.version++;
     return Result.ok(undefined);
   }
@@ -70,18 +77,13 @@ export class Product {
     if (quantity <= 0) {
       return Result.fail(new InvalidStockOperationError("Quantity to restore must be positive"));
     }
+    if (quantity > this.committedStock) {
+      return Result.fail(new InvalidStockOperationError("Cannot restore more stock than committed"));
+    }
     this.stock += quantity;
+    this.committedStock -= quantity;
     this.version++;
     return Result.ok(undefined);
-  }
-  getVersion() {
-    return this.version;
-  }
-  getStock() {
-    return this.stock;
-  }
-  getReservedStock() {
-    return this.reservedStock;
   }
   getId() {
     return this.id;
@@ -91,5 +93,14 @@ export class Product {
   }
   getPrice() {
     return this.price.getValue();
+  }
+  getVersion() {
+    return this.version;
+  }
+  getStock() {
+    return this.stock;
+  }
+  getReservedStock() {
+    return this.reservedStock;
   }
 }

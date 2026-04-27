@@ -61,7 +61,7 @@ export class SaleItem {
     const newQuantity = this.quantity - quantity;
     if (newQuantity <= 0) {
       return Result.fail(
-        new InvalidQuantityError("Resulting quantity cannot be negative")
+        new InvalidQuantityError("Resulting quantity must be positive")
       );
     }
     this.quantity = newQuantity;
