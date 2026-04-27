@@ -1,11 +1,13 @@
 import type { Suite, TestResult } from "../runner";
 import { PaymentOrderCompleted } from "../../core/payment";
 import { PaymentTransactionResult } from "../../core/payment/domain/events/PaymentTransactionResult";
-import { eventBus } from "../../core/shared/config";
 import { Result } from "../../core/shared/domain/Result";
 import type { DomainEvent } from "../../core/shared/domain/DomainEvent";
 import { subscribeWithFilter } from "../../core/shared/infrastructure/subscribeWithFilter";
 import { UuidVO } from "../../core/shared/domain/Uuid.VO";
+import { InMemoryEventBus } from "../../core/shared/infrastructure/InMemoryEventBus";
+
+const eventBus = new InMemoryEventBus();
 
 const suiteId = "iter5-sse-routing";
 const suiteName = "SSE Event Routing (Iter 5)";
