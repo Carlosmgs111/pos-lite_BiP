@@ -49,12 +49,6 @@ export class PriceVO {
     if (price < 0) {
       throw new Error("Price must not be negative");
     }
-    if (
-      !Number.isInteger(price) &&
-      String(price.toFixed(this.centsPrecision + 1)).split(".")[1].length > this.centsPrecision
-    ) {
-      throw new Error("Price must have at most 2 decimal places");
-    }
   }
 
   private convertToCents(price: number): number {

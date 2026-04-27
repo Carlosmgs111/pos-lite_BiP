@@ -10,6 +10,8 @@ import '../../../package/tests/iter5'; // Register iter5 suites
 
 const SNAPSHOTS_DIR = join(process.cwd(), 'src/logbook/data/snapshots');
 
+const pending = new Map<string, Promise<SuiteResult[]>>();
+
 function getSnapshotPath(entryId: string): string {
   return join(SNAPSHOTS_DIR, `${entryId}.json`);
 }
@@ -42,5 +44,16 @@ export async function resolveTestResults(
     return results;
   }
 
-  return runSuites(testSuites);
+  // Open entry — dedup concurrent calls so two Astro pages don't race
+  const key = testSuites.join(",");
+  const existing = pending.get(key);
+  if (existing) return existing;
+
+  const promise = runSuites(testSuites);
+  pending.set(key, promise);
+  try {
+    return await promise;
+  } finally {
+    pending.delete(key);
+  }
 }
