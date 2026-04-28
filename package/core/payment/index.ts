@@ -33,7 +33,17 @@ export const processPayment = new ProcessPayment(paymentRepository, paymentGatew
 export const reconcilePayment = new ReconcilePayment(paymentGateway, confirmPayment);
 export const webhookHandler = new PaymentWebhookHandler(confirmPayment);
 
-eventBus.subscribe(
-  SalesReadyToPay.eventName,
-  new CreatePaymentOrderOnSaleReady(createPaymentOrder)
+const unsubscribers: Array<() => void> = [];
+
+unsubscribers.push(
+  eventBus.subscribe(
+    SalesReadyToPay.eventName,
+    new CreatePaymentOrderOnSaleReady(createPaymentOrder)
+  )
 );
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    unsubscribers.forEach((fn) => fn());
+  });
+}

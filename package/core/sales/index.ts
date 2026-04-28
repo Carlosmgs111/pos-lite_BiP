@@ -45,11 +45,24 @@ const completeSale = new CompleteSale(saleRepository);
 const failSale = new FailSale(saleRepository, handleStock);
 const processedEventRepository = new InMemoryProcessedEventRepositiry();
 
-eventBus.subscribe(
-  PaymentOrderCompleted.eventName,
-  new SaleCompletedOnPayment(completeSale, processedEventRepository)
+const unsubscribers: Array<() => void> = [];
+
+unsubscribers.push(
+  eventBus.subscribe(
+    PaymentOrderCompleted.eventName,
+    new SaleCompletedOnPayment(completeSale, processedEventRepository)
+  )
 );
-eventBus.subscribe(
-  PaymentOrderFailed.eventName,
-  new SaleFailedOnPayment(failSale)
+unsubscribers.push(
+  eventBus.subscribe(
+    PaymentOrderFailed.eventName,
+    new SaleFailedOnPayment(failSale)
+  )
 );
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    unsubscribers.forEach((fn) => fn());
+  });
+  
+}
