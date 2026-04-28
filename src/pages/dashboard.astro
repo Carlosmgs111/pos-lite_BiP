@@ -1,0 +1,49 @@
+---
+import DashboardLayout from '../dashboard/layouts/DashboardLayout.astro';
+import KPICards from '../dashboard/components/KPICards.astro';
+import SalesChart from '../dashboard/components/SalesChart.astro';
+import PaymentMethods from '../dashboard/components/PaymentMethods.astro';
+import RecentSales from '../dashboard/components/RecentSales.astro';
+import InventoryAlerts from '../dashboard/components/InventoryAlerts.astro';
+import ActivityFeed from '../dashboard/components/ActivityFeed.astro';
+---
+
+<DashboardLayout title="Dashboard - pos-lite">
+  <div class="space-y-6">
+    <!-- Page header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Panel de Control</h1>
+        <p class="text-sm text-gray-500 mt-1">Resumen del punto de venta</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 text-sm font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          En línea
+        </span>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <KPICards />
+
+    <!-- Charts row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <SalesChart />
+      </div>
+      <PaymentMethods />
+    </div>
+
+    <!-- Tables and alerts row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <RecentSales />
+      </div>
+      <InventoryAlerts />
+    </div>
+
+    <!-- Activity feed -->
+    <ActivityFeed />
+  </div>
+</DashboardLayout>

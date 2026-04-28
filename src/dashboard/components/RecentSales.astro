@@ -1,0 +1,74 @@
+---
+interface Sale {
+  id: string;
+  time: string;
+  items: number;
+  total: number;
+  status: 'completed' | 'cancelled' | 'pending';
+  paymentMethod: string;
+}
+
+const sales: Sale[] = [
+  { id: 'VNT-0047', time: '2:45 PM', items: 3, total: 34.50, status: 'completed', paymentMethod: 'Efectivo' },
+  { id: 'VNT-0046', time: '2:32 PM', items: 1, total: 12.00, status: 'completed', paymentMethod: 'Tarjeta' },
+  { id: 'VNT-0045', time: '2:18 PM', items: 5, total: 67.25, status: 'completed', paymentMethod: 'Transferencia' },
+  { id: 'VNT-0044', time: '1:55 PM', items: 2, total: 24.00, status: 'cancelled', paymentMethod: '-' },
+  { id: 'VNT-0043', time: '1:42 PM', items: 4, total: 52.80, status: 'completed', paymentMethod: 'Efectivo' },
+  { id: 'VNT-0042', time: '1:28 PM', items: 1, total: 8.50, status: 'completed', paymentMethod: 'Tarjeta' },
+];
+
+const statusStyles: Record<string, string> = {
+  completed: 'bg-emerald-50 text-emerald-700',
+  cancelled: 'bg-red-50 text-red-700',
+  pending: 'bg-amber-50 text-amber-700',
+};
+
+const statusLabels: Record<string, string> = {
+  completed: 'Completada',
+  cancelled: 'Cancelada',
+  pending: 'Pendiente',
+};
+---
+
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+  <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900">Ventas recientes</h3>
+      <p class="text-sm text-gray-500 mt-1">Últimas transacciones del día</p>
+    </div>
+    <a href="/pos" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+      Nueva venta →
+    </a>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50">
+          <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">ID</th>
+          <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">Hora</th>
+          <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3 hidden sm:table-cell">Items</th>
+          <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">Total</th>
+          <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3 hidden md:table-cell">Método</th>
+          <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-5 py-3">Estado</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {sales.map((sale) => (
+          <tr class="hover:bg-gray-50 transition-colors">
+            <td class="px-5 py-3 text-sm font-medium text-gray-900">{sale.id}</td>
+            <td class="px-5 py-3 text-sm text-gray-500">{sale.time}</td>
+            <td class="px-5 py-3 text-sm text-gray-500 hidden sm:table-cell">{sale.items}</td>
+            <td class="px-5 py-3 text-sm font-medium text-gray-900">${sale.total.toFixed(2)}</td>
+            <td class="px-5 py-3 text-sm text-gray-500 hidden md:table-cell">{sale.paymentMethod}</td>
+            <td class="px-5 py-3">
+              <span class={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyles[sale.status]}`}>
+                {statusLabels[sale.status]}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</div>

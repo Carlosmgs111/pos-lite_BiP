@@ -1,0 +1,127 @@
+---
+interface HourData {
+  hour: string;
+  sales: number;
+  revenue: number;
+}
+
+const data: HourData[] = [
+  { hour: '8am', sales: 3, revenue: 45.50 },
+  { hour: '9am', sales: 7, revenue: 128.30 },
+  { hour: '10am', sales: 12, revenue: 215.75 },
+  { hour: '11am', sales: 15, revenue: 287.40 },
+  { hour: '12pm', sales: 22, revenue: 412.60 },
+  { hour: '1pm', sales: 18, revenue: 345.20 },
+  { hour: '2pm', sales: 14, revenue: 268.90 },
+  { hour: '3pm', sales: 10, revenue: 189.50 },
+  { hour: '4pm', sales: 8, revenue: 142.30 },
+  { hour: '5pm', sales: 5, revenue: 98.75 },
+];
+
+const maxRevenue = Math.max(...data.map(d => d.revenue));
+const chartHeight = 160;
+const chartWidth = 100;
+
+function getPoints(type: 'sales' | 'revenue'): string {
+  return data.map((d, i) => {
+    const x = (i / (data.length - 1)) * chartWidth;
+    const value = type === 'sales' ? d.sales : d.revenue;
+    const max = type === 'sales' ? Math.max(...data.map(dd => dd.sales)) : maxRevenue;
+    const y = chartHeight - (value / max) * chartHeight;
+    return `${x},${y}`;
+  }).join(' ');
+}
+---
+
+<div class="bg-white rounded-xl border border-gray-200 p-5">
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900">Ventas por hora</h3>
+      <p class="text-sm text-gray-500 mt-1">Ingresos y transacciones del día</p>
+    </div>
+    <div class="flex items-center gap-4 text-sm">
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+        <span class="text-gray-600">Ingresos</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+        <span class="text-gray-600">Transacciones</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="relative">
+    <svg viewBox={`0 0 ${chartWidth} ${chartHeight + 30}`} class="w-full h-48" preserveAspectRatio="none">
+      <!-- Grid lines -->
+      {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
+        <line
+          x1="0"
+          x2={chartWidth}
+          y1={chartHeight * (1 - pct)}
+          y2={chartHeight * (1 - pct)}
+          stroke="#e5e7eb"
+          stroke-width="0.5"
+        />
+      ))}
+
+      <!-- Revenue area -->
+      <polygon
+        points={`0,${chartHeight} ${getPoints('revenue')} ${chartWidth},${chartHeight}`}
+        fill="url(#revenueGradient)"
+        opacity="0.3"
+      />
+
+      <!-- Revenue line -->
+      <polyline
+        points={getPoints('revenue')}
+        fill="none"
+        stroke="#10b981"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Sales line -->
+      <polyline
+        points={getPoints('sales')}
+        fill="none"
+        stroke="#3b82f6"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Gradient definition -->
+      <defs>
+        <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
+          <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <!-- X-axis labels -->
+    <div class="flex justify-between mt-2 text-xs text-gray-400">
+      {data.map((d) => (
+        <span>{d.hour}</span>
+      ))}
+    </div>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-gray-100">
+    <div class="text-center">
+      <p class="text-sm font-medium text-gray-900">${data.reduce((sum, d) => sum + d.revenue, 0).toFixed(2)}</p>
+      <p class="text-xs text-gray-500 mt-1">Total ingresos</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm font-medium text-gray-900">{data.reduce((sum, d) => sum + d.sales, 0)}</p>
+      <p class="text-xs text-gray-500 mt-1">Total transacciones</p>
+    </div>
+    <div class="text-center">
+      <p class="text-sm font-medium text-gray-900">${(data.reduce((sum, d) => sum + d.revenue, 0) / data.reduce((sum, d) => sum + d.sales, 0)).toFixed(2)}</p>
+      <p class="text-xs text-gray-500 mt-1">Promedio por venta</p>
+    </div>
+  </div>
+</div>

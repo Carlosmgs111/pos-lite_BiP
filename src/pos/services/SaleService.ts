@@ -8,11 +8,7 @@ import {
   $getItemQuantity,
   updateItemQuantity,
 } from "../stores/cart";
-import {
-  $totalToPay,
-  $paymentStatus,
-  resetPayment,
-} from "../stores/payment";
+import { $totalToPay, $paymentStatus, resetPayment } from "../stores/payment";
 import { CatalogService } from "./CatalogService";
 import { showToast } from "../stores/toast";
 

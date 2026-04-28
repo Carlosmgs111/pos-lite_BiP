@@ -53,7 +53,9 @@ export class RegisterSale {
     if (!confirmResult.isSuccess) {
       return Result.fail(confirmResult.getError());
     }
-    const salesReadyToPayEvent = new SalesReadyToPay({
+    const salesReadyToPayEvent = SalesReadyToPay.create({
+      aggregateId: sale.getId().getValue(),
+      version: sale.getVersion(),
       saleId,
       totalAmount: sale.getTotal().getValue(),
     });

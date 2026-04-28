@@ -1,0 +1,67 @@
+---
+interface KPI {
+  label: string;
+  value: string;
+  change?: { value: string; positive: boolean };
+  icon: string;
+  color: string;
+}
+
+const kpis: KPI[] = [
+  {
+    label: 'Ventas hoy',
+    value: '$1,248.50',
+    change: { value: '+12.5%', positive: true },
+    icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1.017M6.913 4.063a8.001 8.001 0 1010.174 0m-5.58 7.097a2.502 2.502 0 00-1.008-1.963',
+    color: 'bg-emerald-500',
+  },
+  {
+    label: 'Transacciones',
+    value: '47',
+    change: { value: '+8', positive: true },
+    icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z',
+    color: 'bg-blue-500',
+  },
+  {
+    label: 'Ticket promedio',
+    value: '$26.56',
+    change: { value: '-2.1%', positive: false },
+    icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z',
+    color: 'bg-violet-500',
+  },
+  {
+    label: 'Tasa de cancelación',
+    value: '3.2%',
+    change: { value: '-1.4%', positive: true },
+    icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z',
+    color: 'bg-amber-500',
+  },
+];
+---
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  {kpis.map((kpi) => (
+    <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-4">
+        <div class={`w-10 h-10 ${kpi.color} rounded-lg flex items-center justify-center`}>
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={kpi.icon} />
+          </svg>
+        </div>
+        {kpi.change && (
+          <span class={`text-xs font-medium px-2 py-1 rounded-full ${
+            kpi.change.positive
+              ? 'text-emerald-700 bg-emerald-50'
+              : 'text-red-700 bg-red-50'
+          }`}>
+            {kpi.change.value}
+          </span>
+        )}
+      </div>
+      <div class="space-y-1">
+        <p class="text-2xl font-bold text-gray-900">{kpi.value}</p>
+        <p class="text-sm text-gray-500">{kpi.label}</p>
+      </div>
+    </div>
+  ))}
+</div>

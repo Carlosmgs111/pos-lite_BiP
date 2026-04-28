@@ -75,7 +75,9 @@ export class ConfirmPayment {
     let orderTerminalEvent: PaymentOrderCompleted | PaymentOrderFailed | null =
       null;
     if (order.getStatus() === PaymentOrderStatus.COMPLETED) {
-      orderTerminalEvent = new PaymentOrderCompleted({
+      orderTerminalEvent = PaymentOrderCompleted.create({
+        aggregateId: order.getId().getValue(),
+        version: order.getVersion(),
         saleId: order.getSaleId().getValue(),
       });
     } else if (
@@ -84,7 +86,9 @@ export class ConfirmPayment {
     ) {
       const failResult = order.markAsFailed();
       if (!failResult.isSuccess) return Result.fail(failResult.getError());
-      orderTerminalEvent = new PaymentOrderFailed({
+      orderTerminalEvent = PaymentOrderFailed.create({
+        aggregateId: order.getId().getValue(),
+        version: order.getVersion(),
         saleId: order.getSaleId().getValue(),
       });
     }
@@ -95,7 +99,9 @@ export class ConfirmPayment {
     if (!paymentUpdate.isSuccess) return Result.fail(paymentUpdate.getError());
 
     await this.eventBus.publish(
-      new PaymentTransactionResult({
+      PaymentTransactionResult.create({
+        aggregateId: payment.getId().getValue(),
+        version: payment.getVersion(),
         paymentId: payment.getId().getValue(),
         success: input.success,
       })

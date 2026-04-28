@@ -1,0 +1,59 @@
+---
+interface Activity {
+  time: string;
+  type: 'sale' | 'payment' | 'alert' | 'system';
+  message: string;
+  details?: string;
+}
+
+const activities: Activity[] = [
+  { time: '2:45 PM', type: 'sale', message: 'Venta completada', details: 'VNT-0047 — $34.50' },
+  { time: '2:44 PM', type: 'payment', message: 'Pago procesado', details: 'Efectivo — $34.50' },
+  { time: '2:32 PM', type: 'sale', message: 'Venta completada', details: 'VNT-0046 — $12.00' },
+  { time: '2:31 PM', type: 'payment', message: 'Pago procesado', details: 'Tarjeta — $12.00' },
+  { time: '2:18 PM', type: 'sale', message: 'Venta completada', details: 'VNT-0045 — $67.25' },
+  { time: '2:15 PM', type: 'alert', message: 'Stock bajo detectado', details: 'Café Americano (5 uds)' },
+  { time: '1:55 PM', type: 'sale', message: 'Venta cancelada', details: 'VNT-0044 — $24.00' },
+  { time: '1:42 PM', type: 'sale', message: 'Venta completada', details: 'VNT-0043 — $52.80' },
+  { time: '1:30 PM', type: 'system', message: 'Sistema inicializado', details: 'Catálogo cargado' },
+];
+
+const typeConfig: Record<string, { color: string; dot: string }> = {
+  sale: { color: 'text-emerald-600', dot: 'bg-emerald-500' },
+  payment: { color: 'text-blue-600', dot: 'bg-blue-500' },
+  alert: { color: 'text-amber-600', dot: 'bg-amber-500' },
+  system: { color: 'text-gray-600', dot: 'bg-gray-500' },
+};
+---
+
+<div class="bg-white rounded-xl border border-gray-200 p-5">
+  <div class="mb-4">
+    <h3 class="text-lg font-semibold text-gray-900">Actividad reciente</h3>
+    <p class="text-sm text-gray-500 mt-1">Eventos en tiempo real</p>
+  </div>
+
+  <div class="space-y-4">
+    {activities.map((activity, index) => {
+      const config = typeConfig[activity.type];
+      return (
+        <div class="flex gap-3">
+          <div class="flex flex-col items-center">
+            <span class={`w-2.5 h-2.5 rounded-full ${config.dot} mt-1.5`}></span>
+            {index < activities.length - 1 && (
+              <div class="w-px h-full bg-gray-200 mt-1"></div>
+            )}
+          </div>
+          <div class="pb-4">
+            <div class="flex items-center gap-2">
+              <p class={`text-sm font-medium ${config.color}`}>{activity.message}</p>
+              <span class="text-xs text-gray-400">{activity.time}</span>
+            </div>
+            {activity.details && (
+              <p class="text-xs text-gray-500 mt-0.5">{activity.details}</p>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>

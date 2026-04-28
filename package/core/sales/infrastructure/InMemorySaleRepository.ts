@@ -8,31 +8,34 @@ export class InMemorySaleRepository implements SaleRepository {
   private persistedVersions = new Map<string, number>();
   save(sale: Sale): Promise<Result<Error, void>> {
     this.sales.push(sale);
-    this.persistedVersions.set(sale.getId(), sale.getVersion());
+    this.persistedVersions.set(sale.getId().getValue(), sale.getVersion());
     return Promise.resolve(Result.ok(undefined));
   }
   async getSaleById(id: string): Promise<Result<Error, Sale | undefined>> {
-    const sale = this.sales.find((sale) => sale.getId() === id);
+    const sale = this.sales.find((sale) => sale.getId().getValue() === id);
     if (!sale) {
       return Result.ok(undefined);
     }
     return Result.ok(sale);
   }
   async update(sale: Sale): Promise<Result<Error, void>> {
-    const index = this.sales.findIndex((s) => s.getId() === sale.getId());
+    const index = this.sales.findIndex(
+      (s) => s.getId().getValue() === sale.getId().getValue()
+    );
     if (index === -1) {
       return Result.fail(new Error("Sale not found"));
     }
-    const persistedVersion = this.persistedVersions.get(sale.getId()) ?? 0;
+    const persistedVersion =
+      this.persistedVersions.get(sale.getId().getValue()) ?? 0;
     if (sale.getVersion() <= persistedVersion) {
       return Result.fail(new ConcurrencyError("Sale"));
     }
     this.sales[index] = sale;
-    this.persistedVersions.set(sale.getId(), sale.getVersion());
+    this.persistedVersions.set(sale.getId().getValue(), sale.getVersion());
     return Result.ok(undefined);
   }
   async delete(saleId: string): Promise<Result<Error, void>> {
-    const index = this.sales.findIndex((s) => s.getId() === saleId);
+    const index = this.sales.findIndex((s) => s.getId().getValue() === saleId);
     if (index === -1) {
       return Result.fail(new Error("Sale not found"));
     }

@@ -65,8 +65,8 @@ export class Sale {
   recalculateTotal(): void {
     this.total = PriceVO.add(this.items.map((item) => item.getSubTotal()));
   }
-  getId(): string {
-    return this.id.getValue();
+  getId() {
+    return this.id;
   }
   getStatus() {
     return this.status;

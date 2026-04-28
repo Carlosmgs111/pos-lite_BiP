@@ -33,8 +33,8 @@ const subscribeWithFilterReceivesMatchingEvents = async () => {
     },
   });
 
-  await eventBus.publish(new PaymentTransactionResult({ paymentId: "pay-1", success: true }));
-  await eventBus.publish(new PaymentTransactionResult({ paymentId: "pay-2", success: false }));
+  await eventBus.publish(PaymentTransactionResult.create({ aggregateId: "pay-1", version: 1, paymentId: "pay-1", success: true }));
+  await eventBus.publish(PaymentTransactionResult.create({ aggregateId: "pay-2", version: 1, paymentId: "pay-2", success: false }));
   unsub();
 
   return result(
@@ -61,9 +61,9 @@ const subscribeWithFilterRespectsPredicate = async () => {
     },
   });
 
-  await eventBus.publish(new PaymentTransactionResult({ paymentId: "success-1", success: true }));
-  await eventBus.publish(new PaymentTransactionResult({ paymentId: "fail-1", success: false }));
-  await eventBus.publish(new PaymentTransactionResult({ paymentId: "success-2", success: true }));
+  await eventBus.publish(PaymentTransactionResult.create({ aggregateId: "s1", version: 1, paymentId: "success-1", success: true }));
+  await eventBus.publish(PaymentTransactionResult.create({ aggregateId: "f1", version: 1, paymentId: "fail-1", success: false }));
+  await eventBus.publish(PaymentTransactionResult.create({ aggregateId: "s2", version: 1, paymentId: "success-2", success: true }));
   unsub();
 
   return result(
@@ -88,8 +88,9 @@ const subscribeWithFilterMultiEvent = async () => {
     },
   });
 
-  await eventBus.publish(new PaymentTransactionResult({ paymentId: "x", success: true }));
-  await eventBus.publish(new PaymentOrderCompleted({ saleId: UuidVO.generate() }));
+  await eventBus.publish(PaymentTransactionResult.create({ aggregateId: "x", version: 1, paymentId: "x", success: true }));
+  const saleId = UuidVO.generate();
+  await eventBus.publish(PaymentOrderCompleted.create({ aggregateId: saleId, version: 1, saleId }));
   unsub();
 
   const hasTransactionResult = received.includes("payment.transaction.result");

@@ -23,7 +23,7 @@ export class Result<E, T> {
         "Invalid Operation: Can't get value from a failed result"
       );
     }
-    return this.value as T;
+    return this.value;
   }
 
   public getError(): E {
@@ -32,6 +32,6 @@ export class Result<E, T> {
         "Invalid Operation: Can't get error from a success result"
       );
     }
-    return this.error as E;
+    return this.error;
   }
 }
