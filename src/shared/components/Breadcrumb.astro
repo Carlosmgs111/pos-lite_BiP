@@ -4,6 +4,7 @@ const pathname = Astro.url.pathname.replace(/\/+$/, '');
 const labels: Record<string, string> = {
   logbook: 'Bitacora',
   dashboard: 'Panel de Control',
+  sale: 'Gestión de Venta',
 };
 
 const segments = pathname.split('/').filter(Boolean);

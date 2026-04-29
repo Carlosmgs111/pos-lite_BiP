@@ -4,8 +4,13 @@ import {
   type CatalogProduct,
 } from "../stores/catalog";
 
+let initialized = false;
+
 export const CatalogService = {
   async init() {
+    if (initialized) return;
+    initialized = true;
+
     const res = await fetch("/api/catalog/init", { method: "POST" });
     if (!res.ok) return;
 

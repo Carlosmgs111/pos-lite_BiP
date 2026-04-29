@@ -79,21 +79,15 @@ export class InMemoryEventBus implements EventBus {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const result = await handler.handle(event);
-  
         if (result.isSuccess) return;
-  
         throw result.getError();
-  
       } catch (error) {
         const isLastAttempt = attempt === maxAttempts;
-  
         this.onFailure(handler, event, error as Error);
-  
         if (isLastAttempt) {
           await this.onFinalFailure(handler, event, error as Error);
           return;
         }
-  
         await this.delay(backoffMs(attempt));
       }
     }

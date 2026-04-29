@@ -1,0 +1,19 @@
+---
+import Layout from '../shared/layouts/Layout.astro';
+import SaleManager from '../pos/components/SaleManager';
+import ToastContainer from '../pos/components/ToastContainer';
+---
+
+<Layout title="Gestión de Venta - pos-lite">
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <header class="mb-6">
+      <h1 class="text-xl font-bold text-gray-900">Gestión de Venta</h1>
+      <p class="text-sm text-gray-500">Selecciona productos, revisa el carrito y procesa el pago</p>
+    </header>
+
+    <SaleManager client:load />
+  </div>
+  <ToastContainer client:load />
+</Layout>
+
+

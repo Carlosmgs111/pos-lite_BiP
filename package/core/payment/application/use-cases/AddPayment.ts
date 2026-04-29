@@ -19,11 +19,12 @@ export class AddPayment {
     const orderResult = await this.paymentOrderRepository.findBySaleId(
       input.saleId
     );
+    console.log("[AddPayment] PaymentOrder found", orderResult);
     if (!orderResult.isSuccess) return Result.fail(orderResult.getError());
-    if (!orderResult.getValue()) {
+    const order = orderResult.getValue();
+    if (!order) {
       return Result.fail(new PaymentOrderNotFoundError());
     }
-    const order = orderResult.getValue()!;
 
     const assertResult = order.assertCanAcceptPayment(
       input.amount,
@@ -31,7 +32,9 @@ export class AddPayment {
     );
     if (!assertResult.isSuccess) return Result.fail(assertResult.getError());
 
-    const registerPendingPaymentResult = order.registerPendingPayment(input.amount);
+    const registerPendingPaymentResult = order.registerPendingPayment(
+      input.amount
+    );
     if (!registerPendingPaymentResult.isSuccess) {
       return Result.fail(registerPendingPaymentResult.getError());
     }

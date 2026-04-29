@@ -85,9 +85,10 @@ export const PaymentService = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId, success: true }),
       });
-      console.log("[POST /api/payment/commit] Payment commit response", res);
       if (!res.ok) {
         showToast("Error al confirmar el pago", "error");
+      }else{
+        showToast("Pago confirmado", "success");
       }
       await this.reconcile();
       return;

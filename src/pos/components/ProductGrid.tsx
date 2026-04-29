@@ -1,11 +1,17 @@
 import { useStore } from "@nanostores/preact";
+import { useEffect } from "preact/hooks";
 import { $catalog } from "../stores/catalog";
+import { CatalogService } from "../services/CatalogService";
 import { SaleService } from "../services/SaleService";
 import ProductCard from "./ProductCard";
 import type { CatalogProduct } from "../stores/catalog";
 
 export default function ProductGrid() {
   const catalog = useStore($catalog);
+
+  useEffect(() => {
+    CatalogService.init();
+  }, []);
 
   const handleAdd = async (product: CatalogProduct) => {
     await SaleService.addProduct({

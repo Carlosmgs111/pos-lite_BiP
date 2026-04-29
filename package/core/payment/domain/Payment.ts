@@ -4,15 +4,15 @@ import { Result } from "../../shared/domain/Result";
 import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
 
 export enum PaymentMethod {
-  CASH,
-  CARD,
-  TRANSFER,
+  CASH = "CASH",
+  CARD = "CARD",
+  TRANSFER = "TRANSFER",
 }
 
 export enum PaymentStatus {
-  PENDING,
-  COMPLETED,
-  FAILED,
+  PENDING = "PENDING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
 }
 
 export type PaymentProps = {
@@ -46,26 +46,34 @@ export class Payment {
       new Date()
     );
   }
-
-  complete(): Result<InvalidPaymentError, void> {
+  private ensureMethodConstraints(): Result<InvalidPaymentError, void> {
+    console.log("[Payment.ensureMethodConstraints] Payment", this);
     if (this.method !== PaymentMethod.CASH && !this.externalId) {
       return Result.fail(
-        new InvalidPaymentError(
-          "Only cash payments can be completed without an external ID"
-        )
+        new InvalidPaymentError("Non-cash payments require an external ID")
       );
     }
+    return Result.ok(undefined);
+  }
+
+  complete(): Result<InvalidPaymentError, void> {
+    const methodValidation = this.ensureMethodConstraints();
+    if (!methodValidation.isSuccess) return methodValidation;
+
     if (this.status === PaymentStatus.COMPLETED) {
       return Result.ok(undefined);
     }
+
     if (this.status !== PaymentStatus.PENDING) {
       return Result.fail(
         new InvalidPaymentError("Can only complete a pending payment")
       );
     }
+
     this.status = PaymentStatus.COMPLETED;
     this.completedAt = new Date();
     this.version++;
+
     return Result.ok(undefined);
   }
 
@@ -84,7 +92,9 @@ export class Payment {
     }
     if (this.externalId) {
       if (this.externalId === externalId) return Result.ok(undefined);
-      return Result.fail(new InvalidPaymentError("Payment already has an external ID"));
+      return Result.fail(
+        new InvalidPaymentError("Payment already has an external ID")
+      );
     }
     this.externalId = externalId;
     this.version++;
