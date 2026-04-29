@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { webhookHandler } from "../../../../package/core/payment";
+import { webhookHandler } from "../../../../package/core";
 
 export const prerender = false;
 

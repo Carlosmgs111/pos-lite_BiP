@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import {
   paymentOrderRepository,
   paymentRepository,
-} from "../../../../package/core/payment";
+} from "../../../../package/core";
 
 export const prerender = false;
 

@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { processPayment } from "../../../../package/core/payment";
+import { processPayment } from "../../../../package/core";
 
 export const prerender = false;
 
