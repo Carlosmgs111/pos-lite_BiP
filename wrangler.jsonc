@@ -1,0 +1,5 @@
+{
+  "name": "pos-lite",
+  "compatibility_date": "2025-04-29",
+  "compatibility_flags": ["nodejs_compat"]
+}

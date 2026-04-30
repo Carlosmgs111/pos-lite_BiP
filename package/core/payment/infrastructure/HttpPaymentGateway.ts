@@ -27,6 +27,7 @@ export class HttpPaymentGateway implements PaymentGateway {
   async requestPayment(request: PaymentRequest): Promise<string> {
     let res: Response;
     try {
+      console.log("[HttpPaymentGateway] baseUrl", this.baseUrl);
       res = await fetch(`${this.baseUrl}/process-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,7 +38,8 @@ export class HttpPaymentGateway implements PaymentGateway {
           metadata: { payment_id: request.paymentId },
         }),
       });
-    } catch {
+    } catch (e) {
+      console.error("[HttpPaymentGateway] requestPayment error", e);
       throw new PaymentGatewayUnreachableError();
     }
 
@@ -60,7 +62,8 @@ export class HttpPaymentGateway implements PaymentGateway {
         if (!res.ok) throw new PaymentGatewayUnreachableError();
 
         const data: TransactionResponse = await res.json();
-        if (data.status === "SUCCEEDED") return GatewayTransactionStatus.SUCCEEDED;
+        if (data.status === "SUCCEEDED")
+          return GatewayTransactionStatus.SUCCEEDED;
         if (data.status === "FAILED") return GatewayTransactionStatus.FAILED;
 
         // PENDING — wait and retry

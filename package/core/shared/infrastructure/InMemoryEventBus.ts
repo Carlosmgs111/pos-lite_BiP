@@ -30,21 +30,6 @@ export class InMemoryEventBus implements EventBus {
     });
   }
 
-  private async executeHandler(
-    handler: EventHandler<DomainEvent<any>>,
-    event: DomainEvent<any>
-  ): Promise<void> {
-    try {
-      const result = await handler.handle(event);
-
-      if (!result.isSuccess) {
-        await this.onFailure(handler, event, result.getError());
-      }
-    } catch (error) {
-      await this.onFailure(handler, event, error as Error);
-    }
-  }
-
   private async onFinalFailure(
     handler: EventHandler<DomainEvent<any>>,
     event: DomainEvent<any>,

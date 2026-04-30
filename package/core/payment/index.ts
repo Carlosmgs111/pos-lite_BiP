@@ -18,7 +18,9 @@ export { GatewayTransactionStatus } from "./domain/PaymentGateway";
 import { SalesReadyToPay } from "../sales";
 import { eventBus } from "../shared/config";
 
-const GATEWAY_URL = "http://localhost:3000";
+const { GATEWAY_URL } = import.meta.env;
+
+console.log("GATEWAY_URL", GATEWAY_URL);
 
 export const paymentOrderRepository = new InMemoryPaymentOrderRepository();
 export const paymentRepository = new InMemoryPaymentRepository();

@@ -7,25 +7,31 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "dev:edge": "cross-env POS_EDGE=true wrangler dev",
     "dev:payment-gateway": "npx tsx externals/payment-gateway/src/index.ts",
     "build": "astro build",
+    "build:edge": "cross-env POS_EDGE=true astro build",
     "preview": "astro preview",
+    "preview:edge": "cross-env POS_EDGE=true wrangler dev",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.8",
     "@astrojs/node": "^10.0.5",
     "@astrojs/preact": "^5.1.1",
+    "@astrojs/vercel": "^10.0.5",
     "@nanostores/preact": "^1.1.0",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.0.7",
     "nanostores": "^1.2.0",
     "preact": "^10.29.1",
     "tailwindcss": "^4.2.2",
-    "typescript": "^6.0.2",
-    "@astrojs/vercel": "^10.0.5"
+    "typescript": "^6.0.2"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0"
+    "@astrojs/cloudflare": "^13.2.2",
+    "@types/node": "^25.6.0",
+    "cross-env": "^10.1.0",
+    "wrangler": "^4.86.0"
   }
 }

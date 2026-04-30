@@ -33,6 +33,7 @@ export class ProcessPayment {
 
       return Result.ok(transactionId);
     } catch (err) {
+      console.error(err);
       return Result.fail(err as Error);
     }
   }
