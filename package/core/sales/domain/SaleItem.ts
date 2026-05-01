@@ -35,6 +35,15 @@ export class SaleItem {
       )
     );
   }
+  static reconstitute(props: SaleItemProps & { subTotal: number }): SaleItem {
+    return new SaleItem(
+      props.productId,
+      props.nameSnapshot,
+      props.quantity,
+      new PriceVO(props.priceSnapshot),
+      new PriceVO(props.subTotal)
+    );
+  }
 
   getProductId() {
     return this.productId;

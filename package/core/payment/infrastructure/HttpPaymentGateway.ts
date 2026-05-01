@@ -26,8 +26,8 @@ export class HttpPaymentGateway implements PaymentGateway {
 
   async requestPayment(request: PaymentRequest): Promise<string> {
     let res: Response;
-    try {
       console.log("[HttpPaymentGateway] baseUrl", this.baseUrl);
+    try {
       res = await fetch(`${this.baseUrl}/process-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

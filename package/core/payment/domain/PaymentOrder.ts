@@ -54,6 +54,33 @@ export class PaymentOrder {
       )
     );
   }
+  static reconstitute(props: {
+    id: string;
+    saleId: string;
+    totalAmount: number;
+    paidAmount: number;
+    pendingAmount: number;
+    failedAttempts: number;
+    change: number;
+    status: PaymentOrderStatus;
+    version: number;
+    createdAt: Date;
+    completedAt?: Date;
+  }): PaymentOrder {
+    return new PaymentOrder(
+      new UuidVO(props.id),
+      new UuidVO(props.saleId),
+      new PriceVO(props.totalAmount),
+      new PriceVO(props.paidAmount),
+      new PriceVO(props.pendingAmount),
+      props.failedAttempts,
+      new PriceVO(props.change),
+      props.status,
+      props.version,
+      new Date(props.createdAt),
+      props.completedAt ? new Date(props.completedAt) : undefined
+    );
+  }
 
   /** PaymentOrder decides if a new payment can be accepted. */
   assertCanAcceptPayment(

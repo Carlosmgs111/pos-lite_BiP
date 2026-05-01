@@ -26,3 +26,5 @@ externals/
 .vercel
 .wrangler/
 .dev.vars
+*.db
+*.db-journal

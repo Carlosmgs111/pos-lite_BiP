@@ -46,6 +46,29 @@ export class Payment {
       new Date()
     );
   }
+  static reconstitute(props: {
+    id: string;
+    paymentOrderId: string;
+    method: PaymentMethod;
+    amount: number;
+    status: PaymentStatus;
+    version: number;
+    createdAt: Date;
+    externalId?: string;
+    completedAt?: Date;
+  }): Payment {
+    return new Payment(
+      new UuidVO(props.id),
+      props.paymentOrderId,
+      props.method,
+      new PriceVO(props.amount),
+      props.status,
+      props.version,
+      new Date(props.createdAt),
+      props.externalId,
+      props.completedAt ? new Date(props.completedAt) : undefined
+    );
+  }
   private ensureMethodConstraints(): Result<InvalidPaymentError, void> {
     console.log("[Payment.ensureMethodConstraints] Payment", this);
     if (this.method !== PaymentMethod.CASH && !this.externalId) {

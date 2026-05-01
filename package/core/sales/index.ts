@@ -1,4 +1,5 @@
 import { InMemorySaleRepository } from "./infrastructure/InMemorySaleRepository";
+import { LibSqlSaleRepository } from "./infrastructure/LibSqlSaleRepository";
 import { GetProductsInfo } from "./infrastructure/GetProductsInfo";
 import { AddItemToSale } from "./application/use-cases/AddItemToSale";
 import { RemoveItemFromSale } from "./application/use-cases/RemoveItemFromSale";
@@ -16,10 +17,16 @@ import { PaymentOrderCompleted } from "../payment/domain/events/PaymentOrderComp
 import { PaymentOrderFailed } from "../payment/domain/events/PaymentOrderFailed";
 import { handleStockForSale } from "../inventory";
 import { InMemoryProcessedEventRepositiry } from "../shared/infrastructure/InMemoryProcessedEventRepositiry";
+import { LibSqlProcessedEventRepository } from "../shared/infrastructure/LibSqlProcessedEventRepository";
 
 export { SalesReadyToPay } from "./domain/events/SalesReadyToPay";
 
-export const saleRepository = new InMemorySaleRepository();
+const useTurso = !!import.meta.env.DATABASE_URL;
+
+export const saleRepository = useTurso
+  ? new LibSqlSaleRepository()
+  : new InMemorySaleRepository();
+
 export const getProductsInfo = new GetProductsInfo();
 export const getSale = new GetSale(saleRepository);
 const handleStock = new HandleStock(handleStockForSale);
@@ -43,7 +50,10 @@ export const registerSale = new RegisterSale(
 export const createSale = new CreateSale(saleRepository, getProductsInfo);
 const completeSale = new CompleteSale(saleRepository);
 const failSale = new FailSale(saleRepository, handleStock);
-const processedEventRepository = new InMemoryProcessedEventRepositiry();
+
+const processedEventRepository = useTurso
+  ? new LibSqlProcessedEventRepository()
+  : new InMemoryProcessedEventRepositiry();
 
 const unsubscribers: Array<() => void> = [];
 

@@ -34,6 +34,17 @@ export class Product {
       0
     );
   }
+  static reconstitute(props: ProductProps & { committedStock: number; version: number }): Product {
+    return new Product(
+      new UuidVO(props.id),
+      new NameVO(props.name),
+      new PriceVO(props.price),
+      props.stock,
+      props.reservedStock,
+      props.committedStock,
+      props.version
+    );
+  }
   reserveStock(quantity: number): Result<InsufficientStockError, void> {
     if (this.stock < quantity) {
       return Result.fail(new InsufficientStockError());

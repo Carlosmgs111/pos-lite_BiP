@@ -47,6 +47,24 @@ export class Sale {
     );
     return Result.ok(sale);
   }
+  static reconstitute(props: {
+    id: string;
+    items: Array<SaleItemProps & { subTotal: number }>;
+    total: number;
+    createdAt: Date;
+    status: SaleStatus;
+    version: number;
+  }): Sale {
+    const saleItems = props.items.map((item) => SaleItem.reconstitute(item));
+    return new Sale(
+      new UuidVO(props.id),
+      saleItems,
+      new PriceVO(props.total),
+      new Date(props.createdAt),
+      props.status,
+      props.version
+    );
+  }
   private findItemById(id: string): Result<SaleItemNotFoundError, SaleItem> {
     const item = this.items.find((item) => item.getProductId() === id);
     if (!item) {
