@@ -14,6 +14,7 @@ export const POST: APIRoute = async () => {
   });
 
   if (!result.isSuccess) {
+    console.error(result.getError());
     return new Response(
       JSON.stringify({ error: result.getError()?.message }),
       { status: 422, headers: { "Content-Type": "application/json" } }

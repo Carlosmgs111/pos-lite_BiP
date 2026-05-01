@@ -70,6 +70,12 @@ let initialized = false;
 
 export async function ensureSchema(): Promise<void> {
   if (initialized) return;
-  await db.execute(SCHEMA);
+  const statements = SCHEMA
+    .split(";")
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+  for (const stmt of statements) {
+    await db.execute(stmt);
+  }
   initialized = true;
 }
