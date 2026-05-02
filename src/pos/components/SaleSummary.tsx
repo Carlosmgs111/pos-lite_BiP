@@ -1,5 +1,5 @@
 import { useStore } from "@nanostores/preact";
-import { $cartItems, $cartStatus, getCartTotal, $saleId } from "../stores/cart";
+import { $cartItems, $cartStatus, getCartTotal } from "../stores/cart";
 import { $totalToPay } from "../stores/payment";
 import type { CartItem } from "../stores/cart";
 
@@ -13,7 +13,6 @@ export default function SaleSummary({ onConfirm, onBack, onCancel }: Props) {
   const items = useStore($cartItems);
   const status = useStore($cartStatus);
   const total = getCartTotal();
-  const saleId = useStore($saleId);
   const totalToPay = useStore($totalToPay);
 
   return (
@@ -70,13 +69,6 @@ export default function SaleSummary({ onConfirm, onBack, onCancel }: Props) {
       ) : (
         <>
           <div class="flex-1 overflow-y-auto">
-            {saleId && (
-              <div class="mb-4">
-                <p class="text-xs text-gray-500">ID de venta</p>
-                <p class="text-sm font-mono text-gray-700">{saleId}</p>
-              </div>
-            )}
-
             <div class="space-y-2 mb-4">
               {items.map((item: CartItem) => (
                 <div
