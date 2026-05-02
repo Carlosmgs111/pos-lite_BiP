@@ -1,5 +1,5 @@
 import "./payment";
-export { registerProduct, handleStockForSale, getProducts } from "./inventory";
+export { registerProduct, handleStockForSale, getProducts, productRepository } from "./inventory";
 export { addItemToSale, registerSale, createSale, removeItemFromSale, cancelSale } from "./sales";
 export {
   addPayment,

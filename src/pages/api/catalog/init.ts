@@ -1,21 +1,27 @@
 import type { APIRoute } from "astro";
-import { registerProduct } from "../../../../package/core";
+import { registerProduct, productRepository } from "../../../../package/core";
 import { UuidVO } from "../../../../package/core/shared/domain/Uuid.VO";
+import type { Product } from "../../../../package/core/inventory/domain/Product";
+import { DEMO_PRODUCTS } from "../../../data/demo-products";
 
 export const prerender = false;
 
-const DEMO_PRODUCTS = [
-  { name: "Cafe Americano", price: 2.5, stock: 50 },
-  { name: "Cafe Latte", price: 3.5, stock: 40 },
-  { name: "Cappuccino", price: 4, stock: 30 },
-  { name: "Te Verde", price: 2, stock: 60 },
-  { name: "Jugo Natural", price: 3, stock: 25 },
-  { name: "Agua Mineral", price: 1.5, stock: 100 },
-  { name: "Sandwich Club", price: 5.5, stock: 20 },
-  { name: "Croissant", price: 2.5, stock: 35 },
-];
-
 export const POST: APIRoute = async () => {
+  const existing = await productRepository.listProducts();
+
+  if (existing.isSuccess && existing.getValue()!.length > 0) {
+    const products = existing.getValue()!.map((p: Product) => ({
+      id: p.getId().getValue(),
+      name: p.getName(),
+      price: p.getPrice(),
+      stock: p.getStock(),
+    }));
+    return new Response(JSON.stringify({ products }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const products = [];
 
   for (const p of DEMO_PRODUCTS) {
