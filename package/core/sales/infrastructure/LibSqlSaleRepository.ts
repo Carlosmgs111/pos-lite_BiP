@@ -81,4 +81,29 @@ export class LibSqlSaleRepository implements SaleRepository {
     await ensureSchema();
     await db.execute(`DELETE FROM sales`);
   }
+
+  async findOpenSale(): Promise<Result<Error, Sale | null>> {
+    await ensureSchema();
+    try {
+      const rs = await db.execute(
+        `SELECT id, items_json, total_cents, created_at, status, version
+         FROM sales WHERE status IN ('DRAFT', 'READY_TO_PAY')
+         ORDER BY created_at DESC LIMIT 1`
+      );
+      if (rs.rows.length === 0) return Result.ok(null);
+      const row = rs.rows[0] as any;
+      const items: Array<SaleItemProps & { subTotal: number }> = JSON.parse(row.items_json as string);
+      const sale = Sale.reconstitute({
+        id: row.id as string,
+        items,
+        total: (row.total_cents as number) / 100,
+        createdAt: new Date(row.created_at as string),
+        status: row.status as SaleStatus,
+        version: row.version as number,
+      });
+      return Result.ok(sale);
+    } catch (e) {
+      return Result.fail(e as Error);
+    }
+  }
 }

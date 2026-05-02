@@ -6,4 +6,5 @@ export interface SaleRepository {
   getSaleById(id: string): Promise<Result<Error, Sale | undefined>>;
   update(sale: Sale): Promise<Result<Error, void>>;
   delete(saleId: string): Promise<Result<Error, void>>;
+  findOpenSale(): Promise<Result<Error, Sale | null>>;
 }

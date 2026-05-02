@@ -20,10 +20,12 @@ export class PriceVO {
   }
 
   static substract(priceBase: PriceVO, prices: PriceVO[]): Result<Error, PriceVO> {
+    console.log(priceBase.getValueInCents(), prices.map(p => p.getValueInCents()));
     const totalToSubstract = prices.reduce(
       (total, price) => total + price.getValueInCents(),
       0
     );
+    console.log(totalToSubstract);
     if (totalToSubstract > priceBase.getValueInCents()) {
       return Result.fail(new InvalidPriceOperationError());
     }

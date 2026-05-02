@@ -114,4 +114,7 @@ export class Product {
   getReservedStock() {
     return this.reservedStock;
   }
+  getCommittedStock() {
+    return this.committedStock;
+  }
 }

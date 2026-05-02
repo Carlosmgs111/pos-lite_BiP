@@ -2,6 +2,7 @@ import { Sale } from "../domain/Sale";
 import type { SaleRepository } from "../domain/SaleRepository";
 import { Result } from "../../shared/domain/Result";
 import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
+import { SaleStatus } from "../domain/SaleStatus";
 
 export class InMemorySaleRepository implements SaleRepository {
   private sales: Sale[] = [];
@@ -44,5 +45,11 @@ export class InMemorySaleRepository implements SaleRepository {
   }
   purgeDb() {
     this.sales = [];
+  }
+
+  async findOpenSale(): Promise<Result<Error, Sale | null>> {
+    const openStatuses = [SaleStatus.DRAFT, SaleStatus.READY_TO_PAY];
+    const sale = this.sales.find((s) => openStatuses.includes(s.getStatus()));
+    return Result.ok(sale ?? null);
   }
 }

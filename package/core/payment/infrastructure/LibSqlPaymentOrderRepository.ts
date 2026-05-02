@@ -75,7 +75,7 @@ export class LibSqlPaymentOrderRepository implements PaymentOrderRepository {
               WHERE id = ? AND version = ?`,
         args: [
           paymentOrder.getPaidAmount().getValueInCents(),
-          0,
+          paymentOrder.getPendingAmount().getValueInCents(),
           paymentOrder.getFailedAttempts(),
           paymentOrder.getChange().getValueInCents(),
           paymentOrder.getStatus(),

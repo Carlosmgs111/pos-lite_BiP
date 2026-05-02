@@ -78,7 +78,7 @@ export class LibSqlProductRepository implements ProductRepository {
         sql: `UPDATE products
               SET name = ?, price_cents = ?, stock = ?, reserved_stock = ?, committed_stock = ?, version = ?
               WHERE id = ? AND version = ?`,
-        args: [product.getName(), product.getPrice() * 100, product.getStock(), product.getReservedStock(), 0, product.getVersion(), id, prevVersion],
+        args: [product.getName(), product.getPrice() * 100, product.getStock(), product.getReservedStock(), product.getCommittedStock(), product.getVersion(), id, prevVersion],
       });
       if (rs.rowsAffected === 0) {
         return Result.fail(new Error(`Concurrent modification on Product ${id}`));

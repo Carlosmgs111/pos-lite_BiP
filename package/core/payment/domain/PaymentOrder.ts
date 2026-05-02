@@ -158,6 +158,8 @@ export class PaymentOrder {
         new InvalidPaymentError("Cannot apply payment to a terminal order")
       );
     }
+    
+    console.log("Pending amount: ", this.pendingAmount.getValueInCents(), "Amount: ", amount);
     const substractResult = PriceVO.substract(this.pendingAmount, [
       new PriceVO(amount),
     ]);
@@ -243,6 +245,9 @@ export class PaymentOrder {
   }
   getPaidAmount() {
     return this.paidAmount;
+  }
+  getPendingAmount() {
+    return this.pendingAmount;
   }
   getChange() {
     return this.change;

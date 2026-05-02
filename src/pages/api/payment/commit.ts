@@ -18,6 +18,8 @@ export const POST: APIRoute = async ({ request }) => {
     success: body.success,
   });
 
+  console.log(result);
+
   if (!result.isSuccess) {
     return new Response(JSON.stringify({ error: result.getError()?.message }), {
       status: 422,

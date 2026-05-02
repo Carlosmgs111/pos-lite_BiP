@@ -11,6 +11,7 @@ export default function ProductGrid() {
 
   useEffect(() => {
     CatalogService.init();
+    SaleService.loadOpenSale();
   }, []);
 
   const handleAdd = async (product: CatalogProduct) => {

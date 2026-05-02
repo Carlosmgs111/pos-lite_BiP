@@ -13,6 +13,34 @@ import { CatalogService } from "./CatalogService";
 import { showToast } from "../stores/toast";
 
 export const SaleService = {
+  async loadOpenSale() {
+    const res = await fetch("/api/sales/open");
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.sale) return;
+
+    const sale = data.sale;
+    $saleId.set(sale.id);
+    $cartStatus.set(sale.status === "READY_TO_PAY" ? "confirmed" : "active");
+
+    if (sale.status === "READY_TO_PAY") {
+      $totalToPay.set(sale.total);
+      $paymentStatus.set("awaiting_payment");
+    }
+
+    if (sale.items && sale.items.length > 0) {
+      $cartItems.set(
+        sale.items.map((i: any) => ({
+          productId: i.productId,
+          name: i.nameSnapshot,
+          price: i.priceSnapshot,
+          quantity: i.quantity,
+        }))
+      );
+    }
+  },
+
   async startSale() {
     const res = await fetch("/api/sales/create", { method: "POST" });
     if (!res.ok) {
