@@ -25,7 +25,6 @@
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.0.7",
     "nanostores": "^1.2.0",
-    "nats": "^2.29.3",
     "preact": "^10.29.1",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"

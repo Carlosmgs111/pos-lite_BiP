@@ -16,7 +16,7 @@ import { eventBus } from "../shared/config";
 import { PaymentOrderCompleted } from "../payment/domain/events/PaymentOrderCompleted";
 import { PaymentOrderFailed } from "../payment/domain/events/PaymentOrderFailed";
 import { handleStockForSale } from "../inventory";
-import { InMemoryProcessedEventRepositiry } from "../shared/infrastructure/InMemoryProcessedEventRepositiry";
+import { InMemoryProcessedEventRepository } from "../shared/infrastructure/InMemoryProcessedEventRepository";
 import { LibSqlProcessedEventRepository } from "../shared/infrastructure/LibSqlProcessedEventRepository";
 
 export { SalesReadyToPay } from "./domain/events/SalesReadyToPay";
@@ -53,14 +53,14 @@ const failSale = new FailSale(saleRepository, handleStock);
 
 const processedEventRepository = useTurso
   ? new LibSqlProcessedEventRepository()
-  : new InMemoryProcessedEventRepositiry();
+  : new InMemoryProcessedEventRepository();
 
 const unsubscribers: Array<() => void> = [];
 
 unsubscribers.push(
   eventBus.subscribe(
     PaymentOrderCompleted.eventName,
-    new SaleCompletedOnPayment(completeSale, processedEventRepository)
+    new SaleCompletedOnPayment(completeSale, /* processedEventRepository */)
   )
 );
 unsubscribers.push(

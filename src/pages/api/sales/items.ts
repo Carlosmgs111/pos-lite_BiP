@@ -20,6 +20,8 @@ export const POST: APIRoute = async ({ request }) => {
     quantity: body.quantity ?? 1,
   });
 
+  console.log(result);
+
   if (!result.isSuccess) {
     return new Response(
       JSON.stringify({ error: result.getError() }),
