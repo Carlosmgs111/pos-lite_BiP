@@ -1,4 +1,5 @@
 import { InMemorySaleRepository } from "./infrastructure/InMemorySaleRepository";
+import { LibSqlSaleRepository } from "./infrastructure/LibSqlSaleRepository";
 import { GetProductsInfo } from "./infrastructure/GetProductsInfo";
 import { AddItemToSale } from "./application/use-cases/AddItemToSale";
 import { RemoveItemFromSale } from "./application/use-cases/RemoveItemFromSale";
@@ -12,7 +13,11 @@ import { handleStockForSale } from "../inventory";
 
 export { SalesReadyToPay } from "./domain/events/SalesReadyToPay";
 
-export const saleRepository = new InMemorySaleRepository();
+const useTurso = !!import.meta.env.DATABASE_URL;
+
+export const saleRepository = useTurso
+  ? new LibSqlSaleRepository()
+  : new InMemorySaleRepository();
 
 export const getProductsInfo = new GetProductsInfo();
 export const getSale = new GetSale(saleRepository);
