@@ -14,10 +14,11 @@ export class HandleStockForSale implements HandleStockForSalePort {
     if (!productResult.isSuccess) {
       return Result.fail(productResult.getError());
     }
-    if (!productResult.getValue()) {
+    const products = productResult.getValue();
+    if (!products || products.length === 0) {
       return Result.fail(new ProductNotFoundError());
     }
-    return Result.ok(productResult.getValue()![0]);
+    return Result.ok(products[0]);
   }
 
   async reserveStock(
