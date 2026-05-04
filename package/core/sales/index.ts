@@ -1,5 +1,4 @@
 import { InMemorySaleRepository } from "./infrastructure/InMemorySaleRepository";
-import { LibSqlSaleRepository } from "./infrastructure/LibSqlSaleRepository";
 import { GetProductsInfo } from "./infrastructure/GetProductsInfo";
 import { AddItemToSale } from "./application/use-cases/AddItemToSale";
 import { RemoveItemFromSale } from "./application/use-cases/RemoveItemFromSale";
@@ -7,25 +6,13 @@ import { RegisterSale } from "./application/use-cases/RegisterSale";
 import { CreateSale } from "./application/use-cases/CreateSale";
 import { GetSale } from "./application/use-cases/GetSale";
 import { CancelSale } from "./application/use-cases/CancelSale";
-import { CompleteSale } from "./application/use-cases/CompleteSale";
-import { FailSale } from "./application/use-cases/FailSale";
-import { SaleCompletedOnPayment } from "./application/event-handlers/SaleCompletedOnPayment";
-import { SaleFailedOnPayment } from "./application/event-handlers/SaleFailedOnPayment";
 import { HandleStock } from "./infrastructure/HandleStock";
 import { eventBus } from "../shared/config";
-import { PaymentOrderCompleted } from "../payment/domain/events/PaymentOrderCompleted";
-import { PaymentOrderFailed } from "../payment/domain/events/PaymentOrderFailed";
 import { handleStockForSale } from "../inventory";
-import { InMemoryProcessedEventRepository } from "../shared/infrastructure/InMemoryProcessedEventRepository";
-import { LibSqlProcessedEventRepository } from "../shared/infrastructure/LibSqlProcessedEventRepository";
 
 export { SalesReadyToPay } from "./domain/events/SalesReadyToPay";
 
-const useTurso = !!import.meta.env.DATABASE_URL;
-
-export const saleRepository = useTurso
-  ? new LibSqlSaleRepository()
-  : new InMemorySaleRepository();
+export const saleRepository = new InMemorySaleRepository();
 
 export const getProductsInfo = new GetProductsInfo();
 export const getSale = new GetSale(saleRepository);
@@ -48,31 +35,3 @@ export const registerSale = new RegisterSale(
   eventBus
 );
 export const createSale = new CreateSale(saleRepository, getProductsInfo);
-const completeSale = new CompleteSale(saleRepository);
-const failSale = new FailSale(saleRepository, handleStock);
-
-const processedEventRepository = useTurso
-  ? new LibSqlProcessedEventRepository()
-  : new InMemoryProcessedEventRepository();
-
-const unsubscribers: Array<() => void> = [];
-
-unsubscribers.push(
-  eventBus.subscribe(
-    PaymentOrderCompleted.eventName,
-    new SaleCompletedOnPayment(completeSale, /* processedEventRepository */)
-  )
-);
-unsubscribers.push(
-  eventBus.subscribe(
-    PaymentOrderFailed.eventName,
-    new SaleFailedOnPayment(failSale)
-  )
-);
-
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    unsubscribers.forEach((fn) => fn());
-  });
-  
-}
