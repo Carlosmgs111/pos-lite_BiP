@@ -35,7 +35,7 @@ function restoreCartSnapshot(snapshot: string | null) {
     /* ignore */
   }
 }
-
+// ? Deboucing
 function scheduleFlush() {
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => flushPendingChanges(), DEBOUNCE_MS);
@@ -55,6 +55,7 @@ async function flushPendingChanges() {
   const snapshot = captureCartSnapshot();
 
   const merged = new Map<string, number>();
+  // ? Merge deltas per product
   for (const c of batch) {
     merged.set(c.productId, (merged.get(c.productId) || 0) + c.delta);
   }
@@ -210,13 +211,8 @@ export const SaleService = {
     const item = items.find((i) => i.productId === productId);
     if (!stock || !item) return;
 
-    const pendingNow = pending
-      .filter((p) => p.productId === productId)
-      .reduce((sum, p) => sum + p.delta, 0);
-    const projected = item.quantity + pendingNow + 1;
-
-    if (stock.stock - projected < 0 && projected > item.quantity) {
-      showToast("Stock máximo alcanzado", "info");
+    if (stock.stock <= 0) {
+      showToast("Sin stock disponible", "error");
       return;
     }
 
