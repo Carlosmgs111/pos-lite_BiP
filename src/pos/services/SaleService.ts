@@ -54,39 +54,41 @@ async function flushPendingChanges() {
   pending = [];
   const snapshot = captureCartSnapshot();
 
-  const adds = batch.filter((c) => c.delta > 0);
-  const removes = batch.filter((c) => c.delta < 0);
-
-  for (const c of adds) {
-    const res = await fetch("/api/sales/items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleId, itemId: c.productId, quantity: c.delta }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: "Error del servidor" }));
-      handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
-      return;
-    }
-  }
-
-  for (const c of removes) {
-    const res = await fetch("/api/sales/items", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleId, itemId: c.productId, quantity: Math.abs(c.delta) }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: "Error del servidor" }));
-      handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
-      return;
-    }
-  }
-
+  const merged = new Map<string, number>();
   for (const c of batch) {
-    await CatalogService.refreshProductStock(c.productId);
+    merged.set(c.productId, (merged.get(c.productId) || 0) + c.delta);
+  }
+
+  for (const [productId, netDelta] of merged) {
+    if (netDelta === 0) continue;
+
+    if (netDelta > 0) {
+      const res = await fetch("/api/sales/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saleId, itemId: productId, quantity: netDelta }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Error del servidor" }));
+        handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
+        return;
+      }
+    } else {
+      const res = await fetch("/api/sales/items", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saleId, itemId: productId, quantity: Math.abs(netDelta) }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: "Error del servidor" }));
+        handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
+        return;
+      }
+    }
+
+    await CatalogService.refreshProductStock(productId);
   }
 }
 
