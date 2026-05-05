@@ -22,4 +22,11 @@ export function updateProductStock(productId: string, newStock: number) {
   );
 }
 
-
+export function adjustProductStock(productId: string, delta: number) {
+  const products = $catalog.get();
+  $catalog.set(
+    products.map((p) =>
+      p.id === productId ? { ...p, stock: p.stock + delta } : p
+    )
+  );
+}

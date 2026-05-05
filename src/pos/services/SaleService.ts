@@ -5,12 +5,99 @@ import {
   addToCart,
   removeFromCart,
   clearCart,
-  $getItemQuantity,
   updateItemQuantity,
 } from "../stores/cart";
 import { $totalToPay, $paymentStatus, resetPayment } from "../stores/payment";
+import { $catalog, adjustProductStock } from "../stores/catalog";
 import { CatalogService } from "./CatalogService";
 import { showToast } from "../stores/toast";
+
+const DEBOUNCE_MS = 300;
+
+interface PendingChange {
+  productId: string;
+  delta: number;
+}
+
+let pending: PendingChange[] = [];
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let previousCart: string | null = null;
+
+function captureCartSnapshot(): string {
+  return JSON.stringify($cartItems.get());
+}
+
+function restoreCartSnapshot(snapshot: string | null) {
+  if (!snapshot) return;
+  try {
+    $cartItems.set(JSON.parse(snapshot));
+  } catch {
+    /* ignore */
+  }
+}
+
+function scheduleFlush() {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => flushPendingChanges(), DEBOUNCE_MS);
+}
+
+async function flushPendingChanges() {
+  if (pending.length === 0) return;
+
+  const saleId = $saleId.get();
+  if (!saleId) {
+    pending = [];
+    return;
+  }
+
+  const batch = [...pending];
+  pending = [];
+  const snapshot = captureCartSnapshot();
+
+  const adds = batch.filter((c) => c.delta > 0);
+  const removes = batch.filter((c) => c.delta < 0);
+
+  for (const c of adds) {
+    const res = await fetch("/api/sales/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ saleId, itemId: c.productId, quantity: c.delta }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Error del servidor" }));
+      handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
+      return;
+    }
+  }
+
+  for (const c of removes) {
+    const res = await fetch("/api/sales/items", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ saleId, itemId: c.productId, quantity: Math.abs(c.delta) }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({ error: "Error del servidor" }));
+      handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
+      return;
+    }
+  }
+
+  for (const c of batch) {
+    await CatalogService.refreshProductStock(c.productId);
+  }
+}
+
+function handleSyncError(
+  snapshot: string | null,
+  _batch: PendingChange[],
+  error: string
+) {
+  restoreCartSnapshot(snapshot);
+  showToast(error, "error");
+}
 
 export const SaleService = {
   async loadOpenSale() {
@@ -61,86 +148,88 @@ export const SaleService = {
       if (!saleId) return;
     }
 
-    const res = await fetch("/api/sales/items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleId, itemId: product.id, quantity: 1 }),
-    });
-
-    if (res.ok) {
-      addToCart(product);
-      await CatalogService.refreshProductStock(product.id);
-    } else {
-      showToast("No se pudo agregar el producto", "error");
+    const catalog = $catalog.get();
+    const stock = catalog.find((p) => p.id === product.id);
+    if (!stock || stock.stock <= 0) {
+      showToast("Sin stock disponible", "error");
+      return;
     }
+
+    addToCart(product);
+    adjustProductStock(product.id, -1);
+
+    pending.push({ productId: product.id, delta: 1 });
+    scheduleFlush();
   },
 
   async removeProduct(productId: string) {
     const saleId = $saleId.get();
     if (!saleId) return;
 
-    const res = await fetch("/api/sales/items", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        saleId,
-        itemId: productId,
-        quantity: $getItemQuantity(productId),
-      }),
-    });
+    const items = $cartItems.get();
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
 
-    if (res.ok) {
-      removeFromCart(productId);
-      await CatalogService.refreshProductStock(productId);
-    } else {
-      showToast("No se pudo remover el producto", "error");
-    }
+    adjustProductStock(productId, item.quantity);
+    removeFromCart(productId);
+
+    pending.push({ productId, delta: -item.quantity });
+    scheduleFlush();
   },
 
   async decrementProductQuantity(productId: string) {
     const saleId = $saleId.get();
     if (!saleId) return;
 
-    const res = await fetch("/api/sales/items", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleId, itemId: productId, quantity: 1 }),
-    });
+    const items = $cartItems.get();
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
 
-    if (res.ok) {
-      const newQuantity = $getItemQuantity(productId) - 1;
-      if (newQuantity <= 0) {
-        removeFromCart(productId);
-      } else {
-        updateItemQuantity(productId, newQuantity);
-      }
-      await CatalogService.refreshProductStock(productId);
+    const newQty = item.quantity - 1;
+    if (newQty <= 0) {
+      adjustProductStock(productId, item.quantity);
+      removeFromCart(productId);
+      pending.push({ productId, delta: -item.quantity });
     } else {
-      showToast("No se pudo reducir la cantidad", "error");
+      updateItemQuantity(productId, newQty);
+      adjustProductStock(productId, 1);
+      pending.push({ productId, delta: -1 });
     }
+    scheduleFlush();
   },
 
   async incrementProductQuantity(productId: string) {
     const saleId = $saleId.get();
     if (!saleId) return;
 
-    const res = await fetch("/api/sales/items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleId, itemId: productId, quantity: 1 }),
-    });
+    const catalog = $catalog.get();
+    const stock = catalog.find((p) => p.id === productId);
+    const items = $cartItems.get();
+    const item = items.find((i) => i.productId === productId);
+    if (!stock || !item) return;
 
-    if (res.ok) {
-      updateItemQuantity(productId, $getItemQuantity(productId) + 1);
-      await CatalogService.refreshProductStock(productId);
-    } else {
-      showToast("No se pudo incrementar la cantidad", "error");
+    const pendingNow = pending
+      .filter((p) => p.productId === productId)
+      .reduce((sum, p) => sum + p.delta, 0);
+    const projected = item.quantity + pendingNow + 1;
+
+    if (stock.stock - projected < 0 && projected > item.quantity) {
+      showToast("Stock máximo alcanzado", "info");
+      return;
     }
+
+    updateItemQuantity(productId, item.quantity + 1);
+    adjustProductStock(productId, -1);
+
+    pending.push({ productId, delta: 1 });
+    scheduleFlush();
   },
 
   async confirmSale() {
     const saleId = $saleId.get();
     if (!saleId) return;
+
+    await flushPendingChanges();
 
     const res = await fetch("/api/sales/register", {
       method: "POST",
@@ -164,6 +253,14 @@ export const SaleService = {
     const saleId = $saleId.get();
     if (!saleId) return;
 
+    if (syncTimer) clearTimeout(syncTimer);
+    pending = [];
+
+    const items = $cartItems.get();
+    for (const item of items) {
+      adjustProductStock(item.productId, item.quantity);
+    }
+
     const res = await fetch("/api/sales/cancel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -176,15 +273,13 @@ export const SaleService = {
     }
 
     showToast("Venta cancelada", "info");
-    const items = $cartItems.get();
-    for (const item of items) {
-      await CatalogService.refreshProductStock(item.productId);
-    }
     clearCart();
     resetPayment();
   },
 
   startNewTransaction() {
+    if (syncTimer) clearTimeout(syncTimer);
+    pending = [];
     clearCart();
     resetPayment();
   },

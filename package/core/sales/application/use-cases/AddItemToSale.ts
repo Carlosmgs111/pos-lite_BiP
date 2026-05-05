@@ -21,11 +21,10 @@ export class AddItemToSale {
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
     }
-    if (!saleResult.getValue()) {
+    const sale = saleResult.getValue();
+    if (!sale) {
       return Result.fail(new SaleNotFoundError());
     }
-    const sale = saleResult.getValue()!;
-
     // Pre-check sin mutar: si no es DRAFT, evitar reservar stock.
     const canAddItemResult = sale.canAddItem();
     if (!canAddItemResult.isSuccess) {

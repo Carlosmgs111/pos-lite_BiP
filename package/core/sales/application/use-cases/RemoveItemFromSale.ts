@@ -21,10 +21,10 @@ export class RemoveItemFromSale {
     if (!saleResult.isSuccess) {
       return Result.fail(saleResult.getError());
     }
-    if (!saleResult.getValue()) {
+    const sale = saleResult.getValue();
+    if (!sale) {
       return Result.fail(new SaleNotFoundError());
     }
-    const sale = saleResult.getValue()!;
     const releaseStockResult = await this.handleStock.releaseStock(itemId, quantity);
     if (!releaseStockResult.isSuccess) {
       return Result.fail(releaseStockResult.getError());
