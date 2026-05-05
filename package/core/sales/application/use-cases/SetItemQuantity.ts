@@ -26,9 +26,11 @@ export class SetItemQuantity {
 
     const existing = sale.getItems().find((i) => i.getProductId() === props.itemId);
     const currentQty = existing?.getQuantity() ?? 0;
+
+    if (currentQty === props.quantity) return Result.ok(sale);
+
     const delta = props.quantity - currentQty;
 
-    // Stock: reserve/release delta
     if (delta > 0) {
       const r = await this.handleStock.reserveStock(props.itemId, delta);
       if (!r.isSuccess) return Result.fail(r.getError());
@@ -37,7 +39,6 @@ export class SetItemQuantity {
       if (!r.isSuccess) return Result.fail(r.getError());
     }
 
-    // Sale item: add / update / remove
     try {
       if (currentQty === 0) {
         const infoR = await this.getProductInfo.execute([props.itemId]);
@@ -51,7 +52,7 @@ export class SetItemQuantity {
       } else {
         const item = sale.getItems().find((i) => i.getProductId() === props.itemId)!;
         if (delta > 0) item.incrementQuantity(delta);
-        else if (delta < 0) item.decrementQuantity(-delta);
+        else item.decrementQuantity(-delta);
         sale.recalculateTotal();
       }
     } catch (e) {

@@ -8,22 +8,32 @@ import {
   updateItemQuantity,
 } from "../stores/cart";
 import { $totalToPay, $paymentStatus, resetPayment } from "../stores/payment";
-import { $catalog, adjustProductStock } from "../stores/catalog";
-import { CatalogService } from "./CatalogService";
+import { $catalog, adjustProductStock, updateProductStock } from "../stores/catalog";
 import { showToast } from "../stores/toast";
 
 const DEBOUNCE_MS = 300;
 
 const pendingMap = new Map<string, number>();
+const inflightMap = new Map<string, number>();
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let mutationId = 0;
 
-function captureCartSnapshot(): string {
-  return JSON.stringify($cartItems.get());
+function captureCartSnapshot(productId: string): string | null {
+  const item = $cartItems.get().find((i) => i.productId === productId);
+  return item ? JSON.stringify(item) : null;
 }
 
-function restoreCartSnapshot(snapshot: string | null) {
-  if (!snapshot) return;
-  try { $cartItems.set(JSON.parse(snapshot)); } catch { /* ignore */ }
+function restoreCartItem(snapshot: string | null, productId: string) {
+  if (!snapshot) { removeFromCart(productId); return; }
+  try {
+    const item = JSON.parse(snapshot);
+    const existing = $cartItems.get().find((i) => i.productId === productId);
+    if (existing) {
+      updateItemQuantity(productId, item.quantity);
+    } else {
+      $cartItems.set([...$cartItems.get(), item]);
+    }
+  } catch { /* ignore */ }
 }
 
 function scheduleFlush() {
@@ -36,29 +46,56 @@ async function flushPendingChanges() {
   const saleId = $saleId.get();
   if (!saleId) { pendingMap.clear(); return; }
 
-  const snapshot = new Map(pendingMap);
+  // Move pending → inflight, snapshot each item's pre-sync state
+  for (const [productId, qty] of pendingMap) {
+    inflightMap.set(productId, qty);
+  }
   pendingMap.clear();
-  const cartSnapshot = captureCartSnapshot();
+  const currentMutation = ++mutationId;
 
-  const results = await Promise.all(
-    [...snapshot.entries()].map(([productId, qty]) =>
-      fetch("/api/sales/items", {
+  const snapshots = new Map<string, string | null>();
+  for (const productId of inflightMap.keys()) {
+    snapshots.set(productId, captureCartSnapshot(productId));
+  }
+
+  const results = await Promise.allSettled(
+    [...inflightMap.entries()].map(async ([productId, qty]) => {
+      const res = await fetch("/api/sales/items", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ saleId, itemId: productId, quantity: qty }),
-      }).then(async (res) => ({ productId, ok: res.ok, error: res.ok ? null : await res.json().catch(() => ({ error: "Error del servidor" })) }))
-    )
+      });
+      const data = await res.json().catch(() => ({ error: "Error del servidor" }));
+      if (!res.ok) throw { productId, error: data.error ?? "Error al sincronizar" };
+      return { productId, stock: data.stock };
+    })
   );
 
-  const failed = results.find((r) => !r.ok);
-  if (failed) {
-    restoreCartSnapshot(cartSnapshot);
-    showToast(failed.error?.error ?? "Error al sincronizar", "error");
-    return;
-  }
+  // Ignore stale responses
+  if (currentMutation !== mutationId) return;
+
+  let hadError = false;
 
   for (const r of results) {
-    await CatalogService.refreshProductStock(r.productId);
+    if (r.status === "fulfilled") {
+      const { productId, stock } = r.value;
+      inflightMap.delete(productId);
+      updateProductStock(productId, stock);
+    } else {
+      hadError = true;
+      const { productId, error } = r.reason as { productId: string; error: string };
+      inflightMap.delete(productId);
+      restoreCartItem(snapshots.get(productId)!, productId);
+      showToast(error, "error");
+    }
+  }
+
+  if (hadError) {
+    // Re-enqueue any remaining inflight items for retry
+    for (const [productId, qty] of inflightMap) {
+      pendingMap.set(productId, qty);
+    }
+    inflightMap.clear();
   }
 }
 
@@ -183,12 +220,17 @@ export const SaleService = {
 
     if (syncTimer) clearTimeout(syncTimer);
     pendingMap.clear();
+    inflightMap.clear();
 
     for (const item of $cartItems.get()) {
       adjustProductStock(item.productId, item.quantity);
     }
 
-    const res = await fetch("/api/sales/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ saleId }) });
+    const res = await fetch("/api/sales/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ saleId }),
+    });
     if (!res.ok) { showToast("No se pudo cancelar la venta", "error"); return; }
 
     showToast("Venta cancelada", "info");
@@ -199,6 +241,7 @@ export const SaleService = {
   startNewTransaction() {
     if (syncTimer) clearTimeout(syncTimer);
     pendingMap.clear();
+    inflightMap.clear();
     clearCart();
     resetPayment();
   },

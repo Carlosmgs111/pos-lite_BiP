@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { setItemQuantity } from "../../../../package/core";
+import { setItemQuantity, productRepository } from "../../../../package/core";
 
 export const prerender = false;
 
@@ -26,12 +26,11 @@ export const PUT: APIRoute = async ({ request }) => {
     );
   }
 
-  const sale = result.getValue()!;
+  const stockResult = await productRepository.getProducts([body.itemId]);
+  const stock = stockResult.isSuccess ? stockResult.getValue()?.[0]?.getStock() ?? 0 : 0;
+
   return new Response(
-    JSON.stringify({
-      ok: true,
-      items: sale.getItems().map((i) => i.serialize()),
-    }),
+    JSON.stringify({ ok: true, stock }),
     { status: 200, headers: { "Content-Type": "application/json" } }
   );
 };
