@@ -14,14 +14,8 @@ import { showToast } from "../stores/toast";
 
 const DEBOUNCE_MS = 300;
 
-interface PendingChange {
-  productId: string;
-  delta: number;
-}
-
-let pending: PendingChange[] = [];
+const pendingMap = new Map<string, number>();
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
-let previousCart: string | null = null;
 
 function captureCartSnapshot(): string {
   return JSON.stringify($cartItems.get());
@@ -29,77 +23,43 @@ function captureCartSnapshot(): string {
 
 function restoreCartSnapshot(snapshot: string | null) {
   if (!snapshot) return;
-  try {
-    $cartItems.set(JSON.parse(snapshot));
-  } catch {
-    /* ignore */
-  }
+  try { $cartItems.set(JSON.parse(snapshot)); } catch { /* ignore */ }
 }
-// ? Deboucing
+
 function scheduleFlush() {
   if (syncTimer) clearTimeout(syncTimer);
   syncTimer = setTimeout(() => flushPendingChanges(), DEBOUNCE_MS);
 }
 
 async function flushPendingChanges() {
-  if (pending.length === 0) return;
-
+  if (pendingMap.size === 0) return;
   const saleId = $saleId.get();
-  if (!saleId) {
-    pending = [];
+  if (!saleId) { pendingMap.clear(); return; }
+
+  const snapshot = new Map(pendingMap);
+  pendingMap.clear();
+  const cartSnapshot = captureCartSnapshot();
+
+  const results = await Promise.all(
+    [...snapshot.entries()].map(([productId, qty]) =>
+      fetch("/api/sales/items", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ saleId, itemId: productId, quantity: qty }),
+      }).then(async (res) => ({ productId, ok: res.ok, error: res.ok ? null : await res.json().catch(() => ({ error: "Error del servidor" })) }))
+    )
+  );
+
+  const failed = results.find((r) => !r.ok);
+  if (failed) {
+    restoreCartSnapshot(cartSnapshot);
+    showToast(failed.error?.error ?? "Error al sincronizar", "error");
     return;
   }
 
-  const batch = [...pending];
-  pending = [];
-  const snapshot = captureCartSnapshot();
-
-  const merged = new Map<string, number>();
-  // ? Merge deltas per product
-  for (const c of batch) {
-    merged.set(c.productId, (merged.get(c.productId) || 0) + c.delta);
+  for (const r of results) {
+    await CatalogService.refreshProductStock(r.productId);
   }
-
-  for (const [productId, netDelta] of merged) {
-    if (netDelta === 0) continue;
-
-    if (netDelta > 0) {
-      const res = await fetch("/api/sales/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ saleId, itemId: productId, quantity: netDelta }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "Error del servidor" }));
-        handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
-        return;
-      }
-    } else {
-      const res = await fetch("/api/sales/items", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ saleId, itemId: productId, quantity: Math.abs(netDelta) }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: "Error del servidor" }));
-        handleSyncError(snapshot, batch, data.error ?? "Error al sincronizar");
-        return;
-      }
-    }
-
-    await CatalogService.refreshProductStock(productId);
-  }
-}
-
-function handleSyncError(
-  snapshot: string | null,
-  _batch: PendingChange[],
-  error: string
-) {
-  restoreCartSnapshot(snapshot);
-  showToast(error, "error");
 }
 
 export const SaleService = {
@@ -133,11 +93,7 @@ export const SaleService = {
 
   async startSale() {
     const res = await fetch("/api/sales/create", { method: "POST" });
-    if (!res.ok) {
-      showToast("No se pudo crear la venta", "error");
-      return null;
-    }
-
+    if (!res.ok) { showToast("No se pudo crear la venta", "error"); return null; }
     const data = await res.json();
     $saleId.set(data.saleId);
     $cartStatus.set("active");
@@ -146,80 +102,57 @@ export const SaleService = {
 
   async addProduct(product: { id: string; name: string; price: number }) {
     let saleId = $saleId.get();
-    if (!saleId) {
-      saleId = await this.startSale();
-      if (!saleId) return;
-    }
+    if (!saleId) { saleId = await this.startSale(); if (!saleId) return; }
 
-    const catalog = $catalog.get();
-    const stock = catalog.find((p) => p.id === product.id);
-    if (!stock || stock.stock <= 0) {
-      showToast("Sin stock disponible", "error");
-      return;
-    }
+    const stock = $catalog.get().find((p) => p.id === product.id);
+    if (!stock || stock.stock <= 0) { showToast("Sin stock disponible", "error"); return; }
 
     addToCart(product);
     adjustProductStock(product.id, -1);
-
-    pending.push({ productId: product.id, delta: 1 });
+    pendingMap.set(product.id, ($cartItems.get().find((i) => i.productId === product.id)?.quantity ?? 1));
     scheduleFlush();
   },
 
-  async removeProduct(productId: string) {
-    const saleId = $saleId.get();
-    if (!saleId) return;
+  async incrementProductQuantity(productId: string) {
+    if (!$saleId.get()) return;
+    const stock = $catalog.get().find((p) => p.id === productId);
+    const item = $cartItems.get().find((i) => i.productId === productId);
+    if (!stock || !item) return;
 
-    const items = $cartItems.get();
-    const item = items.find((i) => i.productId === productId);
-    if (!item) return;
+    if (stock.stock <= 0) { showToast("Stock máximo alcanzado", "info"); return; }
 
-    adjustProductStock(productId, item.quantity);
-    removeFromCart(productId);
-
-    pending.push({ productId, delta: -item.quantity });
+    updateItemQuantity(productId, item.quantity + 1);
+    adjustProductStock(productId, -1);
+    pendingMap.set(productId, item.quantity + 1);
     scheduleFlush();
   },
 
   async decrementProductQuantity(productId: string) {
-    const saleId = $saleId.get();
-    if (!saleId) return;
-
-    const items = $cartItems.get();
-    const item = items.find((i) => i.productId === productId);
+    if (!$saleId.get()) return;
+    const item = $cartItems.get().find((i) => i.productId === productId);
     if (!item) return;
 
     const newQty = item.quantity - 1;
     if (newQty <= 0) {
       adjustProductStock(productId, item.quantity);
       removeFromCart(productId);
-      pending.push({ productId, delta: -item.quantity });
+      pendingMap.set(productId, 0);
     } else {
       updateItemQuantity(productId, newQty);
       adjustProductStock(productId, 1);
-      pending.push({ productId, delta: -1 });
+      pendingMap.set(productId, newQty);
     }
     scheduleFlush();
   },
 
-  async incrementProductQuantity(productId: string) {
-    const saleId = $saleId.get();
-    if (!saleId) return;
+  async removeProduct(productId: string) {
+    if (!$saleId.get()) return;
+    const item = $cartItems.get().find((i) => i.productId === productId);
+    if (!item) return;
 
-    const catalog = $catalog.get();
-    const stock = catalog.find((p) => p.id === productId);
-    const items = $cartItems.get();
-    const item = items.find((i) => i.productId === productId);
-    if (!stock || !item) return;
-
-    if (stock.stock <= 0) {
-      showToast("Sin stock disponible", "error");
-      return;
-    }
-
-    updateItemQuantity(productId, item.quantity + 1);
-    adjustProductStock(productId, -1);
-
-    pending.push({ productId, delta: 1 });
+    adjustProductStock(productId, item.quantity);
+    removeFromCart(productId);
+    pendingMap.set(productId, 0);
     scheduleFlush();
   },
 
@@ -235,10 +168,7 @@ export const SaleService = {
       body: JSON.stringify({ saleId }),
     });
 
-    if (!res.ok) {
-      showToast("No se pudo confirmar la venta", "error");
-      return;
-    }
+    if (!res.ok) { showToast("No se pudo confirmar la venta", "error"); return; }
 
     const data = await res.json();
     showToast("Venta confirmada", "success");
@@ -252,23 +182,14 @@ export const SaleService = {
     if (!saleId) return;
 
     if (syncTimer) clearTimeout(syncTimer);
-    pending = [];
+    pendingMap.clear();
 
-    const items = $cartItems.get();
-    for (const item of items) {
+    for (const item of $cartItems.get()) {
       adjustProductStock(item.productId, item.quantity);
     }
 
-    const res = await fetch("/api/sales/cancel", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ saleId }),
-    });
-
-    if (!res.ok) {
-      showToast("No se pudo cancelar la venta", "error");
-      return;
-    }
+    const res = await fetch("/api/sales/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ saleId }) });
+    if (!res.ok) { showToast("No se pudo cancelar la venta", "error"); return; }
 
     showToast("Venta cancelada", "info");
     clearCart();
@@ -277,7 +198,7 @@ export const SaleService = {
 
   startNewTransaction() {
     if (syncTimer) clearTimeout(syncTimer);
-    pending = [];
+    pendingMap.clear();
     clearCart();
     resetPayment();
   },

@@ -2,6 +2,7 @@ import { InMemorySaleRepository } from "./infrastructure/InMemorySaleRepository"
 import { LibSqlSaleRepository } from "./infrastructure/LibSqlSaleRepository";
 import { GetProductsInfo } from "./infrastructure/GetProductsInfo";
 import { AddItemToSale } from "./application/use-cases/AddItemToSale";
+import { SetItemQuantity } from "./application/use-cases/SetItemQuantity";
 import { RemoveItemFromSale } from "./application/use-cases/RemoveItemFromSale";
 import { RegisterSale } from "./application/use-cases/RegisterSale";
 import { CreateSale } from "./application/use-cases/CreateSale";
@@ -38,5 +39,10 @@ export const registerSale = new RegisterSale(
   saleRepository,
   handleStock,
   eventBus
+);
+export const setItemQuantity = new SetItemQuantity(
+  handleStock,
+  saleRepository,
+  getProductsInfo
 );
 export const createSale = new CreateSale(saleRepository, getProductsInfo);

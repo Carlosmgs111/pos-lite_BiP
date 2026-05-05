@@ -1,65 +1,37 @@
 import type { APIRoute } from "astro";
-import { addItemToSale } from "../../../../package/core";
-import { removeItemFromSale } from "../../../../package/core/sales";
+import { setItemQuantity } from "../../../../package/core";
 
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async ({ request }) => {
   const body = await request.json().catch(() => null);
 
-  if (!body || !body.saleId || !body.itemId) {
+  if (!body || !body.saleId || !body.itemId || body.quantity == null) {
     return new Response(
-      JSON.stringify({ error: "Required: saleId, itemId" }),
+      JSON.stringify({ error: "Required: saleId, itemId, quantity" }),
       { status: 400, headers: { "Content-Type": "application/json" } }
     );
   }
 
-  const result = await addItemToSale.execute({
+  const result = await setItemQuantity.execute({
     saleId: body.saleId,
     itemId: body.itemId,
-    quantity: body.quantity ?? 1,
-  });
-
-  console.log(result);
-
-  if (!result.isSuccess) {
-    return new Response(
-      JSON.stringify({ error: result.getError() }),
-      { status: 422, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  return new Response(
-    JSON.stringify({ ok: true }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
-  );
-};
-
-export const DELETE: APIRoute = async ({ request }) => {
-  const body = await request.json().catch(() => null);
-
-  if (!body || !body.saleId || !body.itemId) {
-    return new Response(
-      JSON.stringify({ error: "Required: saleId, itemId" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
-    );
-  }
-
-  const result = await removeItemFromSale.execute({
-    saleId: body.saleId,
-    itemId: body.itemId,
-    quantity: body.quantity ?? 1,
+    quantity: body.quantity,
   });
 
   if (!result.isSuccess) {
     return new Response(
-      JSON.stringify({ error: result.getError() }),
+      JSON.stringify({ error: result.getError()?.message }),
       { status: 422, headers: { "Content-Type": "application/json" } }
     );
   }
 
+  const sale = result.getValue()!;
   return new Response(
-    JSON.stringify({ ok: true }),
+    JSON.stringify({
+      ok: true,
+      items: sale.getItems().map((i) => i.serialize()),
+    }),
     { status: 200, headers: { "Content-Type": "application/json" } }
   );
 };

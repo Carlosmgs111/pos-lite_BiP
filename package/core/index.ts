@@ -1,6 +1,6 @@
 import "./payment";
 export { registerProduct, handleStockForSale, getProducts, productRepository } from "./inventory";
-export { addItemToSale, registerSale, createSale, removeItemFromSale, cancelSale } from "./sales";
+export { addItemToSale, registerSale, createSale, removeItemFromSale, cancelSale, setItemQuantity } from "./sales";
 export {
   addPayment,
   confirmPayment,
