@@ -24,12 +24,19 @@ export class SetItemQuantity {
     if (!sale) return Result.fail(new SaleNotFoundError());
     if (!sale.canAddItem().isSuccess) return Result.fail(sale.canAddItem().getError()!);
 
-    const existing = sale.getItems().find((i) => i.getProductId() === props.itemId);
+    const existing = sale.getItemByProductId(props.itemId);
     const currentQty = existing?.getQuantity() ?? 0;
-
     if (currentQty === props.quantity) return Result.ok(sale);
 
     const delta = props.quantity - currentQty;
+
+    let productInfo: { name: string; price: number } | null = null;
+    if (currentQty === 0 && props.quantity > 0) {
+      const infoR = await this.getProductInfo.execute([props.itemId]);
+      if (!infoR.isSuccess) return Result.fail(infoR.getError());
+      const info = infoR.getValue()![0];
+      productInfo = { name: info.name, price: info.price };
+    }
 
     if (delta > 0) {
       const r = await this.handleStock.reserveStock(props.itemId, delta);
@@ -39,29 +46,25 @@ export class SetItemQuantity {
       if (!r.isSuccess) return Result.fail(r.getError());
     }
 
-    try {
-      if (currentQty === 0) {
-        const infoR = await this.getProductInfo.execute([props.itemId]);
-        if (!infoR.isSuccess) throw infoR.getError();
-        const info = infoR.getValue()![0];
-        const addR = sale.addItem({ productId: props.itemId, nameSnapshot: info.name, quantity: props.quantity, priceSnapshot: info.price });
-        if (!addR.isSuccess) throw addR.getError();
-      } else if (props.quantity === 0) {
-        const remR = sale.removeItem({ itemId: props.itemId, quantity: currentQty });
-        if (!remR.isSuccess) throw remR.getError();
-      } else {
-        const item = sale.getItems().find((i) => i.getProductId() === props.itemId)!;
-        if (delta > 0) item.incrementQuantity(delta);
-        else item.decrementQuantity(-delta);
-        sale.recalculateTotal();
-      }
-    } catch (e) {
+    const setResult = sale.setItemQuantity(
+      props.itemId,
+      productInfo ?? { name: "", price: 0 },
+      props.quantity
+    );
+
+    if (!setResult.isSuccess) {
       if (delta > 0) await this.handleStock.releaseStock(props.itemId, delta);
-      return Result.fail(e as Error);
+      else if (delta < 0) await this.handleStock.reserveStock(props.itemId, -delta);
+      return Result.fail(setResult.getError());
     }
 
     const updateR = await this.saleRepository.update(sale);
-    if (!updateR.isSuccess) return Result.fail(updateR.getError());
+    if (!updateR.isSuccess) {
+      if (delta > 0) await this.handleStock.releaseStock(props.itemId, delta);
+      else if (delta < 0) await this.handleStock.reserveStock(props.itemId, -delta);
+      return Result.fail(updateR.getError());
+    }
+
     return Result.ok(sale);
   }
 }

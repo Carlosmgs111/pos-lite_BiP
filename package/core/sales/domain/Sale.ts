@@ -72,6 +72,45 @@ export class Sale {
     }
     return Result.ok(item);
   }
+  getItemByProductId(productId: string): SaleItem | undefined {
+    return this.items.find((i) => i.getProductId() === productId);
+  }
+  setItemQuantity(
+    productId: string,
+    info: { name: string; price: number },
+    quantity: number
+  ): Result<Error, void> {
+    if (this.status !== SaleStatus.DRAFT) {
+      return Result.fail(new InvalidSaleStateError("Can only modify items in a draft sale"));
+    }
+    if (quantity < 0) {
+      return Result.fail(new InvalidSaleStateError("Quantity cannot be negative"));
+    }
+
+    const existing = this.getItemByProductId(productId);
+
+    if (!existing) {
+      if (quantity === 0) return Result.ok(undefined);
+      const itemResult = SaleItem.create({
+        productId,
+        nameSnapshot: info.name,
+        quantity,
+        priceSnapshot: info.price,
+      });
+      if (!itemResult.isSuccess) return Result.fail(itemResult.getError());
+      this.items.push(itemResult.getValue()!);
+    } else if (quantity === 0) {
+      const idx = this.items.indexOf(existing);
+      this.items.splice(idx, 1);
+    } else {
+      const setResult = existing.setQuantity(quantity);
+      if (!setResult.isSuccess) return Result.fail(setResult.getError());
+    }
+
+    this.recalculateTotal();
+    this.version++;
+    return Result.ok(undefined);
+  }
   canAddItem(): Result<InvalidSaleStateError, void> {
     if (this.status !== SaleStatus.DRAFT) {
       return Result.fail(

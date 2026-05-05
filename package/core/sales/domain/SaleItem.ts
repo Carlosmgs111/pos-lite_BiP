@@ -78,6 +78,15 @@ export class SaleItem {
     return Result.ok(undefined);
   }
 
+  setQuantity(quantity: number): Result<InvalidQuantityError, void> {
+    if (quantity <= 0) {
+      return Result.fail(new InvalidQuantityError("Quantity must be greater than 0"));
+    }
+    this.quantity = quantity;
+    this.subTotal = PriceVO.multiply(this.priceSnapshot, quantity);
+    return Result.ok(undefined);
+  }
+
   getSubTotal() {
     return this.subTotal;
   }
