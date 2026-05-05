@@ -23,9 +23,15 @@ function delay(ms: number): Promise<void> {
 
 export class HttpPaymentGateway implements PaymentGateway {
   private readonly baseUrl: string;
+  private readonly authHeaders: Record<string, string>;
 
-  constructor(baseUrl: string) {
+  constructor(baseUrl: string, authHeaders: Record<string, string> = {}) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
+    this.authHeaders = authHeaders;
+  }
+
+  private buildHeaders(extra: Record<string, string>): Record<string, string> {
+    return { ...this.authHeaders, ...extra };
   }
 
   async requestPayment(request: PaymentRequest): Promise<string> {
@@ -33,7 +39,7 @@ export class HttpPaymentGateway implements PaymentGateway {
     try {
       res = await fetch(new URL("/process-payment", this.baseUrl).href, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: this.buildHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           amount: request.amount,
           currency: "USD",
@@ -61,7 +67,8 @@ export class HttpPaymentGateway implements PaymentGateway {
     for (let attempt = 0; attempt < RETRY_INTERVALS_MS.length; attempt++) {
       try {
         const res = await fetch(
-          new URL(`/transaction?id=${transactionId}`, this.baseUrl).href
+          new URL(`/transaction?id=${transactionId}`, this.baseUrl).href,
+          { headers: this.authHeaders }
         );
 
         if (res.status === 404) return GatewayTransactionStatus.NOT_FOUND;

@@ -5,34 +5,41 @@ import { subscribeToPaymentEvents } from "../../../../package/core/payment/appli
 export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
-
   let sse: SSEStreamAdapter | null = null;
+  try {
+    const stream = new ReadableStream({
+      start(controller) {
+        sse = new SSEStreamAdapter(controller);
 
-  const stream = new ReadableStream({
-    start(controller) {
-      sse = new SSEStreamAdapter(controller);
-
-      const unsubscribe = subscribeToPaymentEvents((event) => {
-        sse?.sendEvent(event.type, {
-          ...event.payload,
-          timestamp: event.occurredAt,
+        const unsubscribe = subscribeToPaymentEvents((event) => {
+          sse?.sendEvent(event.type, {
+            ...event.payload,
+            timestamp: event.occurredAt,
+          });
         });
-      });
 
-      sse.onClose(unsubscribe);
-      request.signal.addEventListener("abort", () => sse?.close());
-    },
+        sse.onClose(unsubscribe);
+        request.signal.addEventListener("abort", () => sse?.close());
+      },
 
-    cancel() {
-      sse?.close();
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+      cancel() {
+        sse?.close();
+      },
+    });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    return new Response("Error al establecer la conexión", {
+      status: 500,
+      headers: {
+        "Content-Type": "text/plain",
+      },
+    });
+  }
 };

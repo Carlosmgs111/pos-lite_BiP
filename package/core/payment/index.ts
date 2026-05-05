@@ -24,6 +24,13 @@ console.log("GATEWAY_URL", GATEWAY_URL);
 
 const useTurso = !!import.meta.env.DATABASE_URL;
 
+const gatewayAuthHeaders: Record<string, string> = {};
+if (import.meta.env.GATEWAY_AUTH_HEADER) {
+  const [name, ...rest] = import.meta.env.GATEWAY_AUTH_HEADER.split(":");
+  const value = rest.join(":");
+  if (name && value) gatewayAuthHeaders[name.trim()] = value.trim();
+}
+
 export const paymentOrderRepository = useTurso
   ? new LibSqlPaymentOrderRepository()
   : new InMemoryPaymentOrderRepository();
@@ -37,7 +44,7 @@ export const addPayment = new AddPayment(paymentOrderRepository, paymentReposito
 export const confirmPayment = new ConfirmPayment(paymentOrderRepository, paymentRepository, eventBus);
 export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository);
 
-const paymentGateway = new HttpPaymentGateway(GATEWAY_URL);
+const paymentGateway = new HttpPaymentGateway(GATEWAY_URL, gatewayAuthHeaders);
 export const processPayment = new ProcessPayment(paymentRepository, paymentGateway);
 export const reconcilePayment = new ReconcilePayment(paymentGateway, confirmPayment);
 export const webhookHandler = new PaymentWebhookHandler(confirmPayment);

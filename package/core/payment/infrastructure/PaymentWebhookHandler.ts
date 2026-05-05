@@ -13,11 +13,13 @@ export class PaymentWebhookHandler {
     if (this.processedTransactionIds.has(payload.transactionId)) {
       return;
     }
+    console.log("[PaymentWebhookHandler] Webhook received", payload);
     this.processedTransactionIds.add(payload.transactionId);
     const result = await this.confirmPayment.execute({
       transactionId: payload.transactionId,
       success: payload.success,
     });
+    console.log("[PaymentWebhookHandler] Webhook processed", result);
     if (!result.isSuccess) {
       throw result.getError() ?? new Error("Webhook confirmation failed");
     }

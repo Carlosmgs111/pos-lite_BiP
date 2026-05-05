@@ -37,6 +37,7 @@ export class ConfirmPayment {
         input.transactionId
       );
     }
+    console.log("[ConfirmPayment] Payment found", paymentResult);
     if (!paymentResult.isSuccess) return Result.fail(paymentResult.getError());
     if (!paymentResult.getValue()) {
       return Result.fail(new Error("Payment not found"));
@@ -46,6 +47,7 @@ export class ConfirmPayment {
     const orderResult = await this.paymentOrderRepository.findById(
       payment.getPaymentOrderId()
     );
+    console.log("[ConfirmPayment] PaymentOrder found", orderResult);
     if (!orderResult.isSuccess) {
       return Result.fail(orderResult.getError());
     }
@@ -64,10 +66,12 @@ export class ConfirmPayment {
     const amount = payment.getAmount().getValue();
     if (input.success) {
       const applyPaymentResult = order.applyPayment(amount);
+      console.log("[ConfirmPayment] Payment applied", applyPaymentResult);
       if (!applyPaymentResult.isSuccess)
         return Result.fail(applyPaymentResult.getError());
     } else {
       const registerFailedAttemptResult = order.registerFailedAttempt(amount);
+      console.log("[ConfirmPayment] Payment failed", registerFailedAttemptResult);
       if (!registerFailedAttemptResult.isSuccess)
         return Result.fail(registerFailedAttemptResult.getError());
     }
@@ -85,6 +89,7 @@ export class ConfirmPayment {
       order.getFailedAttempts() >= MAX_FAILED_ATTEMPTS
     ) {
       const failResult = order.markAsFailed();
+      console.log("[ConfirmPayment] Payment failed", failResult);
       if (!failResult.isSuccess) return Result.fail(failResult.getError());
       orderTerminalEvent = PaymentOrderFailed.create({
         aggregateId: order.getId().getValue(),
@@ -94,8 +99,10 @@ export class ConfirmPayment {
     }
 
     const orderUpdate = await this.paymentOrderRepository.update(order);
+    console.log("[ConfirmPayment] PaymentOrder updated", orderUpdate);
     if (!orderUpdate.isSuccess) return Result.fail(orderUpdate.getError());
     const paymentUpdate = await this.paymentRepository.update(payment);
+    console.log("[ConfirmPayment] Payment updated", paymentUpdate);
     if (!paymentUpdate.isSuccess) return Result.fail(paymentUpdate.getError());
 
     await this.eventBus.publish(
@@ -106,8 +113,10 @@ export class ConfirmPayment {
         success: input.success,
       })
     );
+    console.log("[ConfirmPayment] PaymentTransactionResult published");
     if (orderTerminalEvent) {
       await this.eventBus.publish(orderTerminalEvent);
+      console.log("[ConfirmPayment] OrderTerminalEvent published");
     }
     return Result.ok(undefined);
   }

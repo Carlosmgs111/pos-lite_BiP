@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly GATEWAY_URL: string;
+  readonly GATEWAY_AUTH_HEADER?: string;
   readonly DATABASE_URL: string;
   readonly DATABASE_AUTH_TOKEN?: string;
 }
