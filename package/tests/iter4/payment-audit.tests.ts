@@ -2,7 +2,7 @@ import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
-  addItemToSale,
+  setItemQuantity,
   registerSale,
   getProducts,
 } from "../../core";
@@ -56,7 +56,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: cancelPendingSaleId,
     itemId: productId,
     quantity: 1,
@@ -68,7 +68,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: cancelPartialSaleId,
     itemId: productId,
     quantity: 1,
@@ -80,7 +80,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: failedRetriesSaleId,
     itemId: productId,
     quantity: 1,
@@ -92,7 +92,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: terminalGuardSaleId,
     itemId: productId,
     quantity: 1,
@@ -104,7 +104,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: zeroAmountSaleId,
     itemId: productId,
     quantity: 1,

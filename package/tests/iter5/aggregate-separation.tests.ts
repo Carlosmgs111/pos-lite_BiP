@@ -2,7 +2,7 @@ import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
-  addItemToSale,
+  setItemQuantity,
   registerSale,
 } from "../../core";
 import { saleRepository } from "../../core/sales";
@@ -44,17 +44,17 @@ const setup = async () => {
 
   // Sales for PaymentOrder tests
   await createSale.execute({ id: cashOverpaySaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: cashOverpaySaleId, itemId: productId, quantity: 1 });
+  await setItemQuantity.execute({ saleId: cashOverpaySaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(cashOverpaySaleId);
   await paymentOrderRepository.save(PaymentOrder.create({ saleId: cashOverpaySaleId, totalAmount: 100 }).getValue()!);
 
   await createSale.execute({ id: cardProcessSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: cardProcessSaleId, itemId: productId, quantity: 1 });
+  await setItemQuantity.execute({ saleId: cardProcessSaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(cardProcessSaleId);
   await paymentOrderRepository.save(PaymentOrder.create({ saleId: cardProcessSaleId, totalAmount: 100 }).getValue()!);
 
   await createSale.execute({ id: completedOrderSaleId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: completedOrderSaleId, itemId: productId, quantity: 1 });
+  await setItemQuantity.execute({ saleId: completedOrderSaleId, itemId: productId, quantity: 1 });
   await registerSale.execute(completedOrderSaleId);
   await paymentOrderRepository.save(PaymentOrder.create({ saleId: completedOrderSaleId, totalAmount: 100 }).getValue()!);
 

@@ -2,8 +2,7 @@ import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
-  addItemToSale,
-  removeItemFromSale,
+  setItemQuantity,
   cancelSale,
   registerSale,
 } from "../../core";
@@ -57,7 +56,7 @@ export const saleSuite: Suite = {
         itemIds: [],
         createdAt: new Date(),
       });
-      const r = await addItemToSale.execute({
+      const r = await setItemQuantity.execute({
         saleId,
         itemId: id,
         quantity: 2,
@@ -81,15 +80,15 @@ export const saleSuite: Suite = {
         itemIds: [],
         createdAt: new Date(),
       });
-      await addItemToSale.execute({
+      await setItemQuantity.execute({
         saleId,
         itemId: id,
         quantity: 2,
       });
-      await addItemToSale.execute({
+      await setItemQuantity.execute({
         saleId,
         itemId: id,
-        quantity: 3,
+        quantity: 5,
       });
       const sale = await saleRepository.getSaleById(saleId);
       const total = sale.getValue()!.getTotal().getValue();
@@ -115,15 +114,15 @@ export const saleSuite: Suite = {
         itemIds: [],
         createdAt: new Date(),
       });
-      await addItemToSale.execute({
+      await setItemQuantity.execute({
         saleId,
         itemId: id,
         quantity: 7,
       });
-      await removeItemFromSale.execute({
+      await setItemQuantity.execute({
         saleId,
         itemId: id,
-        quantity: 4,
+        quantity: 3,
       });
       const sale = await saleRepository.getSaleById(saleId);
       const total = sale.getValue()!.getTotal().getValue();
@@ -149,7 +148,7 @@ export const saleSuite: Suite = {
         itemIds: [],
         createdAt: new Date(),
       });
-      await addItemToSale.execute({
+      await setItemQuantity.execute({
         saleId,
         itemId: id,
         quantity: 7,
@@ -176,7 +175,7 @@ export const saleSuite: Suite = {
         itemIds: [],
         createdAt: new Date(),
       });
-      await addItemToSale.execute({
+      await setItemQuantity.execute({
         saleId,
         itemId: id,
         quantity: 7,

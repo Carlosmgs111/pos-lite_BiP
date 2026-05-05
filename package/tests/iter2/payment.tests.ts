@@ -2,7 +2,7 @@ import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
-  addItemToSale,
+  setItemQuantity,
   registerSale,
   getProducts,
 } from "../../core";
@@ -49,11 +49,11 @@ const setup = async () => {
   await createSale.execute({ id: cancelledSaleId, itemIds: [], createdAt: new Date() });
   // saleId2: for non-cash exceeds total test
   await createSale.execute({ id: saleId2, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: saleId2, itemId: productId, quantity: 4 });
+  await setItemQuantity.execute({ saleId: saleId2, itemId: productId, quantity: 4 });
   await registerSale.execute(saleId2);
   // saleExactPaymentId: for exact payment and completed status tests
   await createSale.execute({ id: saleExactPaymentId, itemIds: [], createdAt: new Date() });
-  await addItemToSale.execute({ saleId: saleExactPaymentId, itemId: productId, quantity: 2 });
+  await setItemQuantity.execute({ saleId: saleExactPaymentId, itemId: productId, quantity: 2 });
   await registerSale.execute(saleExactPaymentId);
 };
 
@@ -66,7 +66,7 @@ const teardown = async () => {
 //--- Tests
 
 const paymentOrderCreatedOnConfirm = async () => {
-  await addItemToSale.execute({ saleId, itemId: productId, quantity: 4 });
+  await setItemQuantity.execute({ saleId, itemId: productId, quantity: 4 });
   await registerSale.execute(saleId);
   const paymentOrderResult = await paymentOrderRepository.findBySaleId(saleId);
   const paymentOrder = paymentOrderResult.getValue();
@@ -79,10 +79,10 @@ const paymentOrderCreatedOnConfirm = async () => {
 const addItemToConfirmedSaleFailsFast = async () => {
   const stockBefore = (await getProducts.execute([productId]))
     .getValue()![0].getStock();
-  const addResult = await addItemToSale.execute({
+  const addResult = await setItemQuantity.execute({
     saleId,
     itemId: productId,
-    quantity: 1,
+    quantity: 5,
   });
   const stockAfter = (await getProducts.execute([productId]))
     .getValue()![0].getStock();
@@ -93,14 +93,14 @@ const addItemToConfirmedSaleFailsFast = async () => {
 };
 
 const addItemToCancelledSaleFailsFast = async () => {
-  await addItemToSale.execute({ saleId: cancelledSaleId, itemId: productId, quantity: 2 });
+  await setItemQuantity.execute({ saleId: cancelledSaleId, itemId: productId, quantity: 2 });
   await cancelSale.execute(cancelledSaleId);
   const stockBefore = (await getProducts.execute([productId]))
     .getValue()![0].getStock();
-  const addResult = await addItemToSale.execute({
+  const addResult = await setItemQuantity.execute({
     saleId: cancelledSaleId,
     itemId: productId,
-    quantity: 1,
+    quantity: 3,
   });
   const stockAfter = (await getProducts.execute([productId]))
     .getValue()![0].getStock();

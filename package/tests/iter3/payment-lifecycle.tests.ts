@@ -2,7 +2,7 @@ import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
-  addItemToSale,
+  setItemQuantity,
   registerSale,
 } from "../../core";
 import { saleRepository } from "../../core/sales";
@@ -67,7 +67,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sequentialSaleId,
     itemId: productId,
     quantity: 2,
@@ -79,7 +79,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: fullPaymentSaleId,
     itemId: productId,
     quantity: 1,
@@ -91,7 +91,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: cashOverpaySaleId,
     itemId: productId,
     quantity: 1,
@@ -103,7 +103,7 @@ const setup = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: failedPaymentSaleId,
     itemId: productId,
     quantity: 1,

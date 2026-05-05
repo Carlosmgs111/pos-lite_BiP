@@ -2,7 +2,7 @@ import type { Suite, TestResult } from "../runner";
 import {
   registerProduct,
   createSale,
-  addItemToSale,
+  setItemQuantity,
   registerSale,
   getProducts,
 } from "../../core";
@@ -80,17 +80,17 @@ const createSaleTest = async () => {
     itemIds: [],
     createdAt: new Date(),
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sale1Id,
     itemId: product1Id,
     quantity: 1,
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sale1Id,
     itemId: product2Id,
     quantity: 2,
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sale1Id,
     itemId: product3Id,
     quantity: 3,
@@ -125,17 +125,17 @@ const tryingToCalcelACompletedSaleTest = async () => {
 };
 
 const addItemsToOtherSaleTest = async () => {
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sale2Id,
     itemId: product1Id,
     quantity: 3,
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sale2Id,
     itemId: product2Id,
     quantity: 2,
   });
-  await addItemToSale.execute({
+  await setItemQuantity.execute({
     saleId: sale2Id,
     itemId: product3Id,
     quantity: 1,
