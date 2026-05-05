@@ -1,5 +1,7 @@
 import { showToast } from "../stores/toast";
 
+// ? 💡 Gestiona el ciclo de vida de la conexión SSE
+
 export class EventListener {
   private lastErrorToast = 0;
   private source: EventSource | null = null;
@@ -22,6 +24,7 @@ export class EventListener {
 
     // Register each handler as a native SSE event listener
     for (const [type, handler] of Object.entries(this.handlers)) {
+      console.log(type, handler);
       this.source.addEventListener(type, (e) => {
         const me = e as MessageEvent;
         if (!me.data) return;

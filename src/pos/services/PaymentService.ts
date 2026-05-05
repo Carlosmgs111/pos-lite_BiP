@@ -1,44 +1,74 @@
 import { $saleId } from "../stores/cart";
-import { $paymentStatus, $payments, $change } from "../stores/payment";
+import { $paymentStatus, $payments, $change, type PaymentFlowStatus } from "../stores/payment";
 import { showToast } from "../stores/toast";
 import { EventListener } from "./EventListener";
+import { PaymentEventType } from "../../../package/contracts/payment/PaymentEventTypes";
 
 const listener = new EventListener("/api/payment/events");
 
-listener.on("payment.order.completed", (data) => {
-  if (data.saleId !== $saleId.get()) return;
-  $paymentStatus.set("completed");
-  PaymentService.reconcile();
-});
+let _initialized = false;
+let _currentSaleId: string | null = null;
+// ? 💡 Centraliza la suscripción a eventos de pago
+function _listenToEvents(saleId: string) {
+  listener.on(PaymentEventType.ORDER_COMPLETED, (data) => {
+    if (data.saleId !== saleId) return;
+    $paymentStatus.set("completed");
+    PaymentService.reconcile(saleId);
+  });
 
-listener.on("payment.order.failed", (data) => {
-  if (data.saleId !== $saleId.get()) return;
-  $paymentStatus.set("failed");
-  PaymentService.reconcile();
-});
+  listener.on(PaymentEventType.ORDER_FAILED, (data) => {
+    if (data.saleId !== saleId) return;
+    $paymentStatus.set("failed");
+    PaymentService.reconcile(saleId);
+  });
 
-listener.on("payment.transaction.result", (data) => {
-  if (
-    data.paymentId !== $payments.get().find((p) => p.id === data.paymentId)?.id
-  )
-    return;
-  $payments.set(
-    $payments
-      .get()
-      .map((p) =>
-        p.id === data.paymentId
-          ? { ...p, status: data.success ? "completed" : "failed" }
-          : p
-      )
-  );
-  $paymentStatus.set("awaiting_payment");
-});
-
-if (typeof window !== "undefined") {
-  listener.connect();
+  listener.on(PaymentEventType.TRANSACTION_RESULT, (data) => {
+    if (
+      data.paymentId !== $payments.get().find((p) => p.id === data.paymentId)?.id
+    )
+      return;
+    $payments.set(
+      $payments
+        .get()
+        .map((p) =>
+          p.id === data.paymentId
+            ? { ...p, status: data.success ? "completed" : "failed" }
+            : p
+        )
+    );
+    $paymentStatus.set("awaiting_payment");
+  });
 }
 
 export const PaymentService = {
+  async init(saleId: string): Promise<void> {
+    if (_initialized && _currentSaleId === saleId) return;
+
+    if (_initialized) {
+      listener.close();
+    }
+
+    _initialized = true;
+    _currentSaleId = saleId;
+
+    try {
+      await this.reconcile(saleId);
+    } catch {
+      // Never block SSE subscription on reconcile failure
+    }
+
+    _listenToEvents(saleId);
+    if (typeof window !== "undefined") {
+      listener.connect();
+    }
+  },
+
+  close() {
+    listener.close();
+    _initialized = false;
+    _currentSaleId = null;
+  },
+
   async registerPayment(
     saleId: string,
     paymentId: string,
@@ -87,10 +117,10 @@ export const PaymentService = {
       });
       if (!res.ok) {
         showToast("Error al confirmar el pago", "error");
-      }else{
+      } else {
         showToast("Pago confirmado", "success");
       }
-      await this.reconcile();
+      await this.reconcile(saleId);
       return;
     }
 
@@ -113,10 +143,7 @@ export const PaymentService = {
     // SSE listener will handle the confirmation
   },
 
-  async reconcile(): Promise<void> {
-    const saleId = $saleId.get();
-    if (!saleId) return;
-
+  async reconcile(saleId: string): Promise<void> {
     try {
       const res = await fetch(`/api/payment/status?saleId=${saleId}`);
       if (!res.ok) return;
@@ -139,8 +166,18 @@ export const PaymentService = {
 
       $change.set(data.change);
 
+      const statusMap: Record<string, string> = {
+        PENDING: "awaiting_payment",
+        PARTIAL: "partial",
+        COMPLETED: "completed",
+        FAILED: "failed",
+        CANCELLED: "idle",
+      };
+
+      const mappedStatus = (statusMap[data.status] ?? "idle") as PaymentFlowStatus;
+      $paymentStatus.set(mappedStatus);
+
       if (data.status === "COMPLETED") {
-        $paymentStatus.set("completed");
         if (data.change > 0) {
           showToast(
             `Pago completado — Cambio: $${data.change.toFixed(2)}`,
@@ -150,7 +187,6 @@ export const PaymentService = {
           showToast("Pago completado", "success");
         }
       } else if (data.status === "FAILED") {
-        $paymentStatus.set("failed");
         showToast("El pago ha fallado definitivamente", "error");
       }
     } catch {

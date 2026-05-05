@@ -1,9 +1,9 @@
-// application/outbound/PaymentEventStream.ts
-
+// ? 💡application/outbound/PaymentEventStream.ts
+// ? Mecanismo de integración de eventos con la infraestructura
 import { eventBus } from "../../../shared/config";
-import { subscribeWithFilter } from "../../../shared/infrastructure/subscribeWithFilter";
-import type { EventFilter } from "../../../shared/infrastructure/subscribeWithFilter";
+import { subscribeWithFilter, type EventFilter } from "../../../shared/infrastructure/subscribeWithFilter";
 import { Result } from "../../../shared/domain/Result";
+import { PaymentEventType } from "../../../../contracts/payment/PaymentEventTypes";
 
 export type IntegrationEvent = {
   type: string;
@@ -12,30 +12,30 @@ export type IntegrationEvent = {
 };
 
 const DOMAIN_TO_INTEGRATION = {
-  "payment.order.completed": (event: any): IntegrationEvent => ({
-    type: "payment.completed",
+  [PaymentEventType.ORDER_COMPLETED]: (event: any): IntegrationEvent => ({
+    type: PaymentEventType.ORDER_COMPLETED,
     payload: {
       saleId: event.payload.saleId,
     },
     occurredAt: event.occurredAt.toISOString(),
   }),
 
-  "payment.order.failed": (event: any): IntegrationEvent => ({
-    type: "payment.failed",
+  [PaymentEventType.ORDER_FAILED]: (event: any): IntegrationEvent => ({
+    type: PaymentEventType.ORDER_FAILED,
     payload: {
       saleId: event.payload.saleId,
     },
     occurredAt: event.occurredAt.toISOString(),
   }),
 
-  "payment.transaction.result": (event: any): IntegrationEvent => ({
-    type: "payment.transaction.result",
+  [PaymentEventType.TRANSACTION_RESULT]: (event: any): IntegrationEvent => ({
+    type: PaymentEventType.TRANSACTION_RESULT,
     payload: event.payload,
     occurredAt: event.occurredAt.toISOString(),
   }),
 } as const;
 
-const FILTERS = Object.keys(DOMAIN_TO_INTEGRATION).map(
+const FILTERS = Object.values(PaymentEventType).map(
   (eventName) =>
     ({
       eventName,
@@ -49,7 +49,7 @@ export function subscribeToPaymentEvents(
     handle: async (event) => {
       const mapper =
         DOMAIN_TO_INTEGRATION[
-          event.eventName as keyof typeof DOMAIN_TO_INTEGRATION
+          event.eventName as PaymentEventType
         ];
 
       if (!mapper) return Result.ok(undefined);

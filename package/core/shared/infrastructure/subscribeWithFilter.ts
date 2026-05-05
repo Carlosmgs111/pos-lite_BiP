@@ -1,3 +1,5 @@
+// ? 💡infrastructure/subscribeWithFilter.ts
+// ? Mecanismo de suscripción del bus de eventos con filtros
 import type { EventBus } from "../domain/bus/EventBus";
 import type { EventHandler } from "../domain/bus/EventHandler";
 import type { DomainEvent, EventName } from "../domain/DomainEvent";

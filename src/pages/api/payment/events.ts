@@ -7,6 +7,8 @@ export const prerender = false;
 export const GET: APIRoute = async ({ request }) => {
   let sse: SSEStreamAdapter | null = null;
   try {
+    // ? 💡Integración de eventos con la infraestructura
+    
     const stream = new ReadableStream({
       start(controller) {
         sse = new SSEStreamAdapter(controller);

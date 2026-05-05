@@ -1,7 +1,8 @@
 import type { DomainEvent } from "../../../shared/domain/DomainEvent";
+import { PaymentEventType } from "../../../../contracts/payment/PaymentEventTypes";
 
-export class PaymentOrderFailed implements DomainEvent<"payment.order.failed"> {
-  static readonly eventName = "payment.order.failed";
+export class PaymentOrderFailed implements DomainEvent<PaymentEventType> {
+  static readonly eventName = PaymentEventType.ORDER_FAILED;
   readonly eventName = PaymentOrderFailed.eventName;
   constructor(
     public readonly id: string,
@@ -17,7 +18,7 @@ export class PaymentOrderFailed implements DomainEvent<"payment.order.failed"> {
   }): PaymentOrderFailed {
     const { aggregateId, version, saleId } = params;
 
-    const id = `payment.order.failed-${aggregateId}-v${version}`;
+    const id = `${PaymentOrderFailed.eventName}-${aggregateId}-v${version}`;
 
     return new PaymentOrderFailed(
       id,

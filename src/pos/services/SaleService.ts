@@ -8,6 +8,7 @@ import {
   updateItemQuantity,
 } from "../stores/cart";
 import { $totalToPay, $paymentStatus, resetPayment } from "../stores/payment";
+import { PaymentService } from "./PaymentService";
 import { $catalog, adjustProductStock, updateProductStock } from "../stores/catalog";
 import { showToast } from "../stores/toast";
 
@@ -110,6 +111,8 @@ export const SaleService = {
     const sale = data.sale;
     $saleId.set(sale.id);
     $cartStatus.set(sale.status === "READY_TO_PAY" ? "confirmed" : "active");
+
+    await PaymentService.init(sale.id);
 
     if (sale.status === "READY_TO_PAY") {
       $totalToPay.set(sale.total);
@@ -235,6 +238,7 @@ export const SaleService = {
 
     showToast("Venta cancelada", "info");
     clearCart();
+    PaymentService.close();
     resetPayment();
   },
 
@@ -242,6 +246,7 @@ export const SaleService = {
     if (syncTimer) clearTimeout(syncTimer);
     pendingMap.clear();
     inflightMap.clear();
+    PaymentService.close();
     clearCart();
     resetPayment();
   },
