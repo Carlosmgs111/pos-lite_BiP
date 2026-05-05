@@ -22,13 +22,16 @@ function delay(ms: number): Promise<void> {
 }
 
 export class HttpPaymentGateway implements PaymentGateway {
-  constructor(private baseUrl: string) {}
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl.replace(/\/+$/, "");
+  }
 
   async requestPayment(request: PaymentRequest): Promise<string> {
     let res: Response;
-      console.log("[HttpPaymentGateway] baseUrl", this.baseUrl);
     try {
-      res = await fetch(`${this.baseUrl}/process-payment`, {
+      res = await fetch(new URL("/process-payment", this.baseUrl).href, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,11 +42,14 @@ export class HttpPaymentGateway implements PaymentGateway {
         }),
       });
     } catch (e) {
-      console.error("[HttpPaymentGateway] requestPayment error", e);
-      throw new PaymentGatewayUnreachableError();
+      throw new PaymentGatewayUnreachableError(e);
     }
 
-    if (!res.ok) throw new PaymentGatewayUnreachableError();
+    if (!res.ok) {
+      throw new PaymentGatewayUnreachableError(
+        new Error(`Gateway responded with status ${res.status}: ${res.statusText}`)
+      );
+    }
 
     const data: ProcessPaymentResponse = await res.json();
     return data.transaction_id;
@@ -55,11 +61,15 @@ export class HttpPaymentGateway implements PaymentGateway {
     for (let attempt = 0; attempt < RETRY_INTERVALS_MS.length; attempt++) {
       try {
         const res = await fetch(
-          `${this.baseUrl}/transaction?id=${transactionId}`
+          new URL(`/transaction?id=${transactionId}`, this.baseUrl).href
         );
 
         if (res.status === 404) return GatewayTransactionStatus.NOT_FOUND;
-        if (!res.ok) throw new PaymentGatewayUnreachableError();
+        if (!res.ok) {
+          throw new PaymentGatewayUnreachableError(
+            new Error(`Gateway responded with status ${res.status}: ${res.statusText}`)
+          );
+        }
 
         const data: TransactionResponse = await res.json();
         if (data.status === "SUCCEEDED")
