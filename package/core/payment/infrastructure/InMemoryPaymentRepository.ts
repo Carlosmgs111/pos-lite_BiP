@@ -1,3 +1,7 @@
+// 🛠️ FASE 7: Repos InMemory — Sin cambios estructurales necesarios
+// ! [ANTES] El repo almacenaba Payment sin campos de ledger
+// ? [DESPUÉS] Payment expandido en dominio con type, settlementSource, etc.; el repo funciona sin cambios
+
 import type { PaymentRepository } from "../domain/PaymentRepository";
 import type { Payment } from "../domain/Payment";
 import { Result } from "../../shared/domain/Result";

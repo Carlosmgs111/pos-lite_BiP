@@ -1,3 +1,7 @@
+// 🛠️ FASE 7: Repos InMemory — Sin cambios estructurales necesarios
+// ! [ANTES] El repo almacenaba PaymentOrder con campos contables
+// ? [DESPUÉS] PaymentOrder simplificado en dominio; el repo funciona sin cambios
+
 import type { PaymentOrderRepository } from "../domain/PaymentOrderRepository";
 import type { PaymentOrder } from "../domain/PaymentOrder";
 import { Result } from "../../shared/domain/Result";

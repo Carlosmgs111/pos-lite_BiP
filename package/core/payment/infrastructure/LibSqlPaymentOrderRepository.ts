@@ -1,3 +1,6 @@
+// 🛠️ FASE 6: Repos LibSQL — PaymentOrderRepository simplificado
+// ! [ANTES] INSERT/UPDATE incluía paid_amount_cents, pending_amount_cents, failed_attempts, change_cents
+// ? [DESPUÉS] Solo persiste workflow: status, version, completed_at
 import type { PaymentOrderRepository } from "../domain/PaymentOrderRepository";
 import { PaymentOrder, PaymentOrderStatus } from "../domain/PaymentOrder";
 import { Result } from "../../shared/domain/Result";
@@ -7,10 +10,6 @@ interface PaymentOrderRow {
   id: string;
   sale_id: string;
   total_amount_cents: number;
-  paid_amount_cents: number;
-  pending_amount_cents: number;
-  failed_attempts: number;
-  change_cents: number;
   status: string;
   version: number;
   created_at: string;
@@ -22,10 +21,6 @@ function rowToPaymentOrder(row: PaymentOrderRow): PaymentOrder {
     id: row.id,
     saleId: row.sale_id,
     totalAmount: row.total_amount_cents / 100,
-    paidAmount: row.paid_amount_cents / 100,
-    pendingAmount: row.pending_amount_cents / 100,
-    failedAttempts: row.failed_attempts,
-    change: row.change_cents / 100,
     status: row.status as PaymentOrderStatus,
     version: row.version,
     createdAt: new Date(row.created_at),
@@ -40,17 +35,12 @@ export class LibSqlPaymentOrderRepository implements PaymentOrderRepository {
     try {
       await db.execute({
         sql: `INSERT INTO payment_orders
-              (id, sale_id, total_amount_cents, paid_amount_cents, pending_amount_cents,
-               failed_attempts, change_cents, status, version, created_at, completed_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              (id, sale_id, total_amount_cents, status, version, created_at, completed_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: [
           id,
           paymentOrder.getSaleId().getValue(),
           paymentOrder.getTotalAmount().getValueInCents(),
-          paymentOrder.getPaidAmount().getValueInCents(),
-          0,
-          paymentOrder.getFailedAttempts(),
-          paymentOrder.getChange().getValueInCents(),
           paymentOrder.getStatus(),
           paymentOrder.getVersion(),
           new Date().toISOString(),
@@ -70,14 +60,9 @@ export class LibSqlPaymentOrderRepository implements PaymentOrderRepository {
     try {
       const rs = await db.execute({
         sql: `UPDATE payment_orders
-              SET paid_amount_cents = ?, pending_amount_cents = ?, failed_attempts = ?,
-                  change_cents = ?, status = ?, version = ?, completed_at = ?
+              SET status = ?, version = ?, completed_at = ?
               WHERE id = ? AND version = ?`,
         args: [
-          paymentOrder.getPaidAmount().getValueInCents(),
-          paymentOrder.getPendingAmount().getValueInCents(),
-          paymentOrder.getFailedAttempts(),
-          paymentOrder.getChange().getValueInCents(),
           paymentOrder.getStatus(),
           paymentOrder.getVersion(),
           paymentOrder.getStatus() === PaymentOrderStatus.COMPLETED ? new Date().toISOString() : null,
@@ -98,8 +83,7 @@ export class LibSqlPaymentOrderRepository implements PaymentOrderRepository {
     await ensureSchema();
     try {
       const rs = await db.execute({
-        sql: `SELECT id, sale_id, total_amount_cents, paid_amount_cents, pending_amount_cents,
-                     failed_attempts, change_cents, status, version, created_at, completed_at
+        sql: `SELECT id, sale_id, total_amount_cents, status, version, created_at, completed_at
               FROM payment_orders WHERE id = ?`,
         args: [id],
       });
@@ -114,8 +98,7 @@ export class LibSqlPaymentOrderRepository implements PaymentOrderRepository {
     await ensureSchema();
     try {
       const rs = await db.execute({
-        sql: `SELECT id, sale_id, total_amount_cents, paid_amount_cents, pending_amount_cents,
-                     failed_attempts, change_cents, status, version, created_at, completed_at
+        sql: `SELECT id, sale_id, total_amount_cents, status, version, created_at, completed_at
               FROM payment_orders WHERE sale_id = ?`,
         args: [saleId],
       });
