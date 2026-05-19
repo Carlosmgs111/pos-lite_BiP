@@ -3,10 +3,27 @@ import { PriceVO } from "../../shared/domain/Price.VO";
 import { Result } from "../../shared/domain/Result";
 import { InvalidPaymentError } from "./Errors/InvalidPaymentError";
 
+// 🛠️ FASE 1: Domain Payment — Payment Ledger Inmutable
+// ! [ANTES] Payment no tenía tipo, settlementSource, ni soporte para refunds como entradas separadas
+// ? [DESPUÉS] Payment es ledger inmutable con PaymentType (CHARGE/REFUND), PaymentSettlementSource, y createRefund()
+
 export enum PaymentMethod {
   CASH = "CASH",
   CARD = "CARD",
   TRANSFER = "TRANSFER",
+}
+
+export enum PaymentType {
+  CHARGE = "CHARGE",
+  REFUND = "REFUND",
+}
+
+export enum PaymentSettlementSource {
+  GATEWAY = "GATEWAY",
+  CASH = "CASH",
+  BANK_TRANSFER = "BANK_TRANSFER",
+  INTERNAL_ADJUSTMENT = "INTERNAL_ADJUSTMENT",
+  OTHER = "OTHER",
 }
 
 export enum PaymentStatus {
@@ -20,55 +37,112 @@ export type PaymentProps = {
   paymentOrderId: string;
   method: PaymentMethod;
   amount: number;
+  settlementSource?: PaymentSettlementSource;
 };
 
 export class Payment {
   private constructor(
     private id: UuidVO,
     private paymentOrderId: string,
+    private type: PaymentType,
     private method: PaymentMethod,
     private amount: PriceVO,
     private status: PaymentStatus,
     private version: number,
     private createdAt: Date,
+    private settlementSource?: PaymentSettlementSource,
+    private externalReference?: string,
+    private notes?: string,
+    private originalPaymentId?: string,
     private externalId?: string,
     private completedAt?: Date
   ) {}
 
-  static create({ id, paymentOrderId, method, amount }: PaymentProps) {
+  static create(props: {
+    id: string;
+    paymentOrderId: string;
+    method: PaymentMethod;
+    amount: number;
+    settlementSource?: PaymentSettlementSource;
+  }) {
     return new Payment(
-      new UuidVO(id),
-      paymentOrderId,
-      method,
-      new PriceVO(amount),
+      new UuidVO(props.id),
+      props.paymentOrderId,
+      PaymentType.CHARGE,
+      props.method,
+      new PriceVO(props.amount),
       PaymentStatus.PENDING,
       0,
-      new Date()
+      new Date(),
+      props.method === PaymentMethod.CASH
+        ? PaymentSettlementSource.CASH
+        : props.settlementSource
     );
   }
+
+  /**
+   * LIMITACIÓN: 1 refund → 1 charge via originalPaymentId.
+   * amount <= refundableAmount (original amount - ya refundeado).
+   *
+   * Futuro: RefundAllocation para N refunds ↔ N charges.
+   */
+  static createRefund(props: {
+    id: string;
+    paymentOrderId: string;
+    originalPaymentId: string;
+    method: PaymentMethod;
+    amount: number;
+  }) {
+    return new Payment(
+      new UuidVO(props.id),
+      props.paymentOrderId,
+      PaymentType.REFUND,
+      props.method,
+      new PriceVO(props.amount),
+      PaymentStatus.PENDING,
+      0,
+      new Date(),
+      undefined,
+      undefined,
+      undefined,
+      props.originalPaymentId
+    );
+  }
+
   static reconstitute(props: {
     id: string;
     paymentOrderId: string;
+    type: PaymentType;
     method: PaymentMethod;
     amount: number;
     status: PaymentStatus;
     version: number;
     createdAt: Date;
+    settlementSource?: PaymentSettlementSource;
+    externalReference?: string;
+    notes?: string;
+    originalPaymentId?: string;
     externalId?: string;
     completedAt?: Date;
   }): Payment {
     return new Payment(
       new UuidVO(props.id),
       props.paymentOrderId,
+      props.type,
       props.method,
       new PriceVO(props.amount),
       props.status,
       props.version,
       new Date(props.createdAt),
+      props.settlementSource,
+      props.externalReference,
+      props.notes,
+      props.originalPaymentId,
       props.externalId,
       props.completedAt ? new Date(props.completedAt) : undefined
     );
   }
+
   private ensureMethodConstraints(): Result<InvalidPaymentError, void> {
     console.log("[Payment.ensureMethodConstraints] Payment", this);
     if (this.method !== PaymentMethod.CASH && !this.externalId) {
@@ -101,6 +175,11 @@ export class Payment {
   }
 
   processing(externalId: string): Result<InvalidPaymentError, void> {
+    if (this.type !== PaymentType.CHARGE) {
+      return Result.fail(
+        new InvalidPaymentError("Only charge payments can be processed")
+      );
+    }
     if (this.method === PaymentMethod.CASH) {
       return Result.fail(
         new InvalidPaymentError(
@@ -138,6 +217,43 @@ export class Payment {
     return Result.ok(undefined);
   }
 
+  markAsSettled(
+    settlementSource: PaymentSettlementSource,
+    externalReference?: string,
+    notes?: string
+  ): Result<InvalidPaymentError, void> {
+    if (this.status === PaymentStatus.COMPLETED) {
+      if (
+        this.settlementSource === settlementSource &&
+        this.externalReference === externalReference
+      ) {
+        return Result.ok(undefined);
+      }
+      return Result.fail(
+        new InvalidPaymentError(
+          "Refund already completed with different settlement"
+        )
+      );
+    }
+    if (this.status !== PaymentStatus.PENDING) {
+      return Result.fail(
+        new InvalidPaymentError("Can only settle a pending payment")
+      );
+    }
+    if (this.type !== PaymentType.REFUND) {
+      return Result.fail(
+        new InvalidPaymentError("Can only settle a refund payment")
+      );
+    }
+    this.settlementSource = settlementSource;
+    this.externalReference = externalReference;
+    this.notes = notes;
+    this.status = PaymentStatus.COMPLETED;
+    this.completedAt = new Date();
+    this.version++;
+    return Result.ok(undefined);
+  }
+
   getVersion() {
     return this.version;
   }
@@ -158,5 +274,26 @@ export class Payment {
   }
   getId() {
     return this.id;
+  }
+  getType() {
+    return this.type;
+  }
+  getSettlementSource() {
+    return this.settlementSource;
+  }
+  getExternalReference() {
+    return this.externalReference;
+  }
+  getNotes() {
+    return this.notes;
+  }
+  getOriginalPaymentId() {
+    return this.originalPaymentId;
+  }
+  getCreatedAt() {
+    return this.createdAt;
+  }
+  getCompletedAt() {
+    return this.completedAt;
   }
 }
