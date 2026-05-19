@@ -33,6 +33,18 @@ const DOMAIN_TO_INTEGRATION = {
     payload: event.payload,
     occurredAt: event.occurredAt.toISOString(),
   }),
+
+  [PaymentEventType.REFUND_REQUESTED]: (event: any): IntegrationEvent => ({
+    type: PaymentEventType.REFUND_REQUESTED,
+    payload: event.payload,
+    occurredAt: event.occurredAt.toISOString(),
+  }),
+
+  [PaymentEventType.REFUND_COMPLETED]: (event: any): IntegrationEvent => ({
+    type: PaymentEventType.REFUND_COMPLETED,
+    payload: event.payload,
+    occurredAt: event.occurredAt.toISOString(),
+  }),
 } as const;
 
 const FILTERS = Object.values(PaymentEventType).map(

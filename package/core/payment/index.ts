@@ -10,10 +10,15 @@ import { ConfirmPayment } from "./application/use-cases/ConfirmPayment";
 import { ProcessPayment } from "./application/use-cases/ProcessPayment";
 import { ReconcilePayment } from "./application/use-cases/ReconcilePayment";
 import { AddPayment } from "./application/use-cases/AddPayment";
-export { PaymentMethod } from "./domain/Payment";
+import { RefundPayment } from "./application/use-cases/RefundPayment";
+import { CompleteRefund } from "./application/use-cases/CompleteRefund";
+import { GetPaymentOrderStatus } from "./application/use-cases/GetPaymentOrderStatus";
+export { PaymentMethod, PaymentType, PaymentSettlementSource } from "./domain/Payment";
 import { PaymentOrderCompleted } from "./domain/events/PaymentOrderCompleted";
 import { PaymentOrderFailed } from "./domain/events/PaymentOrderFailed";
-export { PaymentOrderCompleted, PaymentOrderFailed };
+import { RefundRequested } from "./domain/events/RefundRequested";
+import { RefundCompleted } from "./domain/events/RefundCompleted";
+export { PaymentOrderCompleted, PaymentOrderFailed, RefundRequested, RefundCompleted };
 export { PaymentGatewayUnreachableError } from "./infrastructure/Errors/PaymentGatewayError";
 export { GatewayTransactionStatus } from "./domain/PaymentGateway";
 import { eventBus } from "../shared/config";
@@ -41,8 +46,11 @@ export const paymentRepository = useTurso
 
 const createPaymentOrder = new CreatePaymentOrder(paymentOrderRepository);
 export const addPayment = new AddPayment(paymentOrderRepository, paymentRepository);
-export const confirmPayment = new ConfirmPayment(paymentOrderRepository, paymentRepository, eventBus);
-export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository);
+export const confirmPayment = new ConfirmPayment(paymentRepository, paymentOrderRepository, eventBus);
+export const cancelPaymentOrder = new CancelPaymentOrder(paymentOrderRepository, paymentRepository, eventBus);
+export const refundPayment = new RefundPayment(paymentRepository, paymentOrderRepository, eventBus);
+export const completeRefund = new CompleteRefund(paymentRepository, paymentOrderRepository, eventBus);
+export const getPaymentOrderStatus = new GetPaymentOrderStatus(paymentOrderRepository, paymentRepository);
 
 const paymentGateway = new HttpPaymentGateway(GATEWAY_URL, gatewayAuthHeaders);
 export const processPayment = new ProcessPayment(paymentRepository, paymentGateway);
