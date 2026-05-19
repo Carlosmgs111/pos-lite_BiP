@@ -8,8 +8,11 @@ import { PaymentOrderFailed } from "../../domain/events/PaymentOrderFailed";
 import { PaymentTransactionResult } from "../../domain/events/PaymentTransactionResult";
 import type { EventBus } from "../../../shared/domain/bus/EventBus";
 import { Payment } from "../../domain/Payment";
+import { PaymentOrderProjectionService, PaymentCoverageState, type PaymentOrderSnapshot } from "../../domain/PaymentOrderProjectionService";
 
-const MAX_FAILED_ATTEMPTS = 3;
+// 🛠️ FASE 8: ConfirmPayment — Reescrito con ProjectionService
+// ! [ANTES] ConfirmPayment usaba retry policy (failedAttempts >= 3 → markAsFailed) y mutaba paidAmount/pendingAmount incrementalmente
+// ? [DESPUÉS] ConfirmPayment persiste Payment primero (fuente financiera), proyecta cobertura, y sincroniza PaymentOrder status
 
 type ConfirmPaymentInput = {
   paymentId?: string;
@@ -19,8 +22,8 @@ type ConfirmPaymentInput = {
 
 export class ConfirmPayment {
   constructor(
-    private paymentOrderRepository: PaymentOrderRepository,
     private paymentRepository: PaymentRepository,
+    private paymentOrderRepository: PaymentOrderRepository,
     private eventBus: EventBus
   ) {}
 
@@ -28,26 +31,28 @@ export class ConfirmPayment {
     if (!input.paymentId && !input.transactionId) {
       return Result.fail(new Error("Payment ID or Transaction ID is required"));
     }
-    let paymentResult!: Result<Error, Payment | null>;
-    if (input.paymentId) {
-      paymentResult = await this.paymentRepository.findById(input.paymentId);
-    }
-    if (input.transactionId) {
-      paymentResult = await this.paymentRepository.findByExternalId(
-        input.transactionId
-      );
-    }
-    console.log("[ConfirmPayment] Payment found", paymentResult);
-    if (!paymentResult.isSuccess) return Result.fail(paymentResult.getError());
-    if (!paymentResult.getValue()) {
+
+    // 1. Resolver Payment
+    const payment = await this.resolvePayment(input);
+    if (!payment) {
       return Result.fail(new Error("Payment not found"));
     }
-    const payment = paymentResult.getValue()!;
 
+    // 2. Transicionar Payment (fuente financiera)
+    const transitionResult = input.success
+      ? payment.complete()
+      : payment.fail();
+    if (!transitionResult.isSuccess) {
+      return Result.fail(transitionResult.getError());
+    }
+
+    // 3. Persistir Payment PRIMERO
+    await this.paymentRepository.update(payment);
+
+    // 4. Cargar PaymentOrder
     const orderResult = await this.paymentOrderRepository.findById(
       payment.getPaymentOrderId()
     );
-    console.log("[ConfirmPayment] PaymentOrder found", orderResult);
     if (!orderResult.isSuccess) {
       return Result.fail(orderResult.getError());
     }
@@ -56,55 +61,26 @@ export class ConfirmPayment {
     }
     const order = orderResult.getValue()!;
 
-    const transitionResult = input.success
-      ? payment.complete()
-      : payment.fail();
-    if (!transitionResult.isSuccess) {
-      return Result.fail(transitionResult.getError());
-    }
+    // 5. Proyectar cobertura financiera desde el ledger
+    const allPaymentsResult = await this.paymentRepository.findByPaymentOrderId(
+      order.getId().getValue()
+    );
+    const allPayments = allPaymentsResult.isSuccess
+      ? allPaymentsResult.getValue()
+      : [];
+    const snapshot = PaymentOrderProjectionService.project(
+      order.getTotalAmount(),
+      allPayments
+    );
 
-    const amount = payment.getAmount().getValue();
-    if (input.success) {
-      const applyPaymentResult = order.applyPayment(amount);
-      console.log("[ConfirmPayment] Payment applied", applyPaymentResult);
-      if (!applyPaymentResult.isSuccess)
-        return Result.fail(applyPaymentResult.getError());
-    } else {
-      const registerFailedAttemptResult = order.registerFailedAttempt(amount);
-      console.log("[ConfirmPayment] Payment failed", registerFailedAttemptResult);
-      if (!registerFailedAttemptResult.isSuccess)
-        return Result.fail(registerFailedAttemptResult.getError());
-    }
+    // 6. Sincronizar PaymentOrder status SOLO si la cobertura lo justifica
+    //    - FULLY_PAID → markAsCompleted() (si no está en REFUND_PENDING)
+    //    - PARTIALLY_PAID → syncStatus(PARTIAL) (si está en PENDING)
+    //    - FAILED NUNCA se deriva automáticamente
+    //    - REFUND_PENDING es decisión operacional explícita
+    await this.syncOrderStatus(order, snapshot);
 
-    let orderTerminalEvent: PaymentOrderCompleted | PaymentOrderFailed | null =
-      null;
-    if (order.getStatus() === PaymentOrderStatus.COMPLETED) {
-      orderTerminalEvent = PaymentOrderCompleted.create({
-        aggregateId: order.getId().getValue(),
-        version: order.getVersion(),
-        saleId: order.getSaleId().getValue(),
-      });
-    } else if (
-      !input.success &&
-      order.getFailedAttempts() >= MAX_FAILED_ATTEMPTS
-    ) {
-      const failResult = order.markAsFailed();
-      console.log("[ConfirmPayment] Payment failed", failResult);
-      if (!failResult.isSuccess) return Result.fail(failResult.getError());
-      orderTerminalEvent = PaymentOrderFailed.create({
-        aggregateId: order.getId().getValue(),
-        version: order.getVersion(),
-        saleId: order.getSaleId().getValue(),
-      });
-    }
-
-    const orderUpdate = await this.paymentOrderRepository.update(order);
-    console.log("[ConfirmPayment] PaymentOrder updated", orderUpdate);
-    if (!orderUpdate.isSuccess) return Result.fail(orderUpdate.getError());
-    const paymentUpdate = await this.paymentRepository.update(payment);
-    console.log("[ConfirmPayment] Payment updated", paymentUpdate);
-    if (!paymentUpdate.isSuccess) return Result.fail(paymentUpdate.getError());
-
+    // 7. Publicar eventos
     await this.eventBus.publish(
       PaymentTransactionResult.create({
         aggregateId: payment.getId().getValue(),
@@ -113,11 +89,48 @@ export class ConfirmPayment {
         success: input.success,
       })
     );
-    console.log("[ConfirmPayment] PaymentTransactionResult published");
-    if (orderTerminalEvent) {
-      await this.eventBus.publish(orderTerminalEvent);
-      console.log("[ConfirmPayment] OrderTerminalEvent published");
+
+    if (order.getStatus() === PaymentOrderStatus.COMPLETED) {
+      await this.eventBus.publish(
+        PaymentOrderCompleted.create({
+          aggregateId: order.getId().getValue(),
+          version: order.getVersion(),
+          saleId: order.getSaleId().getValue(),
+        })
+      );
     }
+
     return Result.ok(undefined);
+  }
+
+  private async resolvePayment(input: ConfirmPaymentInput): Promise<Payment | null> {
+    if (input.paymentId) {
+      const r = await this.paymentRepository.findById(input.paymentId);
+      return r.isSuccess ? r.getValue() : null;
+    }
+    if (input.transactionId) {
+      const r = await this.paymentRepository.findByExternalId(input.transactionId);
+      return r.isSuccess ? r.getValue() : null;
+    }
+    return null;
+  }
+
+  private async syncOrderStatus(
+    order: { getStatus(): string; markAsCompleted(): Result<any, void>; syncStatus(s: PaymentOrderStatus): Result<any, void> },
+    snapshot: PaymentOrderSnapshot
+  ): Promise<void> {
+    if (snapshot.coverageState === PaymentCoverageState.FULLY_PAID
+        && order.getStatus() !== PaymentOrderStatus.REFUND_PENDING) {
+      const result = order.markAsCompleted();
+      if (result.isSuccess) {
+        await this.paymentOrderRepository.update(order as any);
+      }
+    } else if (snapshot.coverageState === PaymentCoverageState.PARTIALLY_PAID
+               && order.getStatus() === PaymentOrderStatus.PENDING) {
+      const result = order.syncStatus(PaymentOrderStatus.PARTIAL);
+      if (result.isSuccess) {
+        await this.paymentOrderRepository.update(order as any);
+      }
+    }
   }
 }
