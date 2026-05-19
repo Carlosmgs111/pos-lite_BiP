@@ -1,3 +1,7 @@
+// 🛠️ FASE 2: Domain PaymentOrder — Workflow Aggregate Puro
+// ! [ANTES] PaymentOrder tenía campos contables persistidos (paidAmount, pendingAmount, failedAttempts, change) y métodos incrementales que causaban drift financiero
+// ? [DESPUÉS] PaymentOrder es workflow puro: solo status, totalAmount, saleId. Los montos se derivan de Payments via ProjectionService
+
 import { UuidVO } from "../../shared/domain/Uuid.VO";
 import { PriceVO } from "../../shared/domain/Price.VO";
 import { PaymentMethod } from "./Payment";
@@ -8,6 +12,7 @@ export enum PaymentOrderStatus {
   PENDING = "PENDING",
   PARTIAL = "PARTIAL",
   COMPLETED = "COMPLETED",
+  REFUND_PENDING = "REFUND_PENDING",
   FAILED = "FAILED",
   CANCELLED = "CANCELLED",
 }
@@ -17,10 +22,6 @@ export class PaymentOrder {
     private id: UuidVO,
     private saleId: UuidVO,
     private totalAmount: PriceVO,
-    private paidAmount: PriceVO,
-    private pendingAmount: PriceVO,
-    private failedAttempts: number,
-    private change: PriceVO,
     private status: PaymentOrderStatus,
     private version: number,
     private createdAt: Date,
@@ -44,24 +45,17 @@ export class PaymentOrder {
         new UuidVO(UuidVO.generate()),
         new UuidVO(saleId),
         new PriceVO(totalAmount),
-        new PriceVO(0),
-        new PriceVO(0),
-        0,
-        new PriceVO(0),
         PaymentOrderStatus.PENDING,
         0,
         new Date()
       )
     );
   }
+
   static reconstitute(props: {
     id: string;
     saleId: string;
     totalAmount: number;
-    paidAmount: number;
-    pendingAmount: number;
-    failedAttempts: number;
-    change: number;
     status: PaymentOrderStatus;
     version: number;
     createdAt: Date;
@@ -71,10 +65,6 @@ export class PaymentOrder {
       new UuidVO(props.id),
       new UuidVO(props.saleId),
       new PriceVO(props.totalAmount),
-      new PriceVO(props.paidAmount),
-      new PriceVO(props.pendingAmount),
-      props.failedAttempts,
-      new PriceVO(props.change),
       props.status,
       props.version,
       new Date(props.createdAt),
@@ -102,115 +92,37 @@ export class PaymentOrder {
         new InvalidPaymentError("Payment amount must be greater than zero")
       );
     }
-
-    const currentCoverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
-    const projectedCoverage = PriceVO.add([currentCoverage, new PriceVO(amount)]);
-    const exceedsTotal =
-      projectedCoverage.getValue() > this.totalAmount.getValue();
-
-    if (exceedsTotal && method !== PaymentMethod.CASH) {
+    // Non-cash validation: amount must not exceed total (caller should use projection for remaining)
+    if (method !== PaymentMethod.CASH && amount > this.totalAmount.getValue()) {
       return Result.fail(
         new InvalidPaymentError("Non-cash payment exceeds total amount")
       );
     }
-
     return Result.ok(undefined);
   }
 
-  private recalculateChange(): Result<InvalidPaymentError, void> {
-    const coverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
-    if (coverage.getValue() > this.totalAmount.getValue()) {
-      const substractResult = PriceVO.substract(coverage, [this.totalAmount])
-      if (!substractResult.isSuccess) {
-        return Result.fail(new InvalidPaymentError("PriceVO.substract failed"));
-      }
-      this.change = substractResult.getValue()!;
-    } else {
-      this.change = new PriceVO(0);
+  markAsCompleted(): Result<InvalidPaymentError, void> {
+    if (this.status === PaymentOrderStatus.COMPLETED) {
+      return Result.ok(undefined); // idempotent
     }
-    return Result.ok(undefined);
-  }
-
-  /** Called when a new Payment is created and linked to this order. */
-  registerPendingPayment(amount: number): Result<InvalidPaymentError, void> {
-    if(this.isTerminal()) {
+    if (this.status === PaymentOrderStatus.FAILED || this.status === PaymentOrderStatus.CANCELLED) {
       return Result.fail(
-        new InvalidPaymentError("Cannot add payment to a terminal order")
+        new InvalidPaymentError("Cannot complete a terminal order")
       );
     }
-    this.pendingAmount = PriceVO.add([this.pendingAmount, new PriceVO(amount)]);
-    if (
-      PriceVO.add([this.paidAmount, this.pendingAmount]).getValue() >=
-      this.totalAmount.getValue()
-    ) {
-      this.status = PaymentOrderStatus.PARTIAL;
-    }
-    const recalcResult = this.recalculateChange();
-    if (!recalcResult.isSuccess) return Result.fail(recalcResult.getError());
-    this.version++;
-    return Result.ok(undefined);
-  }
-
-  /** Called when a Payment is confirmed as successful. */
-  applyPayment(amount: number): Result<InvalidPaymentError, void> {
-    if(this.isTerminal()) {
-      return Result.fail(
-        new InvalidPaymentError("Cannot apply payment to a terminal order")
-      );
-    }
-    
-    console.log("Pending amount: ", this.pendingAmount.getValueInCents(), "Amount: ", amount);
-    const substractResult = PriceVO.substract(this.pendingAmount, [
-      new PriceVO(amount),
-    ]);
-    if (!substractResult.isSuccess) {
-      return Result.fail(new InvalidPaymentError("PriceVO.substract failed"));
-    }
-    this.paidAmount = PriceVO.add([this.paidAmount, new PriceVO(amount)]);
-    this.pendingAmount = substractResult.getValue()!;
-
-    if (this.paidAmount.getValue() >= this.totalAmount.getValue()) {
-      this.status = PaymentOrderStatus.COMPLETED;
-      this.completedAt = new Date();
-    }
-    const recalcResult = this.recalculateChange();
-    if (!recalcResult.isSuccess) return Result.fail(recalcResult.getError());
-    this.version++;
-    return Result.ok(undefined);
-  }
-
-  /** Called when a Payment fails. */
-  registerFailedAttempt(amount: number): Result<InvalidPaymentError, void> {
-    if(this.isTerminal()) {
-      return Result.fail(
-        new InvalidPaymentError("Cannot register failed attempt to a terminal order")
-      );
-    }
-    const substractResult = PriceVO.substract(this.pendingAmount, [
-      new PriceVO(amount),
-    ]);
-    if (!substractResult.isSuccess) {
-      return Result.fail(new InvalidPaymentError("PriceVO.substract failed"));
-    }
-    this.failedAttempts++;
-    this.pendingAmount = substractResult.getValue()!;
-
-    const coverage = PriceVO.add([this.paidAmount, this.pendingAmount]);
-    if (coverage.getValue() < this.totalAmount.getValue()) {
-      this.status = PaymentOrderStatus.PENDING;
-    }
-    const recalcResult = this.recalculateChange();
-    if (!recalcResult.isSuccess) return Result.fail(recalcResult.getError());
+    this.status = PaymentOrderStatus.COMPLETED;
+    this.completedAt = new Date();
     this.version++;
     return Result.ok(undefined);
   }
 
   markAsFailed(): Result<InvalidPaymentError, void> {
-    if (this.isTerminal()) {
+    if (this.status === PaymentOrderStatus.FAILED) {
+      return Result.ok(undefined); // idempotent
+    }
+    if (this.status === PaymentOrderStatus.CANCELLED) {
       return Result.fail(
-        new InvalidPaymentError(
-          "Cannot mark a terminal payment order as failed"
-        )
+        new InvalidPaymentError("Cannot fail a cancelled order")
       );
     }
     this.status = PaymentOrderStatus.FAILED;
@@ -218,10 +130,27 @@ export class PaymentOrder {
     return Result.ok(undefined);
   }
 
-  cancel(): Result<InvalidPaymentError, void> {
-    if (this.isTerminal()) {
+  markAsRefundPending(): Result<InvalidPaymentError, void> {
+    if (this.status === PaymentOrderStatus.REFUND_PENDING) {
+      return Result.ok(undefined); // idempotent
+    }
+    if (this.status === PaymentOrderStatus.FAILED || this.status === PaymentOrderStatus.CANCELLED) {
       return Result.fail(
-        new InvalidPaymentError("Cannot cancel a terminal payment order")
+        new InvalidPaymentError("Cannot mark a terminal order as refund pending")
+      );
+    }
+    this.status = PaymentOrderStatus.REFUND_PENDING;
+    this.version++;
+    return Result.ok(undefined);
+  }
+
+  cancel(): Result<InvalidPaymentError, void> {
+    if (this.status === PaymentOrderStatus.CANCELLED) {
+      return Result.ok(undefined); // idempotent
+    }
+    if (this.status === PaymentOrderStatus.FAILED) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot cancel a failed order")
       );
     }
     this.status = PaymentOrderStatus.CANCELLED;
@@ -229,9 +158,26 @@ export class PaymentOrder {
     return Result.ok(undefined);
   }
 
+  syncStatus(newStatus: PaymentOrderStatus): Result<InvalidPaymentError, void> {
+    if (this.status === newStatus) return Result.ok(undefined);
+    if (this.isTerminal()) {
+      return Result.fail(
+        new InvalidPaymentError("Cannot sync status on a terminal order")
+      );
+    }
+    // Only allow transitions to non-terminal states
+    if (newStatus === PaymentOrderStatus.FAILED || newStatus === PaymentOrderStatus.CANCELLED) {
+      return Result.fail(
+        new InvalidPaymentError("Use explicit markAsFailed() or cancel() for terminal states")
+      );
+    }
+    this.status = newStatus;
+    this.version++;
+    return Result.ok(undefined);
+  }
+
   isTerminal(): boolean {
     return (
-      this.status === PaymentOrderStatus.COMPLETED ||
       this.status === PaymentOrderStatus.FAILED ||
       this.status === PaymentOrderStatus.CANCELLED
     );
@@ -239,18 +185,6 @@ export class PaymentOrder {
 
   getVersion() {
     return this.version;
-  }
-  getFailedAttempts() {
-    return this.failedAttempts;
-  }
-  getPaidAmount() {
-    return this.paidAmount;
-  }
-  getPendingAmount() {
-    return this.pendingAmount;
-  }
-  getChange() {
-    return this.change;
   }
   getStatus() {
     return this.status;
@@ -263,5 +197,11 @@ export class PaymentOrder {
   }
   getId() {
     return this.id;
+  }
+  getCreatedAt() {
+    return this.createdAt;
+  }
+  getCompletedAt() {
+    return this.completedAt;
   }
 }
