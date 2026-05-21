@@ -50,7 +50,8 @@ export default function PaymentPanel() {
           <div class="text-3xl font-bold text-emerald-600">Completado</div>
           {change > 0 && (
             <div class="text-lg text-gray-700">
-              Cambio: <span class="font-mono font-bold">${change.toFixed(2)}</span>
+              Cambio:{" "}
+              <span class="font-mono font-bold">${change.toFixed(2)}</span>
             </div>
           )}
           <button
@@ -80,7 +81,9 @@ export default function PaymentPanel() {
 
       <div class="flex justify-between text-sm mb-3">
         <span class="text-gray-500">Total</span>
-        <span class="font-mono font-bold text-gray-900">${totalToPay.toFixed(2)}</span>
+        <span class="font-mono font-bold text-gray-900">
+          ${totalToPay.toFixed(2)}
+        </span>
       </div>
       <div class="flex justify-between text-sm mb-3">
         <span class="text-gray-500">Pagado</span>
@@ -88,22 +91,43 @@ export default function PaymentPanel() {
       </div>
       <div class="flex justify-between text-sm mb-4">
         <span class="text-gray-500">Restante</span>
-        <span class="font-mono font-bold text-amber-700">${remaining.toFixed(2)}</span>
+        <span class="font-mono font-bold text-amber-700">
+          ${remaining.toFixed(2)}
+        </span>
       </div>
 
       {payments.length > 0 && (
         <div class="space-y-1 mb-4">
           {payments.map((p) => (
-            <div key={p.id} class="flex items-center justify-between py-1 px-2 rounded bg-gray-50 text-xs">
+            <div
+              key={p.id}
+              class="flex items-center justify-between py-1 px-2 rounded bg-gray-50 text-xs"
+            >
               <span class="text-gray-600">{p.method}</span>
               <span class="font-mono">${p.amount.toFixed(2)}</span>
-              <span class={p.status === "completed" ? "text-emerald-600" : p.status === "failed" ? "text-red-600" : "text-amber-500"}>
-                {p.status === "completed" ? "OK" : p.status === "failed" ? "FALLO" : "..."}
+              <span
+                class={
+                  p.status === "completed"
+                    ? "text-emerald-600"
+                    : p.status === "failed"
+                      ? "text-red-600"
+                      : "text-amber-500"
+                }
+              >
+                {p.status === "completed"
+                  ? "OK"
+                  : p.status === "failed"
+                    ? "FALLO"
+                    : "..."}
               </span>
             </div>
           ))}
         </div>
       )}
+
+      <button type="button" onClick={PaymentService.reconcilePendingPayments}>
+        Reconciliar pagos
+      </button>
 
       {status !== "processing" && (
         <form onSubmit={handleSubmit} class="mt-auto space-y-3">
@@ -146,7 +170,6 @@ export default function PaymentPanel() {
           Procesando pago...
         </div>
       )}
-
     </div>
   );
 }

@@ -6,5 +6,6 @@ export interface PaymentRepository {
   update(payment: Payment): Promise<Result<Error, void>>;
   findById(id: string): Promise<Result<Error, Payment | null>>;
   findByPaymentOrderId(orderId: string): Promise<Result<Error, Payment[]>>;
+  findPendingByPaymentOrderId(orderId: string): Promise<Result<Error, Payment[]>>;
   findByExternalId(externalId: string): Promise<Result<Error, Payment | null>>;
 }

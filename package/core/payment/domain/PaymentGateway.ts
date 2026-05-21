@@ -1,4 +1,5 @@
 import { PaymentMethod } from "./Payment";
+import { Result } from "../../shared/domain/Result";
 
 export interface PaymentRequest {
   paymentId: string;
@@ -8,13 +9,8 @@ export interface PaymentRequest {
 
 export enum GatewayTransactionStatus {
   PENDING = "PENDING",
-  SUCCEEDED = "SUCCEEDED",
-  FAILED = "FAILED",
-  NOT_FOUND = "NOT_FOUND",
-  /** queryStatus exhausted its retry budget without ever observing a terminal status.
-   *  Distinct from PENDING (gateway said "still processing") to let callers decide between
-   *  "wait longer / reconcile later" and "alert + manual review". */
-  TIMEOUT = "TIMEOUT",
+  APPROVED = "APPROVED",
+  DECLINED = "DECLINED",
 }
 
 export interface ExternalPaymentPayload {
@@ -26,6 +22,6 @@ export interface ExternalPaymentEvent {
   payload: ExternalPaymentPayload;
 }
 export interface PaymentGateway {
-  requestPayment(request: PaymentRequest): Promise<string>;
-  queryStatus(transactionId: string): Promise<GatewayTransactionStatus>;
+  requestPayment(request: PaymentRequest): Promise<Result<Error, string>>;
+  queryStatus(transactionId: string): Promise<Result<Error, GatewayTransactionStatus>>;
 }

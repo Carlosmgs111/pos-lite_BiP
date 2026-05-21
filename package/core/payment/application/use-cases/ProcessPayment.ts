@@ -24,25 +24,33 @@ export class ProcessPayment {
     try {
       // 1. Cargar Payment
       const paymentResult = await this.paymentRepository.findById(paymentId);
-      if (!paymentResult.isSuccess || !paymentResult.getValue()) {
+      if (!paymentResult.isSuccess) {
+        return Result.fail(paymentResult.getError());
+      }
+      const payment = paymentResult.getValue();
+      if (!payment) {
         return Result.fail(new Error("Payment not found"));
       }
-      const payment = paymentResult.getValue()!;
 
       // 2. Validar que es un CHARGE
       if (payment.getType() !== PaymentType.CHARGE) {
         return Result.fail(
-          new InvalidPaymentError("Cannot process a refund payment through gateway")
+          new InvalidPaymentError(
+            "Cannot process a refund payment through gateway"
+          )
         );
       }
-
       // 3. Idempotencia: si ya tiene externalId, retornarlo
       if (payment.getExternalId()) {
         return Result.ok(payment.getExternalId()!);
       }
 
       // 4. Llamar al gateway
-      const transactionId = await this.gateway.requestPayment(request);
+      const transactionIdResult = await this.gateway.requestPayment(request);
+      if (!transactionIdResult.isSuccess) {
+        return Result.fail(transactionIdResult.getError());
+      }
+      const transactionId = transactionIdResult.getValue();
 
       // 5. Vincular transaction ID al Payment
       const processResult = payment.processing(transactionId);

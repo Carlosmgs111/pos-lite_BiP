@@ -1,5 +1,10 @@
 import { $saleId } from "../stores/cart";
-import { $paymentStatus, $payments, $change, type PaymentFlowStatus } from "../stores/payment";
+import {
+  $paymentStatus,
+  $payments,
+  $change,
+  type PaymentFlowStatus,
+} from "../stores/payment";
 import { showToast } from "../stores/toast";
 import { EventListener } from "./EventListener";
 import { PaymentEventType } from "../../../package/contracts/payment/PaymentEventTypes";
@@ -24,7 +29,8 @@ function _listenToEvents(saleId: string) {
 
   listener.on(PaymentEventType.TRANSACTION_RESULT, (data) => {
     if (
-      data.paymentId !== $payments.get().find((p) => p.id === data.paymentId)?.id
+      data.paymentId !==
+      $payments.get().find((p) => p.id === data.paymentId)?.id
     )
       return;
     $payments.set(
@@ -120,7 +126,7 @@ export const PaymentService = {
       } else {
         showToast("Pago confirmado", "success");
       }
-      await this.reconcile(saleId);
+      // await this.reconcile(saleId);
       return;
     }
 
@@ -141,6 +147,12 @@ export const PaymentService = {
       $paymentStatus.set("awaiting_payment");
     }
     // SSE listener will handle the confirmation
+  },
+
+  async reconcilePendingPayments(): Promise<void> {
+    const paymentOrderId = "b8392fcd-80ad-46a0-bc9f-a55b74c23b9e";
+    if (!paymentOrderId) return;
+    await fetch(`/api/payment/reconcile/${paymentOrderId}`, { method: "POST" });
   },
 
   async reconcile(saleId: string): Promise<void> {
@@ -174,7 +186,10 @@ export const PaymentService = {
         CANCELLED: "idle",
       };
 
-      const mappedStatus = (statusMap[data.status] ?? "idle") as PaymentFlowStatus;
+      console.log(data.status);
+
+      const mappedStatus = (statusMap[data.status] ??
+        "idle") as PaymentFlowStatus;
       $paymentStatus.set(mappedStatus);
 
       if (data.status === "COMPLETED") {

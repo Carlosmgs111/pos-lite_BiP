@@ -4,6 +4,7 @@ import {
   GatewayTransactionStatus,
 } from "../domain/PaymentGateway";
 import { PaymentGatewayUnreachableError } from "./Errors/PaymentGatewayError";
+import { Result } from "../../shared/domain/Result";
 
 interface ProcessPaymentResponse {
   transaction_id: string;
@@ -34,7 +35,9 @@ export class HttpPaymentGateway implements PaymentGateway {
     return { ...this.authHeaders, ...extra };
   }
 
-  async requestPayment(request: PaymentRequest): Promise<string> {
+  async requestPayment(
+    request: PaymentRequest
+  ): Promise<Result<Error, string>> {
     let res: Response;
     try {
       res = await fetch(new URL("/process-payment", this.baseUrl).href, {
@@ -53,15 +56,19 @@ export class HttpPaymentGateway implements PaymentGateway {
 
     if (!res.ok) {
       throw new PaymentGatewayUnreachableError(
-        new Error(`Gateway responded with status ${res.status}: ${res.statusText}`)
+        new Error(
+          `Gateway responded with status ${res.status}: ${res.statusText}`
+        )
       );
     }
 
     const data: ProcessPaymentResponse = await res.json();
-    return data.transaction_id;
+    return Result.ok(data.transaction_id);
   }
 
-  async queryStatus(transactionId: string): Promise<GatewayTransactionStatus> {
+  async queryStatus(
+    transactionId: string
+  ): Promise<Result<Error, GatewayTransactionStatus>> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < RETRY_INTERVALS_MS.length; attempt++) {
@@ -70,18 +77,20 @@ export class HttpPaymentGateway implements PaymentGateway {
           new URL(`/transaction?id=${transactionId}`, this.baseUrl).href,
           { headers: this.authHeaders }
         );
-
-        if (res.status === 404) return GatewayTransactionStatus.NOT_FOUND;
         if (!res.ok) {
           throw new PaymentGatewayUnreachableError(
-            new Error(`Gateway responded with status ${res.status}: ${res.statusText}`)
+            new Error(
+              `Gateway responded with status ${res.status}: ${res.statusText}`
+            )
           );
         }
 
         const data: TransactionResponse = await res.json();
+        console.log(data);
         if (data.status === "SUCCEEDED")
-          return GatewayTransactionStatus.SUCCEEDED;
-        if (data.status === "FAILED") return GatewayTransactionStatus.FAILED;
+          return Result.ok(GatewayTransactionStatus.APPROVED);
+        if (data.status === "FAILED")
+          return Result.ok(GatewayTransactionStatus.DECLINED);
 
         // PENDING — wait and retry
         lastError = null;
@@ -97,7 +106,11 @@ export class HttpPaymentGateway implements PaymentGateway {
     // Retries exhausted. If the last attempt errored, propagate; otherwise the gateway
     // kept replying PROCESSING — return TIMEOUT (distinct from PENDING) so the caller can
     // reconcile later or alert.
-    if (lastError) throw lastError;
-    return GatewayTransactionStatus.TIMEOUT;
+    if (lastError) return Result.fail(lastError);
+
+    // throw new PaymentGatewayUnreachableError(new Error("Gateway timed out"));
+    return Result.fail(
+      new PaymentGatewayUnreachableError(new Error("Gateway timed out"))
+    );
   }
 }

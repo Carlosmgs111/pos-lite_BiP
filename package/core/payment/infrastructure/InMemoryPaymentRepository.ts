@@ -3,7 +3,7 @@
 // ? [DESPUÉS] Payment expandido en dominio con type, settlementSource, etc.; el repo funciona sin cambios
 
 import type { PaymentRepository } from "../domain/PaymentRepository";
-import type { Payment } from "../domain/Payment";
+import { PaymentStatus, type Payment } from "../domain/Payment";
 import { Result } from "../../shared/domain/Result";
 import { ConcurrencyError } from "../../shared/domain/Errors/ConcurrencyError";
 
@@ -52,6 +52,13 @@ export class InMemoryPaymentRepository implements PaymentRepository {
   async findByPaymentOrderId(orderId: string): Promise<Result<Error, Payment[]>> {
     const payments = this.payments.filter(
       (p) => p.getPaymentOrderId() === orderId
+    );
+    return Result.ok(payments);
+  }
+
+  async findPendingByPaymentOrderId(orderId: string): Promise<Result<Error, Payment[]>> {
+    const payments = this.payments.filter(
+      (p) => p.getPaymentOrderId() === orderId && p.getStatus() === PaymentStatus.PENDING
     );
     return Result.ok(payments);
   }

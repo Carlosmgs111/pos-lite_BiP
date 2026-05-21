@@ -2,7 +2,13 @@
 // ! [ANTES] payments no persistía type, settlement_source, external_reference, notes, original_payment_id
 // ? [DESPUÉS] Ledger completo: type (CHARGE/REFUND), settlement_source, audit fields
 import type { PaymentRepository } from "../domain/PaymentRepository";
-import { Payment, PaymentMethod, PaymentStatus, PaymentType, PaymentSettlementSource } from "../domain/Payment";
+import {
+  Payment,
+  PaymentMethod,
+  PaymentStatus,
+  PaymentType,
+  PaymentSettlementSource,
+} from "../domain/Payment";
 import { Result } from "../../shared/domain/Result";
 import { db, ensureSchema } from "../../shared/infrastructure/db";
 
@@ -33,7 +39,9 @@ function rowToPayment(row: PaymentRow): Payment {
     status: row.status as PaymentStatus,
     version: row.version,
     createdAt: new Date(row.created_at),
-    settlementSource: row.settlement_source ? row.settlement_source as PaymentSettlementSource : undefined,
+    settlementSource: row.settlement_source
+      ? (row.settlement_source as PaymentSettlementSource)
+      : undefined,
     externalReference: row.external_reference ?? undefined,
     notes: row.notes ?? undefined,
     originalPaymentId: row.original_payment_id ?? undefined,
@@ -92,13 +100,17 @@ export class LibSqlPaymentRepository implements PaymentRepository {
           payment.getExternalReference() ?? null,
           payment.getNotes() ?? null,
           payment.getExternalId() ?? null,
-          payment.getStatus() === PaymentStatus.COMPLETED ? new Date().toISOString() : null,
+          payment.getStatus() === PaymentStatus.COMPLETED
+            ? new Date().toISOString()
+            : null,
           id,
           prevVersion,
         ],
       });
       if (rs.rowsAffected === 0) {
-        return Result.fail(new Error(`Concurrent modification on Payment ${id}`));
+        return Result.fail(
+          new Error(`Concurrent modification on Payment ${id}`)
+        );
       }
       return Result.ok(undefined);
     } catch (e) {
@@ -122,7 +134,9 @@ export class LibSqlPaymentRepository implements PaymentRepository {
     }
   }
 
-  async findByPaymentOrderId(orderId: string): Promise<Result<Error, Payment[]>> {
+  async findByPaymentOrderId(
+    orderId: string
+  ): Promise<Result<Error, Payment[]>> {
     await ensureSchema();
     try {
       const rs = await db.execute({
@@ -131,13 +145,36 @@ export class LibSqlPaymentRepository implements PaymentRepository {
               FROM payments WHERE payment_order_id = ?`,
         args: [orderId],
       });
-      return Result.ok(rs.rows.map((r: any) => rowToPayment(r as unknown as PaymentRow)));
+      return Result.ok(
+        rs.rows.map((r: any) => rowToPayment(r as unknown as PaymentRow))
+      );
     } catch (e) {
       return Result.fail(e as Error);
     }
   }
 
-  async findByExternalId(externalId: string): Promise<Result<Error, Payment | null>> {
+  async findPendingByPaymentOrderId(
+    orderId: string
+  ): Promise<Result<Error, Payment[]>> {
+    await ensureSchema();
+    try {
+      const rs = await db.execute({
+        sql: `SELECT id, payment_order_id, type, method, amount_cents, status, version, created_at,
+                     settlement_source, external_reference, notes, original_payment_id, external_id, completed_at
+              FROM payments WHERE payment_order_id = ? AND status = ?`,
+        args: [orderId, PaymentStatus.PENDING],
+      });
+      return Result.ok(
+        rs.rows.map((r: any) => rowToPayment(r as unknown as PaymentRow))
+      );
+    } catch (e) {
+      return Result.fail(e as Error);
+    }
+  }
+
+  async findByExternalId(
+    externalId: string
+  ): Promise<Result<Error, Payment | null>> {
     await ensureSchema();
     try {
       const rs = await db.execute({

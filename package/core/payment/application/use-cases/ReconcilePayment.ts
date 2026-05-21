@@ -14,29 +14,29 @@ export class ReconcilePayment {
   async execute(
     transactionId: string
   ): Promise<Result<Error, GatewayTransactionStatus>> {
-    let status: GatewayTransactionStatus;
-    try {
-      status = await this.gateway.queryStatus(transactionId);
-    } catch (err) {
-      return Result.fail(err as Error);
+    const queryResult = await this.gateway.queryStatus(transactionId);
+    if (!queryResult.isSuccess) {
+      return Result.fail(queryResult.getError());
     }
+    const status = queryResult.getValue();
+   
 
     // Only confirm on terminal gateway statuses. PENDING / TIMEOUT / NOT_FOUND are
     // non-terminal — return the status to the caller without mutating the Payment.
     if (
-      status !== GatewayTransactionStatus.SUCCEEDED &&
-      status !== GatewayTransactionStatus.FAILED
+      status !== GatewayTransactionStatus.APPROVED &&
+      status !== GatewayTransactionStatus.DECLINED
     ) {
       return Result.ok(status);
     }
 
-    const success = status === GatewayTransactionStatus.SUCCEEDED;
+    const success = status === GatewayTransactionStatus.APPROVED;
     const confirmResult = await this.confirmPayment.execute({
       transactionId,
       success,
     });
     if (!confirmResult.isSuccess) {
-      return Result.fail(confirmResult.getError()!);
+      return Result.fail(confirmResult.getError());
     }
 
     return Result.ok(status);
