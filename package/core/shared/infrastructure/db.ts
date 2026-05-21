@@ -1,7 +1,12 @@
 import { createClient } from "@libsql/client";
+import path from "path";
 
-const DATABASE_URL = import.meta.env.DATABASE_URL || "file:local.db";
+const DEFAULT_DB = `file:${path.resolve("local.db")}`;
+const DATABASE_URL = import.meta.env.DATABASE_URL || DEFAULT_DB;
 const DATABASE_AUTH_TOKEN = import.meta.env.DATABASE_AUTH_TOKEN;
+
+console.log(`[db] DATABASE_URL=${DATABASE_URL}`);
+console.log(`[db] DEFAULT_DB=${DEFAULT_DB}`);
 
 export const db = createClient({
   url: DATABASE_URL,

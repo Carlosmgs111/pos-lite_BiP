@@ -14,6 +14,8 @@ import { RefundPayment } from "./application/use-cases/RefundPayment";
 import { CompleteRefund } from "./application/use-cases/CompleteRefund";
 import { GetPaymentOrderStatus } from "./application/use-cases/GetPaymentOrderStatus";
 import { ReconcilePaymentOrder } from "./application/services/ReconcilePaymentOrder";
+import { ReconcileSalePayments } from "./application/services/ReconcileSalePayments";
+
 export {
   PaymentMethod,
   PaymentType,
@@ -96,6 +98,13 @@ export const reconcilePayment = new ReconcilePayment(
 export const webhookHandler = new PaymentWebhookHandler(confirmPayment);
 export const reconcilePaymentOrder = new ReconcilePaymentOrder(
   paymentRepository,
+  confirmPayment,
+  paymentGateway
+);
+
+export const reconcileSalePayments = new ReconcileSalePayments(
+  paymentRepository,
+  paymentOrderRepository,
   confirmPayment,
   paymentGateway
 );

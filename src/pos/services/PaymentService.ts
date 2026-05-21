@@ -150,9 +150,9 @@ export const PaymentService = {
   },
 
   async reconcilePendingPayments(): Promise<void> {
-    const paymentOrderId = "b8392fcd-80ad-46a0-bc9f-a55b74c23b9e";
-    if (!paymentOrderId) return;
-    await fetch(`/api/payment/reconcile/${paymentOrderId}`, { method: "POST" });
+    const saleId = $saleId.get();
+    if (!saleId) return;
+    await fetch(`/api/payment/reconcile/by-sale-id/${saleId}`, { method: "POST" });
   },
 
   async reconcile(saleId: string): Promise<void> {

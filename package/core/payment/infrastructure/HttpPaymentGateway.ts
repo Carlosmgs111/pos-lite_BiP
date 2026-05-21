@@ -86,7 +86,7 @@ export class HttpPaymentGateway implements PaymentGateway {
         }
 
         const data: TransactionResponse = await res.json();
-        console.log(data);
+        console.log({ data });
         if (data.status === "SUCCEEDED")
           return Result.ok(GatewayTransactionStatus.APPROVED);
         if (data.status === "FAILED")
