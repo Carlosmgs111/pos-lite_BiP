@@ -106,5 +106,6 @@ export const reconcileSalePayments = new ReconcileSalePayments(
   paymentRepository,
   paymentOrderRepository,
   confirmPayment,
+  processPayment,
   paymentGateway
 );

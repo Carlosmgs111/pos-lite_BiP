@@ -1,6 +1,7 @@
 import { type PaymentRepository } from "../../domain/PaymentRepository";
 import { type PaymentOrderRepository } from "../../domain/PaymentOrderRepository";
 import { type ConfirmPayment } from "../use-cases/ConfirmPayment";
+import { type ProcessPayment } from "../use-cases/ProcessPayment";
 import {
   type PaymentGateway,
   GatewayTransactionStatus,
@@ -12,6 +13,7 @@ export class ReconcileSalePayments {
     private repo: PaymentRepository,
     private paymentOrderRepo: PaymentOrderRepository,
     private confirmPayment: ConfirmPayment,
+    private processPayment: ProcessPayment,
     private psp: PaymentGateway
   ) {}
 
@@ -33,14 +35,25 @@ export class ReconcileSalePayments {
     const pendingPayments = pendingPaymentsResult.getValue();
     if (!pendingPayments.length) return Result.ok(void 0);
 
+    // ? Se podrian usar para llevar control del resultado de las reconciliaciones
     const executeConfirmations: Promise<Result<Error, void>>[] = [];
 
     for (const payment of pendingPayments) {
-      const externalId = payment.getExternalId();
+      let externalId = payment.getExternalId();
+      // ? Aqui recupera el flujo que debia haberse ejecutado donde ejecutaba la peticion y obtenia el externalId
       if (!externalId) {
-        executeConfirmations.push(
-          Promise.reject(Result.fail(new Error("Payment has no external ID")))
-        );
+        const paymentRequest = {
+          paymentId: payment.getId().getValue(),
+          amount: payment.getAmount().getValue(),
+          method: payment.getMethod(),
+        };
+        externalId = (
+          await this.processPayment.execute(
+            payment.getId().getValue(),
+            paymentRequest
+          )
+        ).getValue();
+        executeConfirmations.push(Promise.resolve(Result.ok(void 0)));
         continue;
       }
 
